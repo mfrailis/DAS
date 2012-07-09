@@ -50,6 +50,8 @@
     <type name="testLogImage">
         <ancestor type="essentialMetadata"/>
         <metadata>
+            <keyword name="naxis1" type="int32" description="image height"/>
+            <keyword name="naxis2" type="int32" description="image width"/>
             <keyword name="format" type="string" description="e.g. jpeg, tiff, etc."/>
         </metadata>
         <data storeAs="blob">
