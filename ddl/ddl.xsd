@@ -54,7 +54,7 @@
   -->
   <xs:element name="associated">
     <xs:complexType>
-      <xs:attribute name="name" use="required"/>
+      <xs:attribute name="name" use="required"  type="xs:Name"/>
       <xs:attribute name="type" use="required" type="xs:IDREF"/>
       <xs:attribute name="multiplicity" default="one">
         <xs:simpleType>
@@ -88,7 +88,7 @@
   -->
   <xs:element name="keyword">
     <xs:complexType>
-      <xs:attribute name="name" use="required"/>
+      <xs:attribute name="name" use="required" type="xs:Name"/>
       <xs:attribute name="description"/>
       <xs:attribute name="type" use="required">
         <xs:simpleType>
@@ -159,7 +159,7 @@
   -->
   <xs:element name="column">
     <xs:complexType>
-      <xs:attribute name="name" use="required"/>
+      <xs:attribute name="name" use="required" type="xs:Name"/>
       <xs:attribute name="type" use="required">
         <xs:simpleType>
           <xs:restriction base="xs:token">
