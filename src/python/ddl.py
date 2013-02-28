@@ -31,8 +31,6 @@ class DataType:
     self.data = None
     
   def accept(self, visitor):
-    if self.ancestor is not None:
-      self.ancestor.accept(visitor)
     for node in self.associated.values():
       node.accept(visitor)
     if self.metadata is not None:
@@ -49,18 +47,9 @@ class DataType:
       diff.is_copy = False
       return diff
 
-    if self.ancestor is not None:
-      if data_type.ancestor is None:
-        print "Error: expected ancestor element"
-        diff.errors = True
-      else:
-        if self.ancestor.atype != data_type.ancestor.atype:
-          print "Error: type attribute in ancestor element mismatch"
-          diff.errors = True
-    else:
-      if data_type.ancestor is not None:
-        print "Error: unexpected ancestor element"
-        diff.errors = True
+    if self.ancestor != data_type.ancestor:
+      print "Error: type attribute in ancestor element mismatch"
+      diff.errors = True
           
     for (name,assoc) in self.associated.items():
       assoc2 = data_type.associated.get(name,None)
@@ -111,12 +100,12 @@ class DataType:
     return diff
    
 
-class Ancestor:
-  def __init__(self, atype):
-    self.atype = atype
-    
-  def accept(self, visitor):
-    visitor.visit_ancestor(self)   
+#class Ancestor:
+#  def __init__(self, atype):
+#    self.atype = atype
+#    
+#  def accept(self, visitor):
+#    visitor.visit_ancestor(self)   
     
     
 class Associated:
@@ -347,9 +336,8 @@ class DdlParser:
     
     dt = DataType(dtype.get('name'))
     
-    ancestor = dtype.find('ddl:ancestor', DdlParser.NSMAP)
-    if ancestor is not None:
-      dt.ancestor = Ancestor(ancestor.get('type'))
+    ancestor = dtype.get('ancestor')
+    dt.ancestor = ancestor
     
     associated = dtype.findall('ddl:associated', DdlParser.NSMAP)
     for a in associated:
