@@ -37,14 +37,13 @@ def _assemble_db(db):
     
 if __name__ == '__main__':
     import sys
-    configuration_file_name = sys.argv[1]
-    output_dir = sys.argv[2]
+    output_dir = sys.argv[1]
     parser = _ddl.DdlParser('../../ddl/ddl.xsd')
-    c = JsonConfigParser('../../ddl/schema.json')
-    c.parse(configuration_file_name)
+    c = JsonConfigParser('../../configure/schema.json')
+    c.parse('../../configure/config.json')
     type_list = _ddl.DdlTypeList()
     for ddl in c.ddl_files:
-        temp_type_list = parser.parse_ddl(ddl)
+        temp_type_list = parser.parse_ddl("../../ddl/schemas/"+ddl)
         #check advanced constraints per ddl
         validator = _odb.DdlInheritanceValidator(temp_type_list)
         if validator.check_redefined_keywords():
@@ -52,6 +51,8 @@ if __name__ == '__main__':
         if validator.check_image_table_mismatch():
             exit(1)
         if validator.check_redefined_columns():
+            exit(1)
+        if validator.check_ancestor_loop():
             exit(1)
         #check redefined types consistency
         for (name,ddl_type) in temp_type_list.type_map.items():
@@ -63,16 +64,15 @@ if __name__ == '__main__':
                 if not upg.is_copy:
                     print "Error: redefined type "+name+"  doesn't match the previously defined one"
                     exit(1)
-    #FIME redoundant
+
     #generate odb classes
-    valid = _odb.DdlInheritanceValidator(type_list)
-    odb_generator = _odb.DdlOdbGenerator(output_dir,valid)
-    type_list.accept(odb_generator)
+    odb_generator = _odb.DdlOdbGenerator(output_dir,type_list)
+    odb_generator.generate()
 
     print "ddl_map"
-    for (type,list) in c.ddl_map._map.items():
-        print type
-        for l in list:
+    for (type_,list_) in c.ddl_map._map.items():
+        print type_
+        for l in list_:
             print "  ",l
             
     print ""
