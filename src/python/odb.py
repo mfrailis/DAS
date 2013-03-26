@@ -101,6 +101,7 @@ class DdlOdbGenerator(DdlVisitor):
       
   def visit_datatype(self, datatype):
     if datatype.name == "essentialMetadata":
+      self.clean_env()
       return
     lines = []
     intro = []
@@ -112,16 +113,16 @@ class DdlOdbGenerator(DdlVisitor):
     lines.append("#include <odb/core.hxx>")
     lines.append("#include <vector>")
     lines.append("#include <map>")
-    lines.append('#include "ddl_info.hpp"')
+    lines.append('#include "ddl/info.hpp"')
     if datatype.ancestor != "essentialMetadata":
       self._header.append('#include "ddl_' + datatype.ancestor + '.hpp"')
       self._inhetit = datatype.ancestor
     else:
-      self._header.append('#include "ddl_DasObject.hpp"')
+      self._header.append('#include "DasObject.hpp"')
       self._inherit = "DasObject"
       
     if datatype.data is not None:
-      self._header.append('#include "ddl_column.hpp"')
+      self._header.append('#include "ddl/column.hpp"')
     
     for t in datatype.associated.values():
       self._forward_section.append("class " + t.name + ";")
@@ -134,7 +135,7 @@ class DdlOdbGenerator(DdlVisitor):
       intro[-1] += ": public "+self._inherit
     else:
       intro[-1] += ": public DasObject"
-      lines.append('#include "ddl_DasObject.hpp"')
+      lines.append('#include "DasObject.hpp"')
 
     intro.append("{")
     
@@ -193,12 +194,10 @@ class DdlOdbGenerator(DdlVisitor):
     if keyword.default is not None:
       self._default_init.append(keyword.name+"_ = "+keyword.default+";")
     if k_type == 'CBLOB':
-      self._private_section.append('#pragma db mysql:type("MEDIUMBLOB") oracle:type("BLOB") pgsql:type("text") sqlite:type("BLOB") mssql:type("varbinary")')
+      self._private_section.append('#pragma db mysql:type("MEDIUMTEXT") oracle:type("CLOB") pgsql:type("TEXT") sqlite:type("TEXT") mssql:type("varbinary")')
       self._header.append('typedef std::string CBLOB;')    
     self._private_section.append(k_type + " " + keyword.name + "_;")
     self._public_section.extend(_getter_template(keyword.name, self.KTYPE_MAP[keyword.ktype]))
-    if keyword.name != 'version' and keyword.name != 'dbUserId': #user can't modify those attributes
-      self._public_section.extend(_setter_template(keyword.name, self.KTYPE_MAP[keyword.ktype]))     
 
    
   def visit_binary_table(self,_):
@@ -220,7 +219,7 @@ class DdlOdbGenerator(DdlVisitor):
 
   def visit_image(self,_):
     self._protected_section.append("Image"+self._store_as+" image_;")
-    self._header.append('#include "ddl_image.hpp"')
+    self._header.append('#include "ddl/image.hpp"')
     if self._init_list: # if is not empty
       self._init_list.append(', image_("")')
     else:

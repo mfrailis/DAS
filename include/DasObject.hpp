@@ -1,11 +1,14 @@
 #ifndef DAS_DASOBJECT_HPP
 #define DAS_DASOBJECT_HPP
 
+#include <odb/core.hxx>
 #include <string>
-#include "ddl_info.hpp"
+#include "ddl/info.hpp"
 
+#pragma db object abstract
 class DasObject
 {
+public:
   const KeywordInfo&
   get_keyword_info (std::string keyword_name) throw(std::out_of_range)
   {

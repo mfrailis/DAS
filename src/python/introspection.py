@@ -3,16 +3,23 @@ import os as _os
 
 class DdlMap:
     def __init__(self):
-        self._map = {}
-    
+        self._map_type = {}
+        self._map_ddl = {}
+
     def add_type(self,ddl_name,ddl_type):
-        if self._map.get(ddl_type,None) is None:
-            self._map[ddl_type] = []
-        self._map[ddl_type].append(ddl_name)
-        
+        if self._map_type.get(ddl_type,None) is None:
+            self._map_type[ddl_type] = []
+        self._map_type[ddl_type].append(ddl_name)
+        if self._map_ddl.get(ddl_name,None) is None:
+            self._map_ddl[ddl_name] = []
+        self._map_ddl[ddl_name].append(ddl_type)
+
     def get_ddl_list(self, type_name):
-        return self._map.get(type_name,[])
-        
+        return self._map_type.get(type_name,[])
+
+    def get_type_list(self, ddl_name):
+        return self._map_ddl.get(ddl_name,[])
+
 class DdlInfoGenerator(_odb.DdlVisitor):
     def __init__(self,type_list,ddl_map,db_map,source_dir):
         self._type_list = type_list
@@ -47,7 +54,7 @@ class DdlInfoGenerator(_odb.DdlVisitor):
                 d = ""
             else:
                 d = c.description
-            self._init_columns.append('all_columns_["'+data_type.name+'"]["'+c.name+'"] = ColumnInfo("'+c.name+'","'+c.ctype+'","'+c.unit+'","'+d+'","'+c.max_string_length+'");')
+            self._init_columns.append('all_columns_["'+data_type.name+'"]["'+c.name+'"] = ColumnInfo("'+c.name+'","'+c.ctype+'","'+c.unit+'","'+d+'",'+c.max_string_length+');')
 
         ddl_list = self._ddl_map.get_ddl_list(data_type.name)
         for ddl in ddl_list:
@@ -57,7 +64,7 @@ class DdlInfoGenerator(_odb.DdlVisitor):
             if self._columns:
                 self._DdlInfo_children[ddl].append('columns_["'+data_type.name+'"] = &all_columns_["'+data_type.name+'"];')
                 
-    def visit_type_list(self, type_list):
+    def visit_type_list(self,_):
         f = open(_os.path.join(self._src_dir, 'ddl_info.cpp'), 'w')
         f.writelines('#include "'+ddl+'.hpp"\n' for ddl in set(self._db_map.values()))
         f.writelines(['\nvoid\n','DdlInfo::init()\n','{\n'])
@@ -66,7 +73,7 @@ class DdlInfoGenerator(_odb.DdlVisitor):
         f.writelines(['\n'])
         f.writelines('  ddl_map_["'+db+'"] = '+ddl+'::get_instance();\n' for (db,ddl) in self._db_map.items())
         f.writelines(['}\n'])
-        f.close
+        f.close()
  
         for ddl_name in self._DdlInfo_children.keys():
             f = open(_os.path.join(self._src_dir, ddl_name+'.hpp'), 'w')
@@ -116,7 +123,7 @@ public:
   virtual
   const KeywordInfo&
   get_keyword_info(std::string type_name, std::string keyword_name)
-    throw(std::out_of_range) const
+    cosnt throw(std::out_of_range)
   {
     return keywords_.at(type_name)->at(keyword_name);
   }
@@ -124,22 +131,22 @@ public:
   virtual
   const ColumnInfo&
   get_column_info(std::string type_name, std::string column_name)
-    throw(std::out_of_range) const
+    const throw(std::out_of_range)
   {
     return columns_.at(type_name)->at(column_name);
   }  
   
 private:
-  boost::unordered_map<string, DdlInfo::keyword_map* > keywords_;
-  boost::unordered_map<string, DdlInfo::column_map* > columns_;
+  boost::unordered_map<string, DdlInfo::Keyword_map* > keywords_;
+  boost::unordered_map<string, DdlInfo::Column_map* > columns_;
   static '''+ddl_name+'''* instance_;
 ''']
     source.extend(constructor)
     source.append(
 '''
-}
+};
 
-'''+ddl_name+'''* '''+ddl_name+'''::instance = 0;
+'''+ddl_name+'''* '''+ddl_name+'''::instance_ = 0;
 #endif
 ''')
     f.writelines(l for l in source)
@@ -167,9 +174,9 @@ if __name__ == "__main__":
 
 
     print "ddl_map"
-    for (type,list) in ddl_map._map.items():
-        print type
-        for l in list:
+    for (type_,list_) in ddl_map._map.items():
+        print type_
+        for l in list_:
             print "  ",l
             
     print ""
