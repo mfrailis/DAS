@@ -11,9 +11,8 @@
      "id"         : "#database",
      "type"	  : "object",
      "properties" : {
-         "ip"  : {
+         "host"  : {
 	     "type"     : "string",
-	     "format"   : "ipv4",
 	     "required" : true
 	 },
 	 "port"	  : {
@@ -34,6 +33,10 @@
 	 "ddl"  : {
 	     "type"     : "string",
 	     "pattern"  : "^[^\/]",
+	     "required" : true
+	 },
+	 "alias"  : {
+	     "type"     : "string",
 	     "required" : true
 	 },
 	 "data_root_dir" : {

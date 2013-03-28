@@ -23,9 +23,15 @@ class JsonConfigParser:
         self._config = _j.load(f)
         f.close()
         _js.validate(self._config, self._schema, format_checker=_js.FormatChecker())
+        aliases = []        
         for db in self._config:
+            if db['alias'] in aliases:
+                print 'ERROR: found repeated  "'+db['alias']+'" alias in configuration file'
+                exit(1)
+            aliases.append(db['alias'])
             self.db_map[_assemble_db(db)]=_assemble_ddl(db['ddl'])
             self.ddl_files.add(db['ddl'])
+
 
     def get_db_list(self):
         return self.db_map.keys()
@@ -42,48 +48,63 @@ class JsonConfigParser:
             f.write('\n#endif\n')
             f.close()
 
-    def generate_sub(self,output_dir):
+    def generate_sub(self,output_dir,t_pre):
         for db in self._config:
-            db_str = db['ip']+"_"+str(db['port'])+"_"+db['db_name']
+            #db_str = db['host']+"_"+str(db['port'])+"_"+db['db_name']
+            db_str = db['alias']
             self.sub_dirs.append(db_str)
             dir_name = _os.path.join(output_dir,db_str)
             _os.mkdir(dir_name)
-            ddl_h = self.db_map[_assemble_db(db)]+'_types.h'
-            _generate_sub_cmake(dir_name,db_str,db['db_type'],ddl_h)
+            ddl_h   = self.db_map[_assemble_db(db)]+'_types.h'
+            ddl_sql = self.db_map[_assemble_db(db)]+'_types.sql'           
+            _generate_sub_cmake(dir_name,db_str,db['db_type'],ddl_h, ddl_sql, t_pre,db)
 
         
 def _assemble_ddl(path):
     return "ddl_"+_hash.sha1(path).hexdigest()
 
 def _assemble_db(db):
-    uri=""+db['ip']+str(db['port'])+db['db_name']
+    uri=""+db['host']+str(db['port'])+db['db_name']
     return "db_"+_hash.sha1(uri).hexdigest()
 
-def _generate_sub_cmake(dir_name,db_str,db_type,ddl_h):
+def _generate_sub_cmake(dir_name,db_str,db_type,ddl_h,ddl_sql,prefix,db):
     f = open(_os.path.join(dir_name,'CMakeLists.txt'),'w')
     f.write(
 '''
 cmake_minimum_required(VERSION 2.8)
 add_custom_command(
-  OUTPUT  DB_'''+db_str+'''
+  OUTPUT  '''+ddl_sql+'''
   COMMAND odb --database '''+db_type+'''
           --generate-query --generate-schema
           --at-once ${ODB_SOURCE_DIR}/'''+ddl_h+'''
     	  -x -I${ODB_SOURCE_DIR}
 	  -x -I${CPP_INCLUDE_DIR}
-  WORKING_DIRECTORY ${MAKE_CURRENT_BINARY_DIR}
-  COMMENT "Built odb classes for '''+db_str+'''"
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+  COMMENT "Building odb classes for '''+db_str+'''"
+)
+
+add_custom_command(
+  OUTPUT  DBMS_'''+prefix+db_str+'''
+  COMMAND python db_access.py ${CONF_JSON_SCHEMA} ${DB_ACCESS_JSON_SCHEMA} ${CONF_JSON} ${DB_ACCESS_JSON}
+          "'''+db['alias']+'''" ${CMAKE_CURRENT_BINARY_DIR}/'''+ddl_sql+''' 
+  WORKING_DIRECTORY ${PYTHON_SOURCE_DIR}
+  COMMENT "Executing '''+db['db_type']+''' on '''+db['alias']+'''"
 )
 
 add_custom_target(
-  db-'''+db_str+'''
-  DEPENDS DB_'''+db_str+'''
+  schema-'''+db_str+'''
+  DEPENDS '''+ddl_sql+'''
+)
+
+add_custom_target(
+  '''+prefix+db_str+'''
+  DEPENDS '''+ddl_sql+''' DBMS_'''+prefix+db_str+'''
 )
 '''
 )
     f.close()
         
-def generate(output_dir,dirs):
+def generate(output_dir,dirs,prefix):
     f = open(_os.path.join(output_dir,'CMakeLists.txt'),'w')
     f.write('cmake_minimum_required(VERSION 2.8)\n')
     for l in dirs:
@@ -91,11 +112,24 @@ def generate(output_dir,dirs):
     f.write(
 '''
 add_custom_target(
-  db-all ALL
+  schema-all ALL
   DEPENDS'''
 )
     for l in dirs:
-        f.write(" db-"+l)
+        f.write(" schema-"+l)
+    f.write(
+'''
+)
+'''
+)
+    f.write(
+'''
+add_custom_target(
+  '''+prefix+'''all ALL
+  DEPENDS'''
+)
+    for l in dirs:
+        f.write(" "+prefix+l)
     f.write(
 '''
 )
@@ -106,12 +140,12 @@ add_custom_target(
     
 if __name__ == '__main__':
     import sys
-    output_dir   = sys.argv[1]
-    conf_schema = sys.argv[2]
-    conf   = sys.argv[3]
-    ddl_schema   = sys.argv[4]
-    ddl_dir      = sys.argv[5]
-    
+    output_dir    = sys.argv[1]
+    conf_schema   = sys.argv[2]
+    conf          = sys.argv[3]
+    ddl_schema    = sys.argv[4]
+    ddl_dir       = sys.argv[5]
+    target_prefix = sys.argv[6]
 
     parser = _ddl.DdlParser(ddl_schema)
     c = JsonConfigParser(conf_schema)
@@ -152,5 +186,5 @@ if __name__ == '__main__':
     c.generate_db_headers(output_dir)
 
     #subdirectories and CmakeLists.txt
-    c.generate_sub(output_dir)
-    generate(output_dir,c.sub_dirs)
+    c.generate_sub(output_dir,target_prefix)
+    generate(output_dir,c.sub_dirs,target_prefix)
