@@ -5,6 +5,8 @@ set(CPP_SOURCE_DIR ${CMAKE_SOURCE_DIR}/src/cpp)
 set(CPP_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
 set(PYTHON_SOURCE_DIR ${CMAKE_SOURCE_DIR}/src/python)
 
+set(TYPE_PREFIX ddl_)
+
 set(DAS_BUILD_DIR ${PROJECT_SOURCE_DIR}/build)
 
 set(ODB_SOURCE_DIR ${DAS_BUILD_DIR})
@@ -29,21 +31,30 @@ include_directories(${ODB_OUTPUT_DIR})
 
 set(ODB_COMMON_TYPES ${ODB_SOURCE_DIR}/ddl_types.hpp)
 
-add_custom_command(
-  OUTPUT  odb-common
-  COMMAND mkdir -p ${ODB_OUTPUT_DIR}
-  COMMAND odb --multi-database dynamic 
-          --database common
-          --generate-query --generate-schema
-          --output-dir ${ODB_OUTPUT_DIR}
-          --at-once ${ODB_COMMON_TYPES}
-	  -x -I${CPP_INCLUDE_DIR}
-  COMMENT "Built common odb classes"
-)
+#add_custom_command(
+#  OUTPUT  odb-common
+#  COMMAND mkdir -p ${ODB_OUTPUT_DIR}
+#  COMMAND odb
+#          --multi-database dynamic 
+#          --database common
+#          --generate-query
+#          --generate-schema
+#          --omit-drop
+#          --output-dir ${ODB_OUTPUT_DIR}
+#          --at-once
+#          ${ODB_COMMON_TYPES}
+#	  -x -I${CPP_INCLUDE_DIR}
+#  COMMENT "Built common odb classes"
+#)
 
 execute_process(
-  COMMAND python configure.py ${DAS_BUILD_DIR} ${CONF_JSON_SCHEMA} ${CONF_JSON}
-          ${DDL_SCHEMA} ${DDL_INSTANCE_DIR} ${TARGET_DB_PREFIX}
+  COMMAND python configure.py
+          ${DAS_BUILD_DIR}
+          ${CONF_JSON_SCHEMA}
+          ${CONF_JSON}
+          ${DDL_SCHEMA}
+          ${DDL_INSTANCE_DIR}
+          ${TARGET_DB_PREFIX}
   WORKING_DIRECTORY ${PYTHON_SOURCE_DIR}
 )
 
@@ -59,4 +70,3 @@ add_custom_target(
 #add_library (ddl_runtime_lib ${CPP_SOURCE_DIR}/ddl_info.hpp classes-odb)
 #add_executable(ddl_runtime_info ${CPP_SOURCE_DIR}/main.cpp)
 #target_link_libraries(ddl_runtime_info ddl_runtime_lib xerces-c)
-

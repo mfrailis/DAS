@@ -124,9 +124,6 @@ class DdlOdbGenerator(DdlVisitor):
     if datatype.data is not None:
       self._header.append('#include "ddl/column.hpp"')
     
-    for t in datatype.associated.values():
-      self._forward_section.append("class " + t.name + ";")
-
     if self._class_name  == "essentialMetadata":
        intro.append("#pragma db object abstract\nclass " + datatype.name)   
     else:
@@ -179,6 +176,7 @@ class DdlOdbGenerator(DdlVisitor):
       self._has_associations = True 
 	
     self._forward_section.append("class " + associated.atype + ";")
+    self._header.append('#include "ddl_'+ associated.atype +'.hpp"')
     # see Remove multiplicity attribute discussion
     weak_refs = "std::vector<lazy_weak_ptr<" + associated.atype + "> >" 
     #shared_refs = "std::vector<shared_ptr<" + associated.atype + "> >"
