@@ -6,7 +6,6 @@ import ddl as _d
 import os as _os
 from warnings import filterwarnings
 
-
 MYSQL_DDL_SCHEMA='''
 CREATE TABLE IF NOT EXISTS `ddl_schema_types` (
    `schema` TEXT
@@ -80,51 +79,78 @@ class JsonAccessParser:
             exit(1)
 
     def execute(self, xsd_schema, xml_new):
-        filterwarnings('ignore', category = _my.Warning)
+
         is_new = True
         if  self._db_type == 'mysql':
+            filterwarnings('ignore', category = _my.Warning)
+            lock = _my.connect(host=self._host,
+                             port=self._port,
+                             user=self._user_name,
+                             passwd=self._password,
+                             db=self._db_name
+                             )
+
             db = _my.connect(host=self._host,
                              port=self._port,
                              user=self._user_name,
                              passwd=self._password,
-                             db=self._db_name)
-            db.autocommit(False)
+                             db=self._db_name
+                             )
             c = db.cursor()
             c.execute(MYSQL_DDL_SCHEMA)
             c.close()
 
             cur_types = _d.DdlTypeList()
 
-            c = db.cursor()
-            c.execute(MYSQL_GET_DDL_SCHEMA)
-            schema_query = c.fetchone()
-            c.close()           
+# LOCK SCHEMA TABLE
+            lc = lock.cursor()
+            lc.execute("LOCK TABLES `ddl_schema_types` WRITE;")
+            lc.close()
+
+            lc = lock.cursor()           
+            lc.execute(MYSQL_GET_DDL_SCHEMA)
+            schema_query = lc.fetchone()
+            lc.close()
 
             parser = _d.DdlParser(xsd_schema)
             if schema_query is not None:
                 is_new = False
                 cur_types = parser.parse_ddl_from_string(schema_query[0])                
                 
-
             new_types = parser.parse_ddl(xml_new)
             #tree_string = db.escape_string(parser.serialize_tree(xml_new))
             tree_string = parser.serialize_tree(xml_new)
 
+            if not self._check_missing_types(cur_types,new_types):
+# ERROR:        UNLOCK SCHEMA TABLE AND EXIT
+                lc = lock.cursor()
+                lc.execute("UNLOCK TABLES;")
+                lc.close()
+                
+                db.close()
+                lock.close()
+                exit(1)
+                
             code = self._generate_mysql(cur_types,new_types)
             for i in code:
                 cc = db.cursor()
                 cc.execute(i)
                 cc.close()
 
-            c = db.cursor()           
+            lc = lock.cursor()
             if is_new:
-                c.execute("INSERT INTO `ddl_schema_types`(`schema`) VALUES (%s)",[tree_string])
+                lc.execute("INSERT INTO `ddl_schema_types`(`schema`) VALUES (%s)",[tree_string])
             else:
-                c.execute("UPDATE `ddl_schema_types` SET `schema` = %s",[tree_string])
+                lc.execute("UPDATE `ddl_schema_types` SET `schema` = %s",[tree_string])
+            lc.close()
 
-            c.close()
-            db.commit()
+# UNLOCK SCHEMA TABLE
+            lc = lock.cursor()
+            lc.execute("UNLOCK TABLES;")
+            lc.close()
+            
             db.close()
+            lock.close()
 
         elif self._db_type == 'oracle':
             print "ERROR: DBMS vendor not supported (yet)"
@@ -139,9 +165,17 @@ class JsonAccessParser:
             print "ERROR: DBMS vendor not supported (yet)"
             exit(1)
 
+    def _check_missing_types(self,cur,new):
+        for t in cur.type_map.values():
+            ct = new.type_map.get(t.name,None)
+            if ct is None:
+                print "ERROR: type "+t.name+" missing in the new ddl-document" 
+                return False
+        return True
 #TODO modify this function in order to perform types upgrades
     def _generate_mysql(self,cur,new):
         code = []
+
         for t in new.type_map.values():
             ct = cur.type_map.get(t.name,None)
             if ct is None:

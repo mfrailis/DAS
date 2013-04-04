@@ -317,22 +317,21 @@ class DdlParser:
   NSMAP = {'ddl':'http://oats.inaf.it/das'}
   
   def __init__(self, schema_file_name):
-    self.schema = _et.XMLSchema(file=schema_file_name)
-    self.ddl_parser = _et.XMLParser(schema = self.schema, attribute_defaults=True)
-
-    
+    self.schema = _et.XMLSchema(file=schema_file_name, attribute_defaults=True)
+ 
   def parse_ddl(self, xml_filename):
-    tree = _et.parse(xml_filename, self.ddl_parser)
-    tlist = DdlTypeList()
-    dtypes = tree.getroot().findall('ddl:type', DdlParser.NSMAP)
-    for dtype in dtypes:
-      ptype = self._parse_datatype(dtype)
-      tlist.type_map[ptype.name] = ptype
-
-    return tlist
+    tree = _et.parse(xml_filename)
+    tree.xinclude()
+    return self._parse(tree)
 
   def parse_ddl_from_string(self, xml_string):
-    tree = _et.fromstring(xml_string, self.ddl_parser)
+    #note: xinclude are not expected in the string argument
+    tree = _et.fromstring(xml_string)
+    return self._parse(tree)
+
+  def _parse(self,tree):
+    self.schema.assertValid(tree)
+
     tlist = DdlTypeList()
     dtypes = tree.findall('ddl:type', DdlParser.NSMAP)
     for dtype in dtypes:
@@ -340,12 +339,13 @@ class DdlParser:
       tlist.type_map[ptype.name] = ptype
     
     return tlist
-
+    
 
   def serialize_tree(self,xml_filename):
-    tree =  _et.parse(xml_filename, self.ddl_parser)
+    tree =  _et.parse(xml_filename)
+    tree.xinclude()
     return _et.tostring(tree)
-  
+ 
   def _parse_datatype(self, dtype):
     
     dt = DataType(dtype.get('name'))
