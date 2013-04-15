@@ -5,6 +5,13 @@
  xsi:schemaLocation="http://oats.inaf.it/das ddl.xsd">
     <xi:include href="dasInstance.xml" parse="xml"
 	xpointer="xmlns(das=http://oats.inaf.it/das)xpointer(//das:type[@name='essentialMetadata'])"/>
+
     <xi:include href="dasInstance.xml" parse="xml"
 	xpointer="xmlns(das=http://oats.inaf.it/das)xpointer(//das:type[@name='lfiHkDaeSlowVoltage'])"/>
+
+    <!--xi:include href="dasInstance.xml" parse="xml"
+	xpointer="xmlns(das=http://oats.inaf.it/das)xpointer(//das:type[@name='testLogImage'])"/-->
+
+    <!--xi:include href="dasInstance.xml" parse="xml"
+	xpointer="xmlns(das=http://oats.inaf.it/das)xpointer(//das:type[@name='testLog'])"/-->
 </ddl>
