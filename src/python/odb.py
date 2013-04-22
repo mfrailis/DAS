@@ -55,11 +55,12 @@ class DdlOdbGenerator(DdlVisitor):
     self._class_name = ""
     self._forward_section = []
     self._public_section = []
+    self._type_defs = []
     self._protected_section = []
     self._private_section = []
     self._init_list = []
     self._default_init = []
-    self._const_init = []
+    self._init = []
     self._has_associations = False
     self._store_as = None
 
@@ -69,11 +70,12 @@ class DdlOdbGenerator(DdlVisitor):
     self._class_name = ""
     self._forward_section = []
     self._public_section = []
+    self._type_defs = []
     self._protected_section = []
     self._private_section = []
     self._init_list = []
     self._default_init = []
-    self._const_init = []
+    self._init = []
     self._has_associations = False
     self._store_as = None
 
@@ -120,6 +122,7 @@ class DdlOdbGenerator(DdlVisitor):
     else:
       self._header.append('#include "DasObject.hpp"')
       self._inherit = "DasObject"
+    self._header.append('#include "tpl/Database.hpp"')
       
     if datatype.data is not None:
       self._header.append('#include "ddl/column.hpp"')
@@ -148,21 +151,38 @@ class DdlOdbGenerator(DdlVisitor):
     f.writelines(l + "\n" for l in self._header)
     f.writelines(l + "\n" for l in self._forward_section)
     f.writelines(l + "\n" for l in intro)
+    # public section
     f.writelines([" public:\n"])
+    f.writelines("  "+l + "\n" for l in self._type_defs)
     f.writelines("  "+l + "\n" for l in self._public_section)
+    #    public constructor with name argument
+    f.writelines(["  "+self._class_name+" (const std::string &name)\n"])
+    f.writelines("  "+l + "\n" for l in self._init_list)
+    f.writelines(["  {\n"])
+    f.writelines(["    init();\n"])
+    f.writelines(['    name_ = name;\n'])
+    f.writelines(["  }\n"])
+    # preotected section
+    f.writelines([" protected:\n"])
+    f.writelines(["  friend class odb::access;\n"])
+    f.writelines("  "+l + "\n" for l in self._protected_section)
+    #    default constractor.
     f.writelines(["  "+self._class_name+" ()\n"])
     f.writelines("  "+l + "\n" for l in self._init_list)
+    f.writelines(["  {\n"])
+    f.writelines(["    init();\n"])
+    f.writelines(["  }\n"])
+    # private section
+    f.writelines([" private:\n"])
+    f.writelines("  "+l + "\n" for l in self._private_section)
+    #   default inizializer method
+    f.writelines(["  void init()\n"])
     f.writelines(["  {\n"])
     f.writelines(['    type_name_ = "'+self._class_name+'";\n'])
     f.writelines("    "+l + "\n" for l in self._default_init)
     f.writelines(["  }\n"])
-    f.writelines([" protected:\n"])
-    f.writelines(["  friend class odb::access;\n"])
-    f.writelines("  "+l + "\n" for l in self._protected_section)
-    f.writelines([" private:\n"])
-    f.writelines("  "+l + "\n" for l in self._private_section)
+
     f.writelines(["};\n"])
-    f.writelines(l + "\n" for l in self._const_init)
     f.writelines(["#endif"])
     f.close()
     self.clean_env()
@@ -172,16 +192,18 @@ class DdlOdbGenerator(DdlVisitor):
     if not self._has_associations:
       self._header.append("#include <odb/tr1/memory.hxx>")
       self._header.append("#include <odb/tr1/lazy-ptr.hxx>")
+      self._header.append("#include <odb/transaction.hxx>")
       self._header.append("using odb::tr1::lazy_weak_ptr;")  
       self._has_associations = True 
 	
     self._forward_section.append("class " + associated.atype + ";")
     self._header.append('#include "ddl_'+ associated.atype +'.hpp"')
     # see Remove multiplicity attribute discussion
-    weak_refs = "std::vector<lazy_weak_ptr<" + associated.atype + "> >" 
-    #shared_refs = "std::vector<shared_ptr<" + associated.atype + "> >"
-    self._private_section.append(weak_refs + " " + associated.name + "_;")
-    self._public_section.extend(_getter_template(associated.name, weak_refs))
+    type_alias = associated.name+'_vector'
+    self._type_defs.append('typedef typename std::vector<lazy_weak_ptr<'+associated.atype+'> > '+type_alias+';' )
+    self._private_section.append(type_alias + " " + associated.name + "_;")
+    self._public_section.extend(_getter_assoc(associated.name, type_alias))
+    self._public_section.extend(_setter_assoc(associated.name, type_alias))
  
  
   def visit_keyword(self,keyword):
@@ -199,6 +221,7 @@ class DdlOdbGenerator(DdlVisitor):
 
     self._private_section.append(k_type + " " + keyword.name + "_;")
     self._public_section.extend(_getter_template(keyword.name, self.KTYPE_MAP[keyword.ktype]))
+    self._public_section.extend(_setter_template(keyword.name, self.KTYPE_MAP[keyword.ktype]))
 
    
   def visit_binary_table(self,_):
@@ -252,9 +275,54 @@ def _getter_template(attribute_name, attribute_type):
   
 def _setter_template(attribute_name, attribute_type):
   method_definition = ["void"]
-  method_definition.extend([attribute_name + " ("+attribute_type+" "+attribute_name+")","{"])
-  method_definition.extend(["  "+attribute_name+"_ = "+attribute_name+";","}"])
+  method_definition.extend([attribute_name + " (const "+attribute_type+" &"+attribute_name+")", "{"])
+  method_definition.extend(["  "+attribute_name+"_ = "+attribute_name+";","  is_dirty_ = true;","}"])
   return method_definition
+
+def _getter_assoc(attribute_name, attribute_type):
+  src = [attribute_type]
+  src.extend([attribute_name + " () const","{"])
+  src.append('''
+    odb::transaction *transaction;
+    bool local_trans = !odb::transaction::has_current();
+    if(local_trans)
+    {
+      transaction = new odb::transaction(db_ptr_->begin());
+    }
+    else
+    {
+      transaction = &odb::transaction::current();
+    }
+    try
+    {
+      for('''+attribute_type+'''::iterator i = '''+attribute_name+'''_.begin(); i != '''+attribute_name+'''_.end(); i++)
+        i->load();
+    }
+    catch(std::exception &e)
+    {
+      if(local_trans)
+      {
+        transaction->rollback();
+        delete transaction;
+      }
+      throw e;
+    }
+    if(local_trans)
+    {
+      transaction->commit();
+      delete transaction;
+    }
+''')
+  src.extend(["  return " + attribute_name + "_;","}"])
+  return src
+  
+def _setter_assoc(attribute_name, attribute_type):
+  method_definition = ["void"]
+  method_definition.extend([attribute_name + " ( const "+attribute_type+" &"+attribute_name+")","{"])
+  method_definition.extend(["  "+attribute_name+"_ = "+attribute_name+";","  is_dirty_ = true;","}"])
+  return method_definition
+
+
 
 
 class DdlInheritanceValidator:

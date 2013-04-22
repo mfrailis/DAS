@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ddl xmlns="http://oats.inaf.it/das"
+ xmlns:xi="http://www.w3.org/2001/XInclude"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://oats.inaf.it/das ddl.xsd">
+    <xi:include href="dasInstance.xml" parse="xml"
+	xpointer="xmlns(das=http://oats.inaf.it/das)xpointer(//das:type[@name='essentialMetadata'])"/>
+
+    <xi:include href="dasInstance.xml" parse="xml"
+	xpointer="xmlns(das=http://oats.inaf.it/das)xpointer(//das:type[@name='lfiHkDaeSlowVoltage'])"/>
+
+    <!--xi:include href="dasInstance.xml" parse="xml"
+	xpointer="xmlns(das=http://oats.inaf.it/das)xpointer(//das:type[@name='testLogImage'])"/-->
+
+    <!--xi:include href="dasInstance.xml" parse="xml"
+	xpointer="xmlns(das=http://oats.inaf.it/das)xpointer(//das:type[@name='testLog'])"/-->
+</ddl>

@@ -30,12 +30,12 @@
 	"time_interval" : "day"
     },
     {
-	"host"          : "192.168.1.11",
-	"port"          : 5432,
-	"db_type"  	: "oracle",
-	"alias"         : "oracle_l2",
-	"db_name"  	: "testl2_backup2",
-	"ddl"	     	: "dasInstance.xml",
+	"host"          : "localhost",
+	"port"          : 3306,
+	"db_type"  	: "mysql",
+	"alias"         : "test",
+	"db_name"  	: "prova",
+	"ddl"	     	: "prova.xml",
 	"data_root_dir" : "/db/testl2_bak",
 	"time_interval" : "week"
     },

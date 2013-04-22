@@ -9,11 +9,11 @@ class Column
   Column(long long size, std::string type)
     :size_(size), type_(type)
   {}
-  
+
   Column(std::string type)
     :size_(0), type_(type)
   {}
-  
+
   const long long&
   size() const
   {
@@ -31,7 +31,7 @@ class Column
   {
     return type_;
   }
-  
+
   void
   type(std::string type)
   {
@@ -56,7 +56,7 @@ public:
   {}
   ColumnFile(std::string type)
     : Column(type)
-  {}  
+  {}
   const std::string&
   fname()
   {
@@ -71,7 +71,7 @@ public:
 
  private:
   friend class odb::access;
-
+  void save();
   ColumnFile()  {}
   std::string fname_;
 };
@@ -83,18 +83,18 @@ public:
   ColumnBlob(long long size, std::string type)
     : Column(size, type)
   {}
-  
+
   ColumnBlob(std::string type)
     : Column(type)
-  {} 
-  
+  {}
+
 
 
  private:
   friend class odb::access;
 
   ColumnBlob()  {}
- 
+
   #pragma db mysql:type("MEDIUMBLOB") oracle:type("BLOB") pgsql:type("BYTEA") sqlite:type("BLOB") mssql:type("varbinary")
   std::vector<char> buffer_;
 
