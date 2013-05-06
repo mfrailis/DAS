@@ -66,8 +66,9 @@ def _assemble_ddl(path):
     return "ddl_"+_hash.sha1(path).hexdigest()
 
 def _assemble_db(db):
-    uri=""+db['host']+str(db['port'])+db['db_name']
-    return "db_"+_hash.sha1(uri).hexdigest()
+#    uri=""+db['host']+str(db['port'])+db['db_name']
+#    return "db_"+_hash.sha1(uri).hexdigest()
+    return db['alias']
 
 def _generate_sub_cmake(dir_name,db_str,db_type,ddl_h,ddl_sql,prefix,db,typelist):
     f = open(_os.path.join(dir_name,'CMakeLists.txt'),'w')
@@ -110,6 +111,8 @@ foreach(type_name ${TYPE_NAMES})
     COMMAND odb
             --database '''+db_type+'''
             --generate-query
+            --generate-session
+            --default-pointer std::tr1::shared_ptr 
 	    -x -I${ODB_SOURCE_DIR}
             -x -I${CPP_INCLUDE_DIR}
 	    ${ODB_SOURCE_DIR}/${TYPE_PREFIX}${type_name}.hpp
@@ -124,6 +127,8 @@ OUTPUT DasObject-odb.hxx
 COMMAND odb
     --database mysql
     --generate-query
+    --generate-session
+    --default-pointer std::tr1::shared_ptr 
     -x -I${ODB_SOURCE_DIR}
     -x -I${CPP_INCLUDE_DIR}
     ${CPP_INCLUDE_DIR}/DasObject.hpp
@@ -135,6 +140,8 @@ OUTPUT aux_query-odb.hxx
 COMMAND odb
     --database mysql
     --generate-query
+    --generate-session
+    --default-pointer std::tr1::shared_ptr 
     -x -I${ODB_SOURCE_DIR}
     -x -I${CPP_INCLUDE_DIR}
     ${CPP_INCLUDE_DIR}/aux_query.hpp

@@ -7,19 +7,14 @@
 namespace das { namespace tpl { namespace mysql
 {
 
-  class Database : public das::tpl::Database{
+class Database : public das::tpl::Database
+{
 public:
-    Database(/*const std::string& db_id,*/
-	     const std::string& user,
-	     const std::string& password,
-	    const std::string& database,
-	    const std::string& host = "",
-	    int                port = 0)
-    {
-	db_.reset(new odb::mysql::database(user,password,database,host,port));
-//	db_id_ = db_id;
-    }
+    friend shared_ptr<Database> create(const std::string&);
+
 };
 
-}}}
+}//namespace mysql
+}//namespace tpl
+}//namespace das
 #endif

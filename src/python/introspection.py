@@ -105,7 +105,7 @@ def _write_ddl_class(f, ddl_name, constructor):
 '''#ifndef '''+ ddl_name.upper()+'''_HPP
 #define '''+ ddl_name.upper()+'''_HPP
 
-#include "ddl_info.hpp"
+#include "ddl/info.hpp"
 
 class '''+ddl_name+''' : public DdlInfo
 {
@@ -123,7 +123,7 @@ public:
   virtual
   const KeywordInfo&
   get_keyword_info(std::string type_name, std::string keyword_name)
-    cosnt throw(std::out_of_range)
+    const throw(std::out_of_range)
   {
     return keywords_.at(type_name)->at(keyword_name);
   }
@@ -137,8 +137,8 @@ public:
   }  
   
 private:
-  boost::unordered_map<string, DdlInfo::Keyword_map* > keywords_;
-  boost::unordered_map<string, DdlInfo::Column_map* > columns_;
+  boost::unordered_map<std::string, DdlInfo::Keyword_map* > keywords_;
+  boost::unordered_map<std::string, DdlInfo::Column_map* > columns_;
   static '''+ddl_name+'''* instance_;
 ''']
     source.extend(constructor)

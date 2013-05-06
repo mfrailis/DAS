@@ -51,6 +51,7 @@ class DdlOdbGenerator(DdlVisitor):
     self._instance = instance
  
     self._header = []
+    self._src_header = []
     self._inherit = ""
     self._class_name = ""
     self._forward_section = []
@@ -61,11 +62,15 @@ class DdlOdbGenerator(DdlVisitor):
     self._init_list = []
     self._default_init = []
     self._init = []
+    self._friends = ["friend class odb::access;"]
     self._has_associations = False
     self._store_as = None
+    self._keyword_touples = []
+    self._assoc_touples = []
 
   def clean_env(self):
     self._header = []
+    self._src_header = []
     self._inherit = ""
     self._class_name = ""
     self._forward_section = []
@@ -76,8 +81,12 @@ class DdlOdbGenerator(DdlVisitor):
     self._init_list = []
     self._default_init = []
     self._init = []
+    self._friends = ["friend class odb::access;"]
     self._has_associations = False
     self._store_as = None
+    self._keyword_touples = []
+    self._assoc_touples = []
+
 
   def generate(self):
     self.clean_env()
@@ -108,8 +117,9 @@ class DdlOdbGenerator(DdlVisitor):
     lines = []
     intro = []
     self._class_name = datatype.name
-    filename = "ddl_"+ self._class_name +".hpp"
-    self._sources.append(filename)
+    hdr_name = "ddl_"+ self._class_name +".hpp"
+    src_name = "ddl_"+ self._class_name +".cpp" 
+    self._sources.append(hdr_name)
     macro = "DAS_" + datatype.name.upper() + "_H"
     lines.append("#ifndef " + macro + "\n#define " + macro)
     lines.append("#include <odb/core.hxx>")
@@ -118,19 +128,16 @@ class DdlOdbGenerator(DdlVisitor):
     lines.append('#include "ddl/info.hpp"')
     if datatype.ancestor != "essentialMetadata":
       self._header.append('#include "ddl_' + datatype.ancestor + '.hpp"')
-      self._inhetit = datatype.ancestor
+      self._inherit = datatype.ancestor
     else:
       self._header.append('#include "DasObject.hpp"')
       self._inherit = "DasObject"
-    self._header.append('#include "tpl/Database.hpp"')
+
       
     if datatype.data is not None:
       self._header.append('#include "ddl/column.hpp"')
     
-    if self._class_name  == "essentialMetadata":
-       intro.append("#pragma db object abstract\nclass " + datatype.name)   
-    else:
-      intro.append("#pragma db object\nclass " + datatype.name)
+    intro.append("#pragma db object\nclass " + datatype.name)
     if self._inherit != "":
       intro[-1] += ": public "+self._inherit
     else:
@@ -146,65 +153,110 @@ class DdlOdbGenerator(DdlVisitor):
     self._private_section.append('')
 
      
-    f = open(_os.path.join(self._src_dir, filename), 'w') 
-    f.writelines(l + "\n" for l in lines)
-    f.writelines(l + "\n" for l in self._header)
-    f.writelines(l + "\n" for l in self._forward_section)
-    f.writelines(l + "\n" for l in intro)
+    h = open(_os.path.join(self._src_dir, hdr_name), 'w') 
+    h.writelines(l + "\n" for l in lines)
+    h.writelines(l + "\n" for l in self._header)
+    h.writelines(l + "\n" for l in self._forward_section)
+    h.writelines(l + "\n" for l in intro)
     # public section
-    f.writelines([" public:\n"])
-    f.writelines("  "+l + "\n" for l in self._type_defs)
-    f.writelines("  "+l + "\n" for l in self._public_section)
-    #    public constructor with name argument
-    f.writelines(["  "+self._class_name+" (const std::string &name)\n"])
-    f.writelines("  "+l + "\n" for l in self._init_list)
-    f.writelines(["  {\n"])
-    f.writelines(["    init();\n"])
-    f.writelines(['    name_ = name;\n'])
-    f.writelines(["  }\n"])
+    h.writelines([" public:\n"])
+    h.writelines("  "+l + "\n" for l in self._type_defs)
+    h.writelines("  "+l + "\n" for l in self._public_section)
+    # public constructor with name argument
+    h.writelines(["  "+self._class_name+" (const std::string &name);\n"])
     # preotected section
-    f.writelines([" protected:\n"])
-    f.writelines(["  friend class odb::access;\n"])
-    f.writelines("  "+l + "\n" for l in self._protected_section)
-    #    default constractor.
-    f.writelines(["  "+self._class_name+" ()\n"])
-    f.writelines("  "+l + "\n" for l in self._init_list)
-    f.writelines(["  {\n"])
-    f.writelines(["    init();\n"])
-    f.writelines(["  }\n"])
+    h.writelines([" protected:\n"])
+    h.writelines("  "+l + "\n" for l in self._friends)
+    h.writelines("  "+l + "\n" for l in self._protected_section)
+    # default constructor.
+    h.writelines(["  "+self._class_name+" ();\n"])
     # private section
-    f.writelines([" private:\n"])
-    f.writelines("  "+l + "\n" for l in self._private_section)
-    #   default inizializer method
-    f.writelines(["  void init()\n"])
-    f.writelines(["  {\n"])
-    f.writelines(['    type_name_ = "'+self._class_name+'";\n'])
-    f.writelines("    "+l + "\n" for l in self._default_init)
-    f.writelines(["  }\n"])
+    h.writelines([" private:\n"])
+    h.writelines("  "+l + "\n" for l in self._private_section)
+    # default inizializer method
+    h.writelines(["  void init();\n"])
 
-    f.writelines(["};\n"])
-    f.writelines(["#endif"])
-    f.close()
+    h.writelines(["};\n"])
+    h.writelines(["#endif"])
+    h.close()
+
+    s = open(_os.path.join(self._src_dir, src_name), 'w') 
+    s.writelines(['#include "'+hdr_name+'"\n'])
+    s.writelines(l + "\n" for l in self._src_header)
+    # public constructor with name argument
+    s.writelines([self._class_name+"::"+self._class_name+" (const std::string &name)\n"])
+    s.writelines("  "+l + "\n" for l in self._init_list)
+    s.writelines(["{\n"])
+    s.writelines(["  init();\n"])
+    s.writelines(['  name_ = name;\n'])
+    s.writelines(["}\n"])
+    # default constructor.
+    s.writelines([self._class_name+"::"+self._class_name+" ()\n"])
+    s.writelines("  "+l + "\n" for l in self._init_list)
+    s.writelines(["{\n"])
+    s.writelines(["  init();\n"])
+    s.writelines(["}\n"])
+    # private section
+    s.writelines(["void\n",self._class_name+"::init()\n"])
+    s.writelines(["{\n"])
+    s.writelines(['  type_name_ = "'+self._class_name+'";\n'])
+    s.writelines("  "+l + "\n" for l in self._default_init)
+    s.writelines(["}\n"])
+
+    for i in self._keyword_touples:
+      s.writelines(l+'\n' for l in _def_getter(i[0],i[1],self._class_name))
+      s.writelines(l+'\n' for l in _def_setter(i[0],i[1],self._class_name))
+
+    if self._has_associations:
+      for i in self._assoc_touples:
+        s.writelines(l+'\n' for l in _def_getter_assoc(i[0],i[1],i[2],self._class_name))
+        s.writelines(l+'\n' for l in _def_setter_assoc(i[0],i[1],self._class_name))
+
+      s.writelines(['void\n',self._class_name+'::persist_associated(das::tpl::Database *db)\n{\n'])
+      if self._inherit != 'DasObject':
+        s.writelines(['  '+self._inherit+'::persist_associated(db);\n'])
+      for i in self._assoc_touples:
+        s.writelines([_def_persist_assoc(i[0],i[2],i[3])])
+      s.writelines(['}\n'])
+
+      s.writelines(['void\n',self._class_name+'::update_associated()\n{\n'])
+      if self._inherit != 'DasObject':
+        s.writelines(['  '+self._inherit+'::update_associated();\n'])
+      for i in self._assoc_touples:
+        s.writelines([_def_update_assoc(i[0],i[2],i[3])])
+      s.writelines(['}\n'])
+    
+    s.close()
+
     self.clean_env()
     
-  
   def visit_associated(self, associated):
     if not self._has_associations:
       self._header.append("#include <odb/tr1/memory.hxx>")
       self._header.append("#include <odb/tr1/lazy-ptr.hxx>")
       self._header.append("#include <odb/transaction.hxx>")
-      self._header.append("using odb::tr1::lazy_weak_ptr;")  
+      self._header.append("using odb::tr1::lazy_weak_ptr;")
+      self._header.append("using std::tr1::shared_ptr;")
+      self._friends.append("friend class das::tpl::Database;")
+      self._protected_section.extend(['virtual void','persist_associated(das::tpl::Database *db);','virtual void','update_associated();'])
       self._has_associations = True 
 	
     self._forward_section.append("class " + associated.atype + ";")
     self._header.append('#include "ddl_'+ associated.atype +'.hpp"')
     # see Remove multiplicity attribute discussion
-    type_alias = associated.name+'_vector'
-    self._type_defs.append('typedef typename std::vector<lazy_weak_ptr<'+associated.atype+'> > '+type_alias+';' )
-    self._private_section.append(type_alias + " " + associated.name + "_;")
-    self._public_section.extend(_getter_assoc(associated.name, type_alias))
-    self._public_section.extend(_setter_assoc(associated.name, type_alias))
- 
+    pub_type = associated.name+'_vector'
+    priv_type = associated.name+'_lazy_weak_vec'
+    self._private_section.append('typedef typename std::vector<lazy_weak_ptr<'+associated.atype+'> > '+priv_type+';')
+    self._type_defs.append('typedef typename std::vector<shared_ptr<'+associated.atype+'> > '+pub_type+';' )
+    self._private_section.append(priv_type + " " + associated.name + "_;")
+    self._public_section.extend(_dec_getter_assoc(associated.name, pub_type))
+    self._public_section.extend(_dec_setter_assoc(associated.name, pub_type))
+
+
+    self._src_header.append('#include "tpl/Database.hpp"')
+    self._src_header.append('#include "ddl_'+associated.atype+'-odb.hxx"')
+    self._src_header.append('#include "exceptions.hpp"')
+    self._assoc_touples.append((associated.name,pub_type,priv_type,associated.atype))
  
   def visit_keyword(self,keyword):
     k_type = self.KTYPE_MAP[keyword.ktype]
@@ -220,8 +272,10 @@ class DdlOdbGenerator(DdlVisitor):
       self._header.append('typedef std::string CBLOB;')
 
     self._private_section.append(k_type + " " + keyword.name + "_;")
-    self._public_section.extend(_getter_template(keyword.name, self.KTYPE_MAP[keyword.ktype]))
-    self._public_section.extend(_setter_template(keyword.name, self.KTYPE_MAP[keyword.ktype]))
+    self._public_section.extend(_dec_getter(keyword.name, self.KTYPE_MAP[keyword.ktype]))
+    self._public_section.extend(_dec_setter(keyword.name, self.KTYPE_MAP[keyword.ktype]))
+
+    self._keyword_touples.append((keyword.name, self.KTYPE_MAP[keyword.ktype]))
 
    
   def visit_binary_table(self,_):
@@ -267,23 +321,32 @@ class DdlOdbGenerator(DdlVisitor):
 #  def createXMLcolumn(self):
 #    shutil.copyfile("../cpp/ddl_column.hpp", _os.path.join(self._src_dir, "ddl_column.hpp"))   
 
-def _getter_template(attribute_name, attribute_type):
+def _def_getter(attribute_name, attribute_type, class_name):
   method_definition = ["const " + attribute_type + "&"]
-  method_definition.extend([attribute_name + " () const","{"])
+  method_definition.extend([class_name+"::"+attribute_name + " () const","{"])
   method_definition.extend(["  return " + attribute_name + "_;","}"])
   return method_definition
   
-def _setter_template(attribute_name, attribute_type):
+def _def_setter(attribute_name, attribute_type, class_name):
   method_definition = ["void"]
-  method_definition.extend([attribute_name + " (const "+attribute_type+" &"+attribute_name+")", "{"])
+  method_definition.extend([class_name+"::"+attribute_name + " (const "+attribute_type+" &"+attribute_name+")", "{"])
   method_definition.extend(["  "+attribute_name+"_ = "+attribute_name+";","  is_dirty_ = true;","}"])
   return method_definition
 
-def _getter_assoc(attribute_name, attribute_type):
-  src = [attribute_type]
-  src.extend([attribute_name + " () const","{"])
-  src.append('''
-    odb::transaction *transaction;
+def _def_getter_assoc(attribute_name, pub_type, priv_type, class_name):
+  src = [class_name+'::'+pub_type+""]
+  src.extend([class_name+"::"+attribute_name + " ()",'''{
+  odb::transaction *transaction;
+
+  '''+pub_type+''' associated;
+  if(db_ptr_.get() == 0)
+  {
+    // returns previously setted pointers on this transient object
+    for('''+priv_type+'''::iterator i = '''+attribute_name+'''_.begin(); i != '''+attribute_name+'''_.end(); i++)
+      associated.push_back(i->load()); //note: load() acts just as lock() here
+  }
+  else
+  {
     bool local_trans = !odb::transaction::has_current();
     if(local_trans)
     {
@@ -295,8 +358,8 @@ def _getter_assoc(attribute_name, attribute_type):
     }
     try
     {
-      for('''+attribute_type+'''::iterator i = '''+attribute_name+'''_.begin(); i != '''+attribute_name+'''_.end(); i++)
-        i->load();
+      for('''+priv_type+'''::iterator i = '''+attribute_name+'''_.begin(); i != '''+attribute_name+'''_.end(); i++)
+        associated.push_back(i->load()); //note: load() implies lock() as well
     }
     catch(std::exception &e)
     {
@@ -305,24 +368,68 @@ def _getter_assoc(attribute_name, attribute_type):
         transaction->rollback();
         delete transaction;
       }
-      throw e;
+      throw;
     }
     if(local_trans)
     {
       transaction->commit();
       delete transaction;
     }
-''')
-  src.extend(["  return " + attribute_name + "_;","}"])
+  }
+'''])
+  src.extend(["  return associated;","}"])
   return src
   
-def _setter_assoc(attribute_name, attribute_type):
+def _def_setter_assoc(attribute_name, pub_type, class_name):
   method_definition = ["void"]
-  method_definition.extend([attribute_name + " ( const "+attribute_type+" &"+attribute_name+")","{"])
-  method_definition.extend(["  "+attribute_name+"_ = "+attribute_name+";","  is_dirty_ = true;","}"])
+  method_definition.extend([class_name+"::"+attribute_name + " ( const "+pub_type+" &"+attribute_name+")","{"])
+  method_definition.append('  '+attribute_name+"_.clear();")
+  method_definition.append('''  for('''+pub_type+'''::const_iterator i = '''+attribute_name+'''.begin(); i != '''+attribute_name+'''.end(); i++)
+      '''+attribute_name+'''_.push_back(*i);
+''')
+  method_definition.extend(["  is_dirty_ = true;","}"])
   return method_definition
 
+def _def_persist_assoc(attribute_name, priv_type, assoc_class):
+  return '''  for('''+priv_type+'''::iterator i = '''+attribute_name+'''_.begin(); i != '''+attribute_name+'''_.end(); ++i)
+  {
+    db->persist<'''+assoc_class+'''>(*(*i).lock());
+  }
 
+'''
+def _def_update_assoc(attribute_name, priv_type, assoc_class):
+  return '''  for('''+priv_type+'''::iterator i = '''+attribute_name+'''_.begin(); i != '''+attribute_name+'''_.end(); ++i)
+  {
+    db_ptr_->update<'''+assoc_class+'''>(*(*i).lock(),true);
+  }
+
+'''
+
+def _dec_getter(attribute_name, attribute_type):
+  method_declaration = ["inline const " + attribute_type + "&"]
+  method_declaration.extend([attribute_name + " () const;"])
+  return method_declaration
+  
+def _dec_setter(attribute_name, attribute_type):
+  method_declaration = ["inline void"]
+  method_declaration.extend([attribute_name + " (const "+attribute_type+" &"+attribute_name+");"])
+  return method_declaration
+
+def _dec_getter_assoc(attribute_name, attribute_type):
+  src = [attribute_type]
+  src.extend([attribute_name + " ();"])
+  return src
+  
+def _dec_setter_assoc(attribute_name, attribute_type):
+  method_declaration = ["void"]
+  method_declaration.append(attribute_name + " ( const "+attribute_type+" &"+attribute_name+");")
+  return method_declaration
+
+def _dec_persist_assoc():
+  src = ['virtual void']
+  src.append('persist_associated(das::tpl::Database *db);')
+  src.append('virtual void')
+  src.append('update_associated();')
 
 
 class DdlInheritanceValidator:

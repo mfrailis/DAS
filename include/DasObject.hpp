@@ -10,8 +10,9 @@
 
 #include <odb/tr1/memory.hxx>
 #include <odb/tr1/lazy-ptr.hxx>
-#include <boost/shared_ptr.hpp>
+using std::tr1::shared_ptr;
 
+class QLVisitor;
 namespace das{namespace tpl{class Database;}}
 #pragma db object abstract
 class DasObject
@@ -65,7 +66,7 @@ public:
     return name_;
   }
 
-  boost::shared_ptr<das::tpl::Database>
+  shared_ptr<das::tpl::Database>
   database ()
   {
     return db_ptr_;
@@ -84,19 +85,21 @@ protected:
   std::string type_name_;
 
 #pragma db transient
-  boost::shared_ptr<das::tpl::Database> db_ptr_;
+  shared_ptr<das::tpl::Database> db_ptr_;
 
 #pragma db transient
   bool is_dirty_;                                   // does it need an update?
 
   virtual void save_data(){};                                // update external data.
   virtual void save_data(std::string path){};                // save external data, check if the path is empty.
-  virtual void update_associated(das::tpl::Database* db){};  // call update  on associated objects
+  virtual void update_associated(){};  // call update  on associated objects
+  // we need a database pointer because this ogbject is not bouded to any db yet
   virtual void persist_associated(das::tpl::Database* db){}; // call persist on associated objects
 
 private:
   friend class odb::access;
   friend class das::tpl::Database;
+  friend class QLVisitor;
 //  template <typename T> friend class DasVector;
 //  template <typename T> friend void ::swap(DasVector<T> &x, DasVector<T> &y);
 #pragma db id auto
