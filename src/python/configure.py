@@ -48,19 +48,298 @@ class JsonConfigParser:
             f.write('\n#endif\n')
             f.close()
 
-    def generate_sub(self,output_dir,t_pre):
+    def generate_sub(self,db_dir,t_pre):
         for db in self._config:
             #db_str = db['host']+"_"+str(db['port'])+"_"+db['db_name']
             db_str = db['alias']
             self.sub_dirs.append(db_str)
-            dir_name = _os.path.join(output_dir,db_str)
+            dir_name = _os.path.join(db_dir,db_str)
             if not _os.path.exists(dir_name):
                 _os.mkdir(dir_name)
-            ddl_h   = self.db_map[_assemble_db(db)]+'_types.h'
-            ddl_sql = self.db_map[_assemble_db(db)]+'_types.sql'
+#            ddl_h   = self.db_map[_assemble_db(db)]+'_types.h'
+#            ddl_sql = self.db_map[_assemble_db(db)]+'_types.sql'
             typelist=self.ddl_map.get_type_list(_assemble_ddl(db['ddl']))
-            _generate_sub_cmake(dir_name,db_str,db['db_type'],ddl_h, ddl_sql, t_pre,db,typelist)
+            _generate_sub_cmake(dir_name,db_str,db['db_type'], t_pre,db,typelist)
+    
+    def generate(self,db_dir_,cmake_dir,types,prefix):
+        db_vendors = {};
+        for db in self._config:
+            db_dir =  _os.path.join(db_dir_,db['db_type'])
+            if not _os.path.exists(db_dir):
+                _os.mkdir(db_dir)        
+            db_vendors[db['db_type']] = db_dir
 
+
+        f = open(_os.path.join(cmake_dir,'CMakeLists.txt'),'w')
+        f.write('cmake_minimum_required(VERSION 2.8)\n')
+        f.write('set(TYPE_NAMES_ALL \n')
+        for i in types:
+            if i != "essentialMetadata":
+                f.write(' '+i)
+        f.write(')')
+        f.write('''
+file(MAKE_DIRECTORY ${ODB_OUTPUT_DIR}/common)
+set(ODB_CXX
+   ${ODB_OUTPUT_DIR}/common/aux_query-odb.hxx
+   ${ODB_OUTPUT_DIR}/common/DasObject-odb.hxx
+   ${ODB_OUTPUT_DIR}/common/column-odb.hxx
+   ${ODB_OUTPUT_DIR}/common/image-odb.hxx
+)
+
+set(TYPES_CPP)
+
+foreach(type_name ${TYPE_NAMES_ALL})
+  add_custom_command(
+    OUTPUT  ${ODB_OUTPUT_DIR}/common/${TYPE_PREFIX}${type_name}-odb.hxx
+    COMMAND odb
+            --multi-database static
+            --output-dir ${ODB_OUTPUT_DIR}/common
+            --database common
+            --generate-query
+            --generate-session
+            --default-pointer std::tr1::shared_ptr
+            --include-regex "%(column.hpp)|(image.hpp)%ddl/$1$2%"
+            --include-regex "%aux_query.hpp%../src/cpp/aux_query.hpp%"
+            --include-regex "%ddl/(.+).hxx%$1.hxx%"
+            --include-regex-trace
+	    -I${ODB_SOURCE_DIR}
+            -I${CPP_INCLUDE_DIR}
+	    ${ODB_SOURCE_DIR}/${TYPE_PREFIX}${type_name}.hpp
+    DEPENDS ${DDL_LOCAL_SIGNATURE}
+    COMMENT "Generating odb class for type ${type_name}"
+    VERBATIM
+    )
+  list(APPEND ODB_CXX ${ODB_OUTPUT_DIR}/common/${TYPE_PREFIX}${type_name}-odb.hxx)
+  list(APPEND TYPES_CPP ${DAS_BUILD_DIR}/${TYPE_PREFIX}${type_name}.cpp)
+endforeach()
+
+add_custom_command(
+OUTPUT  ${ODB_OUTPUT_DIR}/common/DasObject-odb.hxx
+COMMAND odb
+    --multi-database static
+    --output-dir ${ODB_OUTPUT_DIR}/common
+    --database common
+    --generate-query
+    --generate-session
+    --default-pointer std::tr1::shared_ptr
+    --include-regex "%(column.hpp)|(image.hpp)%ddl/$1$2%"
+    --include-regex "%aux_query.hpp%../src/cpp/aux_query.hpp%"
+    -I${ODB_SOURCE_DIR}
+    -I${CPP_INCLUDE_DIR}
+    ${CPP_INCLUDE_DIR}/DasObject.hpp
+COMMENT "Generating odb DasObject class"
+VERBATIM
+)
+
+add_custom_command(
+OUTPUT  ${ODB_OUTPUT_DIR}/common/aux_query-odb.hxx
+COMMAND odb
+    --multi-database static
+    --output-dir ${ODB_OUTPUT_DIR}/common
+    --database common
+    --generate-query
+    --generate-session
+    --default-pointer std::tr1::shared_ptr
+    --include-regex "%(column.hpp)|(image.hpp)%ddl/$1$2%"
+    --include-regex "%aux_query.hpp%../src/cpp/aux_query.hpp%"
+    -I${ODB_SOURCE_DIR}
+    -I${CPP_INCLUDE_DIR}
+    ${CPP_INCLUDE_INTERNAL_DIR}/aux_query.hpp
+COMMENT "Generating odb auxiliary query"
+VERBATIM
+)
+add_custom_command(
+OUTPUT  ${ODB_OUTPUT_DIR}/common/column-odb.hxx
+COMMAND odb
+    --multi-database static
+    --output-dir  ${ODB_OUTPUT_DIR}/common
+    --database common
+    --generate-query
+    --generate-session
+    --default-pointer std::tr1::shared_ptr
+    --include-regex "%(column.hpp)|(image.hpp)%ddl/$1$2%"
+    --include-regex "%aux_query.hpp%../src/cpp/aux_query.hpp%"
+    --include-regex-trace
+    -I${ODB_SOURCE_DIR}
+    -I${CPP_INCLUDE_DIR}
+    ${CPP_INCLUDE_DIR}/ddl/column.hpp
+COMMENT "Generating odb column data support"
+VERBATIM
+)
+add_custom_command(
+OUTPUT  ${ODB_OUTPUT_DIR}/common/image-odb.hxx
+COMMAND odb
+    --multi-database static
+    --output-dir  ${ODB_OUTPUT_DIR}/common
+    --database common
+    --generate-query
+    --generate-session
+    --include-regex "%(column.hpp)|(image.hpp)%ddl/$1$2%"
+    --include-regex "%aux_query.hpp%../src/cpp/aux_query.hpp%"
+    --include-regex-trace
+    -I${ODB_SOURCE_DIR}
+    -I${CPP_INCLUDE_DIR}
+    ${CPP_INCLUDE_DIR}/ddl/image.hpp
+COMMENT "Generating odb image data support"
+VERBATIM
+)
+''')
+        for (db_type,db_dir_) in db_vendors.items():
+            db_dir = "${ODB_OUTPUT_DIR}/"+db_type
+            f.write('''
+file(MAKE_DIRECTORY '''+db_dir+''')
+list(APPEND ODB_CXX '''+db_dir+'''/aux_query-odb-'''+db_type+'''.cxx)
+list(APPEND ODB_CXX '''+db_dir+'''/DasObject-odb-'''+db_type+'''.cxx)
+list(APPEND ODB_CXX '''+db_dir+'''/column-odb-'''+db_type+'''.cxx)
+list(APPEND ODB_CXX '''+db_dir+'''/image-odb-'''+db_type+'''.cxx)
+
+foreach(type_name ${TYPE_NAMES_ALL})
+  add_custom_command(
+    OUTPUT '''+db_dir+'''/${TYPE_PREFIX}${type_name}-odb-'''+db_type+'''.cxx
+    COMMAND odb
+            --multi-database static
+            --output-dir '''+db_dir+'''
+            --database '''+db_type+'''
+            --generate-query
+            --generate-session
+            --include-regex "%(column.hpp)|(image.hpp)%ddl/$1$2%"
+            --include-regex "%aux_query.hpp%../src/cpp/aux_query.hpp%"
+            --include-regex "%(.+)-odb.hxx%../common/$1-odb.hxx%"
+            --include-regex "%ddl/(.+).hxx%$1.hxx%"
+            --include-regex-trace
+            --default-pointer std::tr1::shared_ptr
+	    -I${ODB_SOURCE_DIR}
+            -I${CPP_INCLUDE_DIR}
+	    ${ODB_SOURCE_DIR}/${TYPE_PREFIX}${type_name}.hpp
+    DEPENDS ${DDL_LOCAL_SIGNATURE}
+    COMMENT "Generating odb class for type ${type_name} for '''+db_type+''' DBMS"
+    VERBATIM
+    )
+  list(APPEND ODB_CXX '''+db_dir+'''/${TYPE_PREFIX}${type_name}-odb-'''+db_type+'''.cxx)
+endforeach()
+        
+add_custom_command(
+OUTPUT '''+db_dir+'''/DasObject-odb-'''+db_type+'''.cxx
+COMMAND odb
+    --multi-database static
+    --output-dir '''+db_dir+'''
+    --database '''+db_type+'''
+    --generate-query
+    --generate-session
+    --include-regex "%(column.hpp)|(image.hpp)%ddl/$1$2%"
+    --include-regex "%aux_query.hpp%../src/cpp/aux_query.hpp%"
+    --include-regex "%(.+)-odb.hxx%../common/$1-odb.hxx%"
+    --default-pointer std::tr1::shared_ptr
+    -I${ODB_SOURCE_DIR}
+    -I${CPP_INCLUDE_DIR}
+    ${CPP_INCLUDE_DIR}/DasObject.hpp
+COMMENT "Generating odb DasObject class for '''+db_type+''' DBMS"
+VERBATIM
+)
+
+add_custom_command(
+OUTPUT '''+db_dir+'''/aux_query-odb-'''+db_type+'''.cxx
+COMMAND odb
+    --multi-database static
+    --output-dir '''+db_dir+'''
+    --database '''+db_type+'''
+    --generate-query
+    --generate-session
+    --include-regex "%(column.hpp)|(image.hpp)%ddl/$1$2%"
+    --include-regex "%aux_query.hpp%../src/cpp/aux_query.hpp%"
+    --include-regex "%(.+)-odb.hxx%../common/$1-odb.hxx%"
+    --default-pointer std::tr1::shared_ptr 
+    -I${ODB_SOURCE_DIR}
+    -I${CPP_INCLUDE_DIR}
+    ${CPP_INCLUDE_INTERNAL_DIR}/aux_query.hpp
+COMMENT "Generating odb auxiliary query on for '''+db_type+''' DBMS"
+VERBATIM
+)
+
+add_custom_command(
+OUTPUT '''+db_dir+'''/column-odb-'''+db_type+'''.cxx
+COMMAND odb
+    --multi-database static
+    --output-dir '''+db_dir+'''
+    --database '''+db_type+'''
+    --generate-query
+    --generate-session
+    --include-regex "%(column.hpp)|(image.hpp)%ddl/$1$2%"
+    --include-regex "%(.+)-odb.hxx%../common/$1-odb.hxx%"
+    --default-pointer std::tr1::shared_ptr
+    -I${ODB_SOURCE_DIR}
+    -I${CPP_INCLUDE_DIR}
+    ${CPP_INCLUDE_DIR}/ddl/column.hpp
+COMMENT "Generating odb column data support for '''+db_type+''' DBMS"
+VERBATIM
+)
+
+add_custom_command(
+OUTPUT '''+db_dir+'''/image-odb-'''+db_type+'''.cxx
+COMMAND odb
+    --multi-database static
+    --output-dir '''+db_dir+'''
+    --database '''+db_type+'''
+    --generate-query
+    --generate-session
+    --include-regex "%(column.hpp)|(image.hpp)%ddl/$1$2%"
+    --include-regex "%(.+)-odb.hxx%../common/$1-odb.hxx%"
+    --default-pointer std::tr1::shared_ptr 
+    -I${ODB_SOURCE_DIR}
+    -I${CPP_INCLUDE_DIR}
+    ${CPP_INCLUDE_DIR}/ddl/image.hpp
+COMMENT "Generating odb image data support for '''+db_type+''' DBMS"
+VERBATIM
+)
+''')
+        for l in self.sub_dirs:
+            f.write("add_subdirectory(db/"+l+")\n")
+        f.write(
+'''
+
+add_custom_target(
+  odb ALL
+  DEPENDS ${ODB_CXX}
+)
+
+add_custom_target(
+  schema-all ALL
+  DEPENDS'''
+)
+        for l in self.sub_dirs:
+            f.write("\n      schema-"+l)
+        f.write(
+'''
+)
+'''
+)
+        f.write(
+'''
+add_custom_target(
+  '''+prefix+'''all ALL
+  DEPENDS'''
+)
+        for l in self.sub_dirs:
+            f.write("\n      "+prefix+l)
+        f.write(
+'''
+)
+
+#set(TYPES_SRC ${TYPES_CPP} PARENT_SCOPE)
+#set(ODB_SRC ${ODB_CXX} PARENT_SCOPE)
+
+foreach(odb_ ${ODB_CXX})
+  message(STATUS "odb  ${odb_}")
+endforeach()
+
+foreach(type_ ${TYPES_CPP})
+  message(STATUS "type ${type_}")
+endforeach()
+
+add_library(das ${DAS_QL_SRC} ${DAS_SRC} ${TYPES_CPP} ${ODB_CXX})
+'''
+)
+        f.close()
         
 def _assemble_ddl(path):
     return "ddl_"+_hash.sha1(path).hexdigest()
@@ -70,7 +349,7 @@ def _assemble_db(db):
 #    return "db_"+_hash.sha1(uri).hexdigest()
     return db['alias']
 
-def _generate_sub_cmake(dir_name,db_str,db_type,ddl_h,ddl_sql,prefix,db,typelist):
+def _generate_sub_cmake(dir_name,db_str,db_type,prefix,db,typelist):
     f = open(_os.path.join(dir_name,'CMakeLists.txt'),'w')
     f.write(
 '''
@@ -92,61 +371,14 @@ foreach(type_name ${TYPE_NAMES})
             --database '''+db_type+'''
 	    --generate-schema-only
             --omit-drop
-            -x -I${ODB_SOURCE_DIR}
-            -x -I${CPP_INCLUDE_DIR}
+            -I${ODB_SOURCE_DIR}
+            -I${CPP_INCLUDE_DIR}
 	    ${ODB_SOURCE_DIR}/${TYPE_PREFIX}${type_name}.hpp
     DEPENDS ${DDL_LOCAL_SIGNATURE}
     COMMENT "Generating schema for type ${type_name} on '''+db['alias']+'''"
     )
   list(APPEND SQL_FILES ${TYPE_PREFIX}${type_name}.sql)
 endforeach()
-
-set(ODB_HXX)
-list(APPEND ODB_HXX aux_query-odb.hxx)
-list(APPEND ODB_HXX DasObject-odb.hxx)
-
-foreach(type_name ${TYPE_NAMES})
-  add_custom_command(
-    OUTPUT ${TYPE_PREFIX}${type_name}-odb.hxx
-    COMMAND odb
-            --database '''+db_type+'''
-            --generate-query
-            --generate-session
-            --default-pointer std::tr1::shared_ptr 
-	    -x -I${ODB_SOURCE_DIR}
-            -x -I${CPP_INCLUDE_DIR}
-	    ${ODB_SOURCE_DIR}/${TYPE_PREFIX}${type_name}.hpp
-    DEPENDS ${DDL_LOCAL_SIGNATURE}
-    COMMENT "Generating odb class for type ${type_name} on '''+db['alias']+'''"
-    )
-  list(APPEND ODB_HXX ${TYPE_PREFIX}${type_name}-odb.hxx)
-endforeach()
-
-add_custom_command(
-OUTPUT DasObject-odb.hxx
-COMMAND odb
-    --database mysql
-    --generate-query
-    --generate-session
-    --default-pointer std::tr1::shared_ptr 
-    -x -I${ODB_SOURCE_DIR}
-    -x -I${CPP_INCLUDE_DIR}
-    ${CPP_INCLUDE_DIR}/DasObject.hpp
-COMMENT "Generating odb DasObject class on '''+db['alias']+'''"
-)
-
-add_custom_command(
-OUTPUT aux_query-odb.hxx
-COMMAND odb
-    --database mysql
-    --generate-query
-    --generate-session
-    --default-pointer std::tr1::shared_ptr 
-    -x -I${ODB_SOURCE_DIR}
-    -x -I${CPP_INCLUDE_DIR}
-    ${CPP_INCLUDE_DIR}/aux_query.hpp
-COMMENT "Generating odb auxiliary query on '''+db['alias']+'''"
-)
 
 add_custom_command(
   OUTPUT  SIGNATURE_CHECK ${DDL_LOCAL_SIGNATURE}
@@ -175,10 +407,6 @@ add_custom_command(
 )
 
 
-add_custom_target(
-  odb-'''+db_str+'''
-  DEPENDS SIGNATURE_CHECK ${ODB_HXX}
-)
 
 add_custom_target(
   schema-'''+db_str+'''
@@ -193,77 +421,18 @@ add_custom_target(
 )
     f.close()
         
-def generate(output_dir,dirs,types,prefix):
-    f = open(_os.path.join(output_dir,'CMakeLists.txt'),'w')
-    f.write('cmake_minimum_required(VERSION 2.8)\n')
-    f.write('set(TYPE_NAMES_ALL \n')
-    for i in types:
-        if i != "essentialMetadata":
-            f.write(' '+i)
-    f.write(')')
-    f.write('''
-#set(ODB_COMMON_HXX)
-#foreach(type_name ${TYPE_NAMES_ALL})
-#  add_custom_command(
-#    OUTPUT ${TYPE_PREFIX}${type_name}-odb.hxx
-#    COMMAND odb
-#            --multi-database static
-#            --database common
-#            --generate-query
-#            --generate-schema
-#            --omit-drop
-#            -x -I${ODB_SOURCE_DIR}
-#            -x -I${CPP_INCLUDE_DIR}
-#	    ${ODB_SOURCE_DIR}/${TYPE_PREFIX}${type_name}.hpp
-#    COMMENT "Generating ORM mapping for type ${type_name}"
-#    )
-#  list(APPEND ODB_COMMON_HXX ${TYPE_PREFIX}${type_name}-odb.hxx)
-#endforeach()
-''')
-
-    for l in dirs:
-        f.write("add_subdirectory("+l+")\n")
-    f.write(
-'''
-#add_custom_target(
-#  odb-common ALL
-#  DEPENDS ${ODB_COMMON_HXX} )
-
-add_custom_target(
-  schema-all ALL
-  DEPENDS'''
-)
-    for l in dirs:
-        f.write("\n      schema-"+l)
-    f.write(
-'''
-)
-'''
-)
-    f.write(
-'''
-add_custom_target(
-  '''+prefix+'''all ALL
-  DEPENDS'''
-)
-    for l in dirs:
-        f.write("\n      "+prefix+l)
-    f.write(
-'''
-)
-'''
-)
-    f.close()        
+      
 
     
 if __name__ == '__main__':
     import sys
-    output_dir    = sys.argv[1]
-    conf_schema   = sys.argv[2]
-    conf          = sys.argv[3]
-    ddl_schema    = sys.argv[4]
-    ddl_dir       = sys.argv[5]
-    target_prefix = sys.argv[6]
+    db_dir        = sys.argv[1]
+    cmake_dir     = sys.argv[2]
+    conf_schema   = sys.argv[3]
+    conf          = sys.argv[4]
+    ddl_schema    = sys.argv[5]
+    ddl_dir       = sys.argv[6]
+    target_prefix = sys.argv[7]
 
     parser = _ddl.DdlParser(ddl_schema)
     c = JsonConfigParser(conf_schema)
@@ -295,17 +464,17 @@ if __name__ == '__main__':
                     exit(1)
 
     #generate odb classes
-    odb_generator = _odb.DdlOdbGenerator(output_dir,type_list)
+    odb_generator = _odb.DdlOdbGenerator(cmake_dir,type_list)
     odb_generator.generate()
 
     #generate info classes
-    info_generator = _info.DdlInfoGenerator(type_list,c.ddl_map,c.db_map,output_dir)
+    info_generator = _info.DdlInfoGenerator(type_list,c.ddl_map,c.db_map,cmake_dir)
     type_list.accept(info_generator)
 
     #generate per database header
-    c.generate_db_headers(output_dir)
+    c.generate_db_headers(cmake_dir)
 
     #subdirectories and CmakeLists.txt
-    c.generate_sub(output_dir,target_prefix)
-    generate(output_dir,c.sub_dirs,type_set,target_prefix)
+    c.generate_sub(db_dir,target_prefix)
+    c.generate(db_dir,cmake_dir,type_set,target_prefix)
 

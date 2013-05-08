@@ -8,20 +8,25 @@
 #include <odb/transaction.hxx>
 #include <odb/database.hxx>
 #include <odb/traits.hxx>
-#include "../exceptions.hpp"
-#include "../aux_query.hpp"
-#include "aux_query-odb.hxx"
+
+#include "dbms/common/aux_query-odb.hxx"
+#include "dbms/mysql/aux_query-odb-mysql.hxx"
+
+#include "ddl/info.hpp"
+#include "exceptions.hpp"
+#include "../src/cpp/aux_query.hpp"
+#include "../src/cpp/ql/qlvisitor.hpp"
 
 #include <odb/mysql/database.hxx>
 using std::tr1::shared_ptr;
 using std::tr1::weak_ptr;
-
+/*
 template<class T>
 struct object_traits
 {
     static const std::string table_name;
 };
-
+*/
 
 namespace das
 {
@@ -33,6 +38,7 @@ namespace mysql{class Database;}
 class Database
 {
 public:
+
     static
     shared_ptr<Database>
     create(const std::string& alias)
@@ -43,6 +49,7 @@ public:
         //db->db_.reset(new odb::mysql::database(user,password,database,host,port));
         db->db_.reset(new odb::mysql::database("odb_test","","prova"));
         db->self_ = db;
+	db->info_ = DdlInfo::get_instance(alias);
         return db;
     }
 
@@ -230,10 +237,19 @@ public:
 
     template<typename T>
     void erase(T obj);//TODO
-    /*
-      template<typename T>
-      result query(const std::string& expression);
-    */
+  /*
+    template<typename T>
+    odb::result<T> query(const std::string& expression, const std::string& ordering = "")
+    {
+      QLVisitor exp_visitor(das_traits<T>::type_name,info_);
+      std::string clause = exp_visitor.parse(expression);
+
+      QLOVisitor order_visitor(das_traits<T>::type_name,info_);
+      //std::string ord = order_visitor.parse(ordering);
+      //return db_->query<T>(clause+ord);
+      return db_->query<T>(clause);
+    }
+*/
     template<typename T>
     bool find(const std::string& name, int version = -1)
     {
@@ -293,6 +309,7 @@ private:
 
     shared_ptr<odb::database> db_;
     weak_ptr<Database> self_;
+    DdlInfo *info_;
 };
 
 

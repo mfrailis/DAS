@@ -59,6 +59,17 @@ namespace das
     }
     
   }; //TODO
+
+ class incomplete_statement : public std::exception
+  {
+  public :
+    virtual const char*
+    what() const throw()
+    {
+      return "incomplete query expression";
+    }
+    
+  }; //TODO
 }
 
 #endif
