@@ -96,8 +96,10 @@ class DdlOdbGenerator(DdlVisitor):
     lines = []
 #    lines.append('#include "ddl_BLOB.hpp"')
     for k in self._sources:
-      lines.append('#include "' + k +'"')
-      
+      lines.append('#include "ddl_' + k +'.hpp"')
+      #TODO change mysql in common for multi-database support
+      lines.append('#include "dbms/mysql/ddl_' + k +'-odb.hxx"')
+     
     if len(lines):
       lines.insert(0,
 '''
@@ -118,8 +120,9 @@ class DdlOdbGenerator(DdlVisitor):
     intro = []
     self._class_name = datatype.name
     hdr_name = "ddl_"+ self._class_name +".hpp"
+    idr_name = "ddl_"+ self._class_name +".ipp"
     src_name = "ddl_"+ self._class_name +".cpp" 
-    self._sources.append(hdr_name)
+    self._sources.append(self._class_name)
     macro = "DAS_" + datatype.name.upper() + "_H"
     lines.append("#ifndef " + macro + "\n#define " + macro)
     lines.append("#include <odb/core.hxx>")
@@ -177,8 +180,15 @@ class DdlOdbGenerator(DdlVisitor):
     h.writelines(["  void init();\n"])
 
     h.writelines(["};\n"])
+    h.writelines(['#include "'+idr_name+'"\n'])
     h.writelines(["#endif"])
     h.close()
+
+    i = open(_os.path.join(self._src_dir, idr_name), 'w')
+    for j in self._keyword_touples:
+      i.writelines(l+'\n' for l in _def_getter(j[0],j[1],self._class_name))
+      i.writelines(l+'\n' for l in _def_setter(j[0],j[1],self._class_name))    
+    i.close()
 
     s = open(_os.path.join(self._src_dir, src_name), 'w') 
     s.writelines(['#include "'+hdr_name+'"\n'])
@@ -203,9 +213,9 @@ class DdlOdbGenerator(DdlVisitor):
     s.writelines("  "+l + "\n" for l in self._default_init)
     s.writelines(["}\n"])
 
-    for i in self._keyword_touples:
-      s.writelines(l+'\n' for l in _def_getter(i[0],i[1],self._class_name))
-      s.writelines(l+'\n' for l in _def_setter(i[0],i[1],self._class_name))
+#    for i in self._keyword_touples:
+#      s.writelines(l+'\n' for l in _def_getter(i[0],i[1],self._class_name))
+#      s.writelines(l+'\n' for l in _def_setter(i[0],i[1],self._class_name))
 
     if self._has_associations:
       for i in self._assoc_touples:
