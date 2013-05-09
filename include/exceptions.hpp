@@ -70,6 +70,17 @@ namespace das
     }
     
   }; //TODO
+
+ class bad_ordering_clause : public std::exception
+  {
+  public :
+    virtual const char*
+    what() const throw()
+    {
+      return "bad ordering clause";
+    }
+    
+  }; //TODO
 }
 
 #endif

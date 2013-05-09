@@ -116,5 +116,7 @@ protected:
   std::string name_;
 };
 
+template<class T>
+struct das_traits{};
 
 #endif

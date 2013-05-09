@@ -46,7 +46,7 @@ set(DAS_SRC
 )
 
 include_directories(${CPP_INCLUDE_DIR})
-include_directories(${ODB_SOURCE_DIR})
+#include_directories(${ODB_SOURCE_DIR})
 
 set(ODB_COMMON_TYPES ${ODB_SOURCE_DIR}/ddl_types.hpp)
 

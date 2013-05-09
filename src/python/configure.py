@@ -104,6 +104,9 @@ foreach(type_name ${TYPE_NAMES_ALL})
             --include-regex "%(column.hpp)|(image.hpp)%ddl/$1$2%"
             --include-regex "%aux_query.hpp%../src/cpp/aux_query.hpp%"
             --include-regex "%ddl/(.+).hxx%$1.hxx%"
+    --include-regex "%ddl_(.+).hpp%../../ddl_$1.hpp%"
+    --include-regex-trace
+
             --default-pointer std::tr1::shared_ptr
 	    -I${ODB_SOURCE_DIR}
             -I${CPP_INCLUDE_DIR}
@@ -124,6 +127,9 @@ COMMAND odb
     --generate-session
     --include-regex "%(column.hpp)|(image.hpp)%ddl/$1$2%"
     --include-regex "%aux_query.hpp%../src/cpp/aux_query.hpp%"
+    --include-regex "%ddl_(.+).hpp%../../ddl_$1.hpp%"
+    --include-regex-trace
+
     --default-pointer std::tr1::shared_ptr
     -I${ODB_SOURCE_DIR}
     -I${CPP_INCLUDE_DIR}
@@ -141,6 +147,9 @@ COMMAND odb
     --generate-session
     --include-regex "%(column.hpp)|(image.hpp)%ddl/$1$2%"
     --include-regex "%aux_query.hpp%../src/cpp/aux_query.hpp%"
+    --include-regex "%ddl_(.+).hpp%../../ddl_$1.hpp%"
+    --include-regex-trace
+
     --default-pointer std::tr1::shared_ptr 
     -I${ODB_SOURCE_DIR}
     -I${CPP_INCLUDE_DIR}
@@ -214,26 +223,28 @@ add_custom_target(
 '''
 )
 
-#set(TYPES_SRC ${TYPES_CPP} PARENT_SCOPE)
-#set(ODB_SRC ${ODB_CXX} PARENT_SCOPE)
 
-foreach(odb_ ${ODB_CXX})
-  message(STATUS "odb  ${odb_}")
+#foreach(odb_ ${ODB_CXX})
+#  message(STATUS "odb  ${odb_}")
+#endforeach()
+
+#foreach(type_ ${TYPES_CPP})
+#  message(STATUS "type ${type_}")
+#endforeach()
+
+#foreach(das_src_ ${DAS_SRC})
+#  message(STATUS "das  ${das_src_}")
+#endforeach()
+
+#foreach(das_ql_src_ ${DAS_QL_SRC})
+#  message(STATUS "ql   ${das_ql_src_}")
+#endforeach()
+
+foreach(type_ ${TYPE_NAMES_ALL} )
+  message(STATUS "Generated type ${type_}")
 endforeach()
 
-foreach(type_ ${TYPES_CPP})
-  message(STATUS "type ${type_}")
-endforeach()
-
-foreach(das_src_ ${DAS_SRC})
-  message(STATUS "das  ${das_src_}")
-endforeach()
-
-foreach(das_ql_src_ ${DAS_QL_SRC})
-  message(STATUS "ql   ${das_ql_src_}")
-endforeach()
-
-add_library(das ${DAS_QL_SRC} ${DAS_SRC} ${TYPES_CPP} ${ODB_CXX})
+add_library(das SHARED ${DAS_QL_SRC} ${DAS_SRC} ${TYPES_CPP} ${ODB_CXX})
 
 add_executable(test ${TEST_SOURCE_DIR}/main.cpp)
 target_link_libraries(test das)

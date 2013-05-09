@@ -187,12 +187,21 @@ class DdlOdbGenerator(DdlVisitor):
     i = open(_os.path.join(self._src_dir, idr_name), 'w')
     for j in self._keyword_touples:
       i.writelines(l+'\n' for l in _def_getter(j[0],j[1],self._class_name))
-      i.writelines(l+'\n' for l in _def_setter(j[0],j[1],self._class_name))    
+      i.writelines(l+'\n' for l in _def_setter(j[0],j[1],self._class_name))  
+    i.writelines('''
+template<>
+struct das_traits<'''+self._class_name+'''>
+{
+    static const std::string name;
+};
+''')
     i.close()
 
     s = open(_os.path.join(self._src_dir, src_name), 'w') 
     s.writelines(['#include "'+hdr_name+'"\n'])
     s.writelines(l + "\n" for l in self._src_header)
+    # type traits static inizialization
+    s.writelines(['const std::string das_traits<'+self._class_name+'>::name = "'+self._class_name+'";\n'])
     # public constructor with name argument
     s.writelines([self._class_name+"::"+self._class_name+" (const std::string &name)\n"])
     s.writelines("  "+l + "\n" for l in self._init_list)
@@ -212,10 +221,6 @@ class DdlOdbGenerator(DdlVisitor):
     s.writelines(['  type_name_ = "'+self._class_name+'";\n'])
     s.writelines("  "+l + "\n" for l in self._default_init)
     s.writelines(["}\n"])
-
-#    for i in self._keyword_touples:
-#      s.writelines(l+'\n' for l in _def_getter(i[0],i[1],self._class_name))
-#      s.writelines(l+'\n' for l in _def_setter(i[0],i[1],self._class_name))
 
     if self._has_associations:
       for i in self._assoc_touples:
