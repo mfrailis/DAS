@@ -1,0 +1,35 @@
+entrypoints BoolExp;
+token CompOp '>' | '<' | {"<="} | {">="} | {"=="} | {"!="} ;
+token Str  '\'' (letter | digit | ["\\/ -._~"] )* '\''; -- TODO add more symbols
+token BoolConst {"true"} | {"false"};
+
+BoolExpAnd.   BoolExp  ::= BoolExp "&&" BoolExp1;
+BoolExpOr.    BoolExp  ::= BoolExp "||" BoolExp1;
+BoolExpNot.   BoolExp2 ::= "!" BoolExp2;
+BoolCompExp.  BoolExp3 ::= CompExp;
+BoolStrExp.   BoolExp3 ::= StrExp;	
+coercions     BoolExp 3;
+
+StartsWith.   StrExp ::= [Name] ".startsWith" "(" Str ")";
+EndsWith.     StrExp ::= [Name] ".endsWith" "(" Str ")";
+
+CompExpAA. CompExp ::= Exp CompOp Exp;
+CompExpSC. CompExp ::= Str CompOp Exp;
+CompExpCS. CompExp ::= Exp CompOp Str;
+CompExpBA. CompExp ::= BoolConst CompOp Exp;
+CompExpAB. CompExp ::= Exp CompOp BoolConst;
+
+ExpSum.	  Exp  ::= Exp "+" Exp2;
+ExpSub.	  Exp  ::= Exp "-" Exp2;
+ExpMul.	  Exp2 ::= Exp2 "*" Exp3;
+ExpDiv.	  Exp2 ::= Exp2	"/" Exp3;
+ExpConst. Exp3 ::= NumConst;
+ExpName.  Exp3 ::= [Name];
+coercions Exp 3 ;
+
+ConstFloat. NumConst ::= Double;
+ConstInt.   NumConst ::= Integer;
+
+Keyword.   Name ::= Ident;
+(:[]). 	   [Name] ::= Name;
+(:).   	   [Name] ::= Name "."  [Name];
