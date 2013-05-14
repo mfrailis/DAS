@@ -38,7 +38,7 @@ class DdlVisitor:
 class DdlOdbGenerator(DdlVisitor):
   
   
-  KTYPE_MAP = {'byte':'signed char', 'char':'char', 'int16':'short', 'int32':'int', 
+  KTYPE_MAP = {'byte':'char', 'char':'char', 'int16':'short', 'int32':'int', 
                'int64':'long long', 'float32':'float', 'float64':'double', 
                'boolean':'bool', 'string':'std::string', 'text' : 'CBLOB'}
 
