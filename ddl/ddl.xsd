@@ -39,11 +39,20 @@
     <xs:complexType>
       <xs:attribute name="name" use="required"  type="xs:Name"/>
       <xs:attribute name="type" use="required" type="xs:IDREF"/>
-      <xs:attribute name="multiplicity" default="one">
+      <xs:attribute name="multiplicity" default="many">
         <xs:simpleType>
           <xs:restriction base="xs:token">
             <xs:enumeration value="one"/>
             <xs:enumeration value="many"/>
+          </xs:restriction>  
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="relation" default="shared">
+        <xs:simpleType>
+          <xs:restriction base="xs:token">
+            <xs:enumeration value="shared"/>
+            <xs:enumeration value="exclusive"/>
+            <xs:enumeration value="extend"/>
           </xs:restriction>  
         </xs:simpleType>
       </xs:attribute>

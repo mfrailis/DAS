@@ -27,6 +27,16 @@ namespace das
     }
     
   }; //TODO
+  class association_not_present : public std::exception
+  {
+  public :
+    virtual const char*
+    what() const throw()
+    {
+      return "the association requested is not present";
+    }
+    
+  }; //TODO
  class unknown_kewyword_type : public std::exception
   {
   public :

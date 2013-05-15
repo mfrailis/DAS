@@ -105,7 +105,7 @@ foreach(type_name ${TYPE_NAMES_ALL})
             --include-regex "%aux_query.hpp%../src/cpp/aux_query.hpp%"
             --include-regex "%ddl/(.+).hxx%$1.hxx%"
     --include-regex "%ddl_(.+).hpp%../../ddl_$1.hpp%"
-    --include-regex-trace
+
 
             --default-pointer std::tr1::shared_ptr
 	    -I${ODB_SOURCE_DIR}
@@ -128,7 +128,7 @@ COMMAND odb
     --include-regex "%(column.hpp)|(image.hpp)%ddl/$1$2%"
     --include-regex "%aux_query.hpp%../src/cpp/aux_query.hpp%"
     --include-regex "%ddl_(.+).hpp%../../ddl_$1.hpp%"
-    --include-regex-trace
+
 
     --default-pointer std::tr1::shared_ptr
     -I${ODB_SOURCE_DIR}
@@ -148,7 +148,7 @@ COMMAND odb
     --include-regex "%(column.hpp)|(image.hpp)%ddl/$1$2%"
     --include-regex "%aux_query.hpp%../src/cpp/aux_query.hpp%"
     --include-regex "%ddl_(.+).hpp%../../ddl_$1.hpp%"
-    --include-regex-trace
+
 
     --default-pointer std::tr1::shared_ptr 
     -I${ODB_SOURCE_DIR}

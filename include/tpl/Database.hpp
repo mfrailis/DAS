@@ -49,7 +49,7 @@ public:
         shared_ptr<Database> db(new Database());
         //TODO select proper database
         //db->db_.reset(new odb::mysql::database(user,password,database,host,port));
-        db->db_.reset(new odb::mysql::database("odb_test","","odb_test"));
+        db->db_.reset(new odb::mysql::database("odb_test","",alias.c_str()));
         db->self_ = db;
 	db->info_ = DdlInfo::get_instance(alias);
         return db;
@@ -221,11 +221,12 @@ public:
             }
 
             obj.save_data(path);
-            obj.persist_associated(this);
+            obj.persist_associated_pre(this);
 #ifdef VDBG
             std::cout << "DAS debug INFO: PRS " << obj.name_ <<std::endl; //DBG
 #endif
             id = db_->persist<T>(obj);
+            obj.persist_associated_post(this);
         }
         catch(const std::exception &e){auto_catch(local_trans,transaction);}
 

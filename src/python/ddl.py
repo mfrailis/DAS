@@ -1,5 +1,6 @@
 
 from lxml import etree as _et
+from collections import OrderedDict as MapOrd
 
 class TypeUpgrade:
   def __init__(self, name):
@@ -14,7 +15,7 @@ class TypeUpgrade:
 
 class DdlTypeList:
   def __init__(self):
-    self.type_map = {}
+    self.type_map = MapOrd()
     
   def accept(self, visitor):
     for node in self.type_map.values():
@@ -26,7 +27,7 @@ class DataType:
   def __init__(self, name):
     self.name = name 
     self.ancestor = None
-    self.associated = {}
+    self.associated = MapOrd()
     self.metadata = None
     self.data = None
     
@@ -100,19 +101,13 @@ class DataType:
     return diff
    
 
-#class Ancestor:
-#  def __init__(self, atype):
-#    self.atype = atype
-#    
-#  def accept(self, visitor):
-#    visitor.visit_ancestor(self)   
-    
     
 class Associated:
-  def __init__(self, name, atype, multiplicity):
+  def __init__(self, name, atype, multiplicity, relation):
     self.name = name
     self.atype = atype
     self.multiplicity = multiplicity
+    self.relation = relation
     
   def accept(self, visitor):
     visitor.visit_associated(self)
@@ -120,7 +115,7 @@ class Associated:
 
 class Metadata:
   def __init__(self):
-    self.keywords = {}
+    self.keywords = MapOrd()
     
   def accept(self, visitor):
     for node in self.keywords.values():
@@ -240,7 +235,7 @@ class Data:
        
 class BinaryTable:
   def __init__(self):
-    self.columns = {}
+    self.columns = MapOrd()
     
   def accept(self, visitor):
     for node in self.columns.values():
@@ -358,7 +353,8 @@ class DdlParser:
       name = a.get('name')
       atype = a.get('type')
       multi = a.get('multiplicity')
-      dt.associated[name]=Associated(name, atype, multi)
+      relat = a.get('relation')
+      dt.associated[name]=Associated(name, atype, multi,relat)
       
     meta = dtype.find('ddl:metadata', DdlParser.NSMAP)
     if meta is not None:

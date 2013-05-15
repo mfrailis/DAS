@@ -58,6 +58,14 @@ public:
     return all_columns_.at(type_name).at(column_name);
   }
 
+  virtual
+  const std::string&
+  get_association_type(const std::string &type_name, const std::string &association_name)
+    const throw(std::out_of_range)
+  {
+    return all_associations_.at(type_name).at(association_name);
+  }
+
   static DdlInfo*
   get_instance()
   {
@@ -76,11 +84,14 @@ public:
     return get_instance()->ddl_map_.at(ddl_name);
   }
 protected:
+  typedef boost::unordered_map< std::string, std::string > Association_map;
   typedef boost::unordered_map< std::string, KeywordInfo > Keyword_map;
   typedef boost::unordered_map< std::string, ColumnInfo > Column_map;
 
   static boost::unordered_map< std::string, Keyword_map > all_keywords_;
   static boost::unordered_map< std::string, Column_map > all_columns_;
+  static boost::unordered_map< std::string, Association_map > all_associations_;
+
   DdlInfo(){}
 private:
   void init();
