@@ -1,5 +1,5 @@
 #include <iostream>
-
+#include <sstream>
 #include "tpl/Database.hpp"
 #include "ddl/types.hpp"
 
@@ -33,9 +33,9 @@ void print(const shared_ptr<testLogImage> &img)
 
 int main()
 {
-    shared_ptr<D::Database> db = D::Database::create("local");
+ /*   shared_ptr<D::Database> db = D::Database::create("local");
 
-    shared_ptr<lfiHkDaeSlowVoltage> hk (new lfiHkDaeSlowVoltage("LfiDaeSlowVoltage_TOI_0001"));
+    shared_ptr<lfiHkDaeSlowVoltage> hk = lfiHkDaeSlowVoltage::create("LfiDaeSlowVoltage_TOI_0001");
 
     hk->runId("FUNC_0001");
     hk->startTime(107361255356137);
@@ -48,13 +48,13 @@ int main()
 
     db->persist (*hk);
 
-    shared_ptr<testLog> log (new testLog("TestLog_FUNC_0001"));
+    shared_ptr<testLog> log = testLog::create("TestLog_FUNC_0001");
     log->runId("FUNC_0001");
     log->startTime(107361255356137);
     log->endTime(107367005705966);
     log->log("A first example of ddl mapping into the DAS");
 
-    shared_ptr<testLogImage> logImage(new testLogImage("IMG_001_FUNC_0001"));
+    shared_ptr<testLogImage> logImage = testLogImage::create("IMG_001_FUNC_0001");
     logImage->naxis1(25);
     logImage->naxis2(50);
     logImage->format("png");
@@ -84,8 +84,53 @@ int main()
 
       t.commit ();
     }
-
-
+*/
+    odb::session s;
+    
+    shared_ptr<D::Database> db = D::Database::create("benchmark");
+    
+    shared_ptr<TypeMain> tm = TypeMain::create("main1");
+    TypeMain::many_ex_vector exass = tm->many_ex();
+    TypeMain::many_sh_vector shass = tm->many_sh();
+    
+    for(int i=0; i< 10; i++)
+    {
+        std::stringstream ss;
+        ss << "ass_prima" << i;
+        shared_ptr<manyEx> exp = manyEx::create(ss.str());
+        exass.push_back(exp);
+        
+        shared_ptr<manySh> shp = manySh::create(ss.str());
+        shass.push_back(shp);        
+    }
+    tm->many_ex(exass);
+    tm->many_sh(shass);
+    db->persist(*tm);
+ 
+    TypeMain::many_ex_vector exass2;
+    TypeMain::many_sh_vector shass2;   
+    for(int i=0; i< 5; i++)
+    {
+        std::stringstream ss;
+        ss << "ass_seconda" << i;
+        shared_ptr<manyEx> exp = manyEx::create(ss.str());
+        exass2.push_back(exp);
+        db->persist(*exp);
+                
+        shared_ptr<manySh> shp = manySh::create(ss.str());
+        shass2.push_back(shp);
+        db->persist(*shp);      
+    }   
+    tm->many_ex(exass2);
+    tm->many_sh(shass2);
+    db->update(*tm,true);
+    
+    for(TypeMain::many_ex_vector::iterator i = exass2.begin(); i != exass2.end(); ++i)
+        db->update(*(*i),true);       
+  
+    for(TypeMain::many_ex_vector::iterator i = exass.begin(); i != exass.end(); ++i)
+        db->update(*(*i),true);
+    
     return 0;
 }
 

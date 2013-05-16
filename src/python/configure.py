@@ -214,7 +214,7 @@ add_custom_target(
         f.write(
 '''
 add_custom_target(
-  '''+prefix+'''all ALL
+  '''+prefix+'''all
   DEPENDS'''
 )
         for l in self.sub_dirs:

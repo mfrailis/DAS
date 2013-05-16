@@ -14,14 +14,14 @@
     </type>
     
     <type name="TypeMain" ancestor="TypeAbs">
-        <associated name="assoc1" type="TypeAss1" multiplicity="one"  relation="exclusive"/>
-        <associated name="assoc2" type="TypeAss2" multiplicity="one"  relation="shared"/>
-        <associated name="assoc3" type="TypeAss3" multiplicity="many" relation="exclusive"/>
-        <associated name="assoc4" type="TypeAss4" multiplicity="many" relation="shared"/>
+        <associated name="one_ex"  type="oneEx"  multiplicity="one"  relation="exclusive"/>
+        <associated name="one_sh"  type="oneSh"  multiplicity="one"  relation="shared"/>
+        <associated name="many_ex" type="manyEx" multiplicity="many" relation="exclusive"/>
+        <associated name="many_sh" type="manySh" multiplicity="many" relation="shared"/>
     </type>
 
-    <type name="TypeAss1" ancestor="TypeAbs"></type>
-    <type name="TypeAss2" ancestor="TypeAbs"></type>
-    <type name="TypeAss3" ancestor="TypeAbs"></type>
-    <type name="TypeAss4" ancestor="TypeAbs"></type>
+    <type name="oneEx"  ancestor="TypeAbs"></type>
+    <type name="oneSh"  ancestor="TypeAbs"></type>
+    <type name="manyEx" ancestor="TypeAbs"></type>
+    <type name="manySh" ancestor="TypeAbs"></type>
 </ddl>

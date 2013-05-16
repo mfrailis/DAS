@@ -49,7 +49,12 @@ public:
         shared_ptr<Database> db(new Database());
         //TODO select proper database
         //db->db_.reset(new odb::mysql::database(user,password,database,host,port));
-        db->db_.reset(new odb::mysql::database("odb_test","",alias.c_str()));
+        if(alias == "local")
+            db->db_.reset(new odb::mysql::database("odb_test","","odb_test"));
+        else if(alias == "benchmark")
+            db->db_.reset(new odb::mysql::database("odb_test","","benchmark"));
+        else
+            throw das::wrong_database();
         db->self_ = db;
 	db->info_ = DdlInfo::get_instance(alias);
         return db;
