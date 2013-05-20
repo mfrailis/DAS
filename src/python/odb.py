@@ -506,7 +506,7 @@ def _def_persist_assoc(association, priv_type):
     {
       shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = (*i).load();
       // if('''+association.name+'''_temp)
-      db->persist<'''+association.atype+'''> (*'''+association.name+'''_temp);
+      db->persist<'''+association.atype+'''> ('''+association.name+'''_temp);
     }
   }
 '''
@@ -516,7 +516,7 @@ def _def_persist_assoc(association, priv_type):
   {
   shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = '''+association.name+'''_.load(); //it means just lock
   // if('''+association.name+'''_temp)
-    db->persist<'''+association.atype+'''> (*'''+association.name+'''_temp);
+    db->persist<'''+association.atype+'''> ('''+association.name+'''_temp);
   }
 '''
 
@@ -528,7 +528,7 @@ def _def_update_assoc(association, priv_type):
     {
       shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = (*i).load(); // it means just lock
       // if('''+association.name+'''_temp)
-      db_ptr_->update<'''+association.atype+'''> (*'''+association.name+'''_temp,true);
+      db_ptr_->update<'''+association.atype+'''> ('''+association.name+'''_temp,true);
     }
   }
 '''
@@ -538,7 +538,7 @@ def _def_update_assoc(association, priv_type):
   {
     shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = '''+association.name+'''_.load(); // it means just lock
     //if('''+association.name+'''_temp)
-    db_ptr_->update<'''+association.atype+'''> (*'''+association.name+'''_temp,true);
+    db_ptr_->update<'''+association.atype+'''> ('''+association.name+'''_temp,true);
   }
 ''' 
 
