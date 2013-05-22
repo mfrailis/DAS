@@ -180,6 +180,7 @@ class DdlOdbGenerator(DdlVisitor):
     h.writelines(["  static","  shared_ptr<"+self._class_name+"> create(const std::string &name);\n"])
     h.writelines("  "+l + "\n" for l in self._type_defs)
     h.writelines("  "+l + "\n" for l in self._public_section)
+    h.writelines(["  virtual ~"+self._class_name+"();\n"])
 # preotected section
     h.writelines([" protected:\n"])
     h.writelines("  "+l + "\n" for l in self._friends)
@@ -209,7 +210,9 @@ class DdlOdbGenerator(DdlVisitor):
     i.writelines([_def_factory_method(self._class_name)])
     for j in self._keyword_touples:
       i.writelines(l+'\n' for l in _def_getter(j[0],j[1],self._class_name))
-      i.writelines(l+'\n' for l in _def_setter(j[0],j[1],self._class_name))  
+      i.writelines(l+'\n' for l in _def_setter(j[0],j[1],self._class_name))
+
+
     i.writelines('''
 template<>
 struct das_traits<'''+self._class_name+'''>
@@ -218,6 +221,10 @@ struct das_traits<'''+self._class_name+'''>
 };
 ''')
     i.close()
+
+    self._src_header.append('#include "tpl/Database.hpp"')
+    self._src_header.append('#include "dbms/mysql/ddl_'+self._class_name+'-odb.hxx"')
+    self._src_header.append('#include "exceptions.hpp"')
 
     s = open(_os.path.join(self._src_dir, src_name), 'w') 
     s.writelines(['#include "'+hdr_name+'"\n'])
@@ -237,6 +244,15 @@ struct das_traits<'''+self._class_name+'''>
     s.writelines(["{\n"])
     s.writelines(["  init();\n"])
     s.writelines(["}\n"])
+    # destructor
+    s.writelines(self._class_name+'::~'+self._class_name+'''()
+{
+  if(!is_new() && db_ptr_ && is_dirty_)
+  {
+    db_ptr_->update<'''+self._class_name+'''>(*this,false);
+  }
+}
+''')
     # private section
     s.writelines(["void\n",self._class_name+"::init()\n"])
     s.writelines(["{\n"])
@@ -284,6 +300,7 @@ struct das_traits<'''+self._class_name+'''>
       self._header.append("#include <odb/tr1/lazy-ptr.hxx>")
       self._header.append("#include <odb/transaction.hxx>")
       self._header.append("using odb::tr1::lazy_weak_ptr;")
+      self._header.append("using odb::tr1::lazy_shared_ptr;")
       self._header.append("using std::tr1::shared_ptr;")
       self._friends.append("friend class das::tpl::Database;")
       self._protected_section.extend(['virtual void','persist_associated_pre (das::tpl::Database *db);'])
@@ -295,12 +312,17 @@ struct das_traits<'''+self._class_name+'''>
     self._header.append('#include "ddl_'+ associated.atype +'.hpp"')
     if associated.multiplicity == 'many':
       pub_type = associated.name+'_vector'
-      priv_type = associated.name+'_lazy_weak_vec'
-      self._private_section.append('typedef typename std::vector<lazy_weak_ptr<'+associated.atype+'> > '+priv_type+';')
-      self._type_defs.append('typedef typename std::vector<shared_ptr<'+associated.atype+'> > '+pub_type+';' )
+      if associated.relation == 'exclusive' or associated.relation == 'extend':
+        priv_type = associated.name+'_lazy_weak_vec'
+        self._private_section.append('typedef typename std::vector<lazy_weak_ptr<'+associated.atype+'> > '+priv_type+';')
+        self._type_defs.append('typedef typename std::vector<shared_ptr<'+associated.atype+'> > '+pub_type+';' )
+      else:
+        priv_type = associated.name+'_lazy_shared_vec'
+        self._private_section.append('typedef typename std::vector<lazy_shared_ptr<'+associated.atype+'> > '+priv_type+';')
+        self._type_defs.append('typedef typename std::vector<shared_ptr<'+associated.atype+'> > '+pub_type+';' )       
     else:
       pub_type = 'shared_ptr<'+associated.atype+'>'
-      priv_type = 'lazy_weak_ptr<'+associated.atype+'>'
+      priv_type = 'lazy_shared_ptr<'+associated.atype+'>'
     
     self._public_section.extend(_dec_getter_assoc(associated.name, pub_type))
     self._public_section.extend(_dec_setter_assoc(associated.name, pub_type))
@@ -500,29 +522,43 @@ def _def_setter_assoc(association, pub_type, class_name):
 
 def _def_persist_assoc(association, priv_type):
   if association.multiplicity == 'many':
-    return '''  for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
+    if association.relation == 'shared':
+      return '''  for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
   {
-    if(!(*i).expired())
-    {
-      shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = (*i).load();
-      // if('''+association.name+'''_temp)
-      db->persist<'''+association.atype+'''> ('''+association.name+'''_temp);
-    }
-  }
-'''
-  else:
-    return '''
-  if(!'''+association.name+'''_.expired())
-  {
-  shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = '''+association.name+'''_.load(); //it means just lock
-  // if('''+association.name+'''_temp)
+    shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = (*i).get_eager();
     db->persist<'''+association.atype+'''> ('''+association.name+'''_temp);
   }
+'''
+    else:
+      return '''  for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
+  {
+    shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = (*i).get_eager().lock();
+    if('''+association.name+'''_temp)
+      db->persist<'''+association.atype+'''> ('''+association.name+'''_temp);
+  }
+'''
+
+  else:
+    return '''
+  shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = '''+association.name+'''_.get_eager();
+  if('''+association.name+'''_temp) // the association may not be setted
+    db->persist<'''+association.atype+'''> ('''+association.name+'''_temp);
+
 '''
 
 def _def_update_assoc(association, priv_type):
   if association.multiplicity == 'many':
-    return '''  for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
+    if association.relation == 'shared':
+      return '''  for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
+  {
+  //we should check the cache: if is already loaded then update, otherwise don't load and go on
+    shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = (*i).load(); // it means just lock
+    // if('''+association.name+'''_temp)
+    db_ptr_->update<'''+association.atype+'''> ('''+association.name+'''_temp,true);
+  }
+'''
+    else:
+      return '''  for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
   {
     if((*i).loaded() && !(*i).expired())
     {
@@ -534,12 +570,17 @@ def _def_update_assoc(association, priv_type):
 '''
   else: 
     return '''
-  if('''+association.name+'''_.loaded() && !'''+association.name+'''_.expired())
+/*  if('''+association.name+'''_.loaded() && !'''+association.name+'''_.expired())
   {
     shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = '''+association.name+'''_.load(); // it means just lock
     //if('''+association.name+'''_temp)
     db_ptr_->update<'''+association.atype+'''> ('''+association.name+'''_temp,true);
   }
+*/
+  //we should check the cache: if is already loaded then update, otherwise don't load and go on
+  shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = '''+association.name+'''_.load(); // it means just lock
+  db_ptr_->update<'''+association.atype+'''> ('''+association.name+'''_temp,true);
+
 ''' 
 
 
