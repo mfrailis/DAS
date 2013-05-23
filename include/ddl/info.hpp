@@ -5,10 +5,10 @@
 
 struct KeywordInfo{
   KeywordInfo(){}
-  KeywordInfo(std::string _name,
-	      std::string _type,
-	      std::string _unit,
-	      std::string _description)
+  KeywordInfo(const std::string& _name,
+	      const std::string& _type,
+	      const std::string& _unit,
+	      const std::string& _description)
     : name(_name),
       type(_type),
       unit(_unit),
@@ -21,10 +21,10 @@ struct KeywordInfo{
 
 
 struct ColumnInfo{
-  ColumnInfo(std::string _name,
-	     std::string _type,
-	     std::string _unit,
-	     std::string _description,
+  ColumnInfo(const std::string& _name,
+	     const std::string& _type,
+	     const std::string& _unit,
+	     const std::string& _description,
 	     int _max_sting_length)
     : name(_name),
       type(_type),
@@ -37,6 +37,22 @@ struct ColumnInfo{
   std::string unit;
   std::string description;
   int max_string_length;
+};
+
+struct AssociationInfo{
+  AssociationInfo(){}
+  AssociationInfo(const std::string& ass_type,
+		  const std::string& table_name,
+		  const std::string& ass_key,
+		  const std::string& obj_key)
+    : association_type(ass_type), 
+      association_table(table_name),
+      association_key(ass_key),
+      object_key(obj_key) {}
+  std::string association_type;
+  std::string association_table;
+  std::string association_key;
+  std::string object_key;
 };
 
 class DdlInfo
@@ -58,14 +74,6 @@ public:
     return all_columns_.at(type_name).at(column_name);
   }
 
-  virtual
-  const std::string&
-  get_association_type(const std::string &type_name, const std::string &association_name)
-    const throw(std::out_of_range)
-  {
-    return all_associations_.at(type_name).at(association_name);
-  }
-
   static DdlInfo*
   get_instance()
   {
@@ -83,8 +91,17 @@ public:
   {
     return get_instance()->ddl_map_.at(ddl_name);
   }
+
+  virtual
+  const AssociationInfo&
+  get_association_type(const std::string &type_name, const std::string &association_name)
+    const throw(std::out_of_range)
+  {
+    return all_associations_.at(type_name).at(association_name);
+  }
+
 protected:
-  typedef boost::unordered_map< std::string, std::string > Association_map;
+  typedef boost::unordered_map< std::string, AssociationInfo > Association_map;
   typedef boost::unordered_map< std::string, KeywordInfo > Keyword_map;
   typedef boost::unordered_map< std::string, ColumnInfo > Column_map;
 
@@ -93,6 +110,9 @@ protected:
   static boost::unordered_map< std::string, Association_map > all_associations_;
 
   DdlInfo(){}
+
+
+  
 private:
   void init();
   boost::unordered_map< std::string, DdlInfo* > ddl_map_;

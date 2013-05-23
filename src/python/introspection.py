@@ -60,8 +60,8 @@ class DdlInfoGenerator(_odb.DdlVisitor):
                 d = c.description
             self._init_columns.append('all_columns_["'+data_type.name+'"]["'+c.name+'"] = ColumnInfo("'+c.name+'","'+c.ctype+'","'+c.unit+'","'+d+'",'+c.max_string_length+');')
 
-        for (ass_name,ass_type) in self._associations:
-            self._init_associations.append('all_associations_["'+data_type.name+'"]["'+ass_name+'"] = "'+ass_type+'";')
+        for (ass_name,association) in self._associations:
+            self._init_associations.append('all_associations_["'+data_type.name+'"]["'+ass_name+'"] = '+_association_info_gen(data_type.name,ass_name,association)+';')
 
         ddl_list = self._ddl_map.get_ddl_list(data_type.name)
         for ddl in ddl_list:
@@ -113,7 +113,7 @@ class DdlInfoGenerator(_odb.DdlVisitor):
     def _get_associations(self, type_name): #TODO
         ddl_type = self._type_list.type_map[type_name]
         for (ass_name,association) in ddl_type.associated.items():
-            self._associations.append((ass_name,association.atype))
+            self._associations.append((ass_name,association))
         if ddl_type.ancestor != ddl_type.name:
             self._get_associations(ddl_type.ancestor)
 
@@ -154,7 +154,7 @@ public:
   }  
   
   virtual
-  const std::string&
+  const AssociationInfo&
   get_association_type(const std::string &type_name, const std::string &association_name)
     const throw(std::out_of_range)
   {
@@ -176,6 +176,17 @@ private:
 #endif
 ''')
     f.writelines(l for l in source)
+
+def _association_info_gen(base_name,ass_name,association):
+    if association.multiplicity == 'many' :
+        if association.relation == 'shared':
+            return 'AssociationInfo("'+association.atype+'","'+base_name+'_'+ass_name+'","value","object_id")'
+        else:
+            return 'AssociationInfo("'+association.atype+'","'+association.atype+'","","'+base_name+'_'+ass_name+'")'
+    else:
+        return 'AssociationInfo("'+association.atype+'","'+base_name+'","'+ass_name+'","")'
+    
+            
 
 
 if __name__ == "__main__":

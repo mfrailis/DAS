@@ -3,6 +3,7 @@
 #include "bnfc/Absyn.H"
 #include "ddl/info.hpp"
 #include <stack>
+#include <set>
 #include <sstream>
 
 enum type_e {
@@ -17,7 +18,7 @@ enum type_e {
   t_string =32,
   t_text   =32
 };
-
+/*
 class Env{// TODO: implement operator= as a swap
 public:
   //  bool is_assoc_chain_;
@@ -39,7 +40,34 @@ public:
   }
   Env(){}
 };
+*/
+class Env{
+public:
+  type_e type_;
+  std::string direct_code_;
+  std::string nested_code_;
+  std::string join_code_;
+  std::string current_type_;
+  std::set<std::string> assoc_tables_;
+  
+  Env& operator= (Env& rhs)
+  {
+    type_ = rhs.type_;
+    swap(direct_code_,rhs.direct_code_);
+    swap(nested_code_,rhs.nested_code_);
+    swap(join_code_,rhs.join_code_);
+    swap(assoc_tables_,rhs.assoc_tables_);
+    current_type_ = rhs.current_type_;
 
+    return *this;
+  }  
+  Env(const Env& rhs)
+  {
+    current_type_ = rhs.current_type_;
+    //is_assoc_chain_ = rhs.assoc_chain_;
+  }
+  Env(){}
+};
 
 class QLVisitor: public Visitor
 {
@@ -98,10 +126,13 @@ public:
   std::string parse_exp(const std::string &expression);
   std::string parse_ord(const std::string &expression);
 private:
-  inline std::string type_to_string(type_e t);
-  inline type_e string_to_type(const std::string &t);
-  inline type_e common(const Env& e1,const Env& e2);
-  inline const char* compop_to_sql(const std::string &op);
+  std::string type_to_string(type_e t);
+  type_e string_to_type(const std::string &t);
+  type_e common(const Env& e1,const Env& e2);
+  const char* compop_to_sql(const std::string &op);
+  void gen_join_code(const AssociationInfo& info);
+  void gen_nested(Env& e);
+  void merge_envs(Env& e1, Env& e2);
   void visitBinExp(Exp *e1, Exp *e2, const std::string &op);
   void visitStrFun(ListName *listname);
 
