@@ -19,6 +19,11 @@
             <keyword name="stringkey" type="string"/>
         </metadata>        
     </type>
+
+    <type name="assoc1" ancestor="assoc"></type>
+    <type name="assoc2" ancestor="assoc"></type>
+    <type name="assoc3" ancestor="assoc"></type>
+    <type name="assoc4" ancestor="assoc"></type>
     
     <type name="TypeMain" ancestor="TypeAnc">
         <associated name="one_ex"  type="oneEx"  multiplicity="one"  relation="exclusive"/>
@@ -28,19 +33,19 @@
     </type>
 
     <type name="oneEx"  ancestor="TypeAnc">
-        <associated name="nested_one_ex"  type="assoc"  multiplicity="one"  relation="exclusive"/>     
+        <associated name="nested_one_ex"  type="assoc1"  multiplicity="one"  relation="exclusive"/>     
     </type>
     
     <type name="oneSh"  ancestor="TypeAnc">
-        <associated name="nested_one_sh"  type="assoc"  multiplicity="one"  relation="shared"/>      
+        <associated name="nested_one_sh"  type="assoc2"  multiplicity="one"  relation="shared"/>      
     </type>
     
     <type name="manyEx" ancestor="TypeAnc">
-        <associated name="nested_many_ex" type="assoc" multiplicity="many" relation="exclusive"/>      
+        <associated name="nested_many_ex" type="assoc3" multiplicity="many" relation="exclusive"/>      
     </type>
     
     <type name="manySh" ancestor="TypeAnc"> 
-        <associated name="nested_many_sh" type="assoc" multiplicity="many" relation="shared"/>   
+        <associated name="nested_many_sh" type="assoc4" multiplicity="many" relation="shared"/>   
     </type>
     
 </ddl>

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 #include <sstream>
 #include "tpl/Database.hpp"
 #include "ddl/types.hpp"
@@ -31,8 +32,10 @@ void print(const shared_ptr<testLogImage> &img)
        << "  format : " << img->format() << endl;
 }
 
-int main()
-{/*
+int main(int argc, char * argv[])
+{
+
+    /*
     shared_ptr<D::Database> db = D::Database::create("local");
 
     shared_ptr<lfiHkDaeSlowVoltage> hk = lfiHkDaeSlowVoltage::create("LfiDaeSlowVoltage_TOI_0001");
@@ -84,62 +87,89 @@ int main()
 
       t.commit ();
     }
-
-    odb::session s;
-    
-    shared_ptr<D::Database> db = D::Database::create("benchmark");
-    
-    shared_ptr<TypeMain> tm = TypeMain::create("main1");
-    TypeMain::many_ex_vector exass = tm->many_ex();
-    TypeMain::many_sh_vector shass = tm->many_sh();
-    
-    for(int i=0; i< 10; i++)
-    {
-        std::stringstream ss;
-        ss << "ass_prima" << i;
-        shared_ptr<manyEx> exp = manyEx::create(ss.str());
-        exass.push_back(exp);
-        
-        shared_ptr<manySh> shp = manySh::create(ss.str());
-        shass.push_back(shp);        
+*/  
+    if(argc != 3 && argc != 1){
+        cout << "usage: " << argv[0] << " \"query to execute\" \"ordering\"" << endl;
+        cout << "or " << argv[0] << endl;
+        return 1;
     }
-    tm->many_ex(exass);
-    tm->many_sh(shass);
-    db->persist<TypeMain>(tm);
- 
-    TypeMain::many_ex_vector exass2;
-    TypeMain::many_sh_vector shass2;   
-    for(int i=0; i< 5; i++)
-    {
-        std::stringstream ss;
-        ss << "ass_seconda" << i;
-        shared_ptr<manyEx> exp = manyEx::create(ss.str());
-        exass2.push_back(exp);
-        db->persist<manyEx>(exp);
-                
-        shared_ptr<manySh> shp = manySh::create(ss.str());
-        shass2.push_back(shp);
-        db->persist<manySh>(shp);      
-    }   
-    tm->many_ex(exass2);
-    tm->many_sh(shass2);
-    db->update<TypeMain>(tm,true);
-    
-    for(TypeMain::many_ex_vector::iterator i = exass2.begin(); i != exass2.end(); ++i)
-      db->update<manyEx>(*i,true);       
-  
-    for(TypeMain::many_ex_vector::iterator i = exass.begin(); i != exass.end(); ++i)
-        db->update<manyEx>(*i,true);
-    */
+        
     shared_ptr<D::Database> db = D::Database::create("benchmark");
+    if( argc == 1)
+    for(int i=0; i < 5; i++)
+    {
+        std::stringstream tm_n;
+        tm_n << "TypeMain " << i;
+        shared_ptr<TypeMain> tm = TypeMain::create(tm_n.str());
+        
+        TypeMain::many_ex_vector mev;
+        TypeMain::many_sh_vector msv;
+        for(int j=0; j < 2; j++)
+        { 
+            std::stringstream  me_n;
+            me_n << "manyEx "<<i<<" "<<j;
+            shared_ptr<manyEx> me = manyEx::create(me_n.str());
+            mev.push_back(me);
+            
+            std::stringstream  ms_n;
+            ms_n << "manySh " << i << " " <<j;
+            shared_ptr<manySh> ms = manySh::create(ms_n.str());
+            msv.push_back(ms);
+            
+            manyEx::nested_many_ex_vector nmev;
+            manySh::nested_many_sh_vector nmsv;
+            for(int k=0; k < 3; k++)
+            {
+                std::stringstream a3_n;
+                a3_n << "assoc3 "<< i<<" "<<j<<" "<<k;
+                shared_ptr<assoc3> a3 = assoc3::create(a3_n.str());
+                nmev.push_back(a3);
+                
+                std::stringstream  a4_n;
+                a4_n << "assoc4 " << i<<" "<<j<<" "<<k;
+                shared_ptr<assoc4> a4 = assoc4::create(a4_n.str());
+                nmsv.push_back(a4);
+            }
+            ms->nested_many_sh(nmsv);
+            me->nested_many_ex(nmev);
+        }
+        std::stringstream os_n;
+        os_n<< "oneSh "<< i;
+        shared_ptr<oneSh> os = oneSh::create(os_n.str());
+        
+        std::stringstream oe_n;
+        oe_n << "oneEx " <<i;
+        shared_ptr<oneEx> oe = oneEx::create(oe_n.str());
+        
+        std::stringstream a1_n;
+        a1_n << "assoc1 "<< i;
+        shared_ptr<assoc1> a1 = assoc1::create(a1_n.str());
+        oe->nested_one_ex(a1);
+            
+        std::stringstream a2_n;
+        a2_n << "assoc2 "<< i;
+        shared_ptr<assoc2> a2 = assoc2::create(a2_n.str());
+        os->nested_one_sh(a2);
+        
+        tm->one_sh(os);
+        tm->one_ex(oe);
+        tm->many_sh(msv);
+        tm->many_ex(mev);
+        
+        db->persist<TypeMain>(tm);
+    }
     
     typedef odb::result<TypeMain> result;
 
-
+    if(argc == 3 ){
       odb::transaction t (db->begin ());
-      result r (db->query<TypeMain> ("(many_sh.nested_many_sh.stringkey == one_ex.nested_one_ex.stringkey) && one_ex.nested_one_ex.stringkey == 'FUNC_0001' && name == 'prova'","version descending"));
+      result r (db->query<TypeMain> (argv[1],argv[2]));
+      cout << "result:" << endl;
+      for (result::iterator i (r.begin ()); i != r.end (); ++i)
+      {
+          cout << (*i).name() << endl;
+      }
       t.commit ();
-      
+    }
     return 0;
 }
-
