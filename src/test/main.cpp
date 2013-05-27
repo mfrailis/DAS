@@ -1,5 +1,4 @@
 #include <iostream>
-#include <string>
 #include <sstream>
 #include "tpl/Database.hpp"
 #include "ddl/types.hpp"
@@ -32,10 +31,8 @@ void print(const shared_ptr<testLogImage> &img)
        << "  format : " << img->format() << endl;
 }
 
-int main(int argc, char * argv[])
-{
-
-    /*
+int main()
+{/*
     shared_ptr<D::Database> db = D::Database::create("local");
 
     shared_ptr<lfiHkDaeSlowVoltage> hk = lfiHkDaeSlowVoltage::create("LfiDaeSlowVoltage_TOI_0001");
@@ -158,6 +155,27 @@ int main(int argc, char * argv[])
         
         db->persist<TypeMain>(tm);
     }
+    tm->many_ex(exass);
+    tm->many_sh(shass);
+    db->persist<TypeMain>(tm);
+ 
+    TypeMain::many_ex_vector exass2;
+    TypeMain::many_sh_vector shass2;   
+    for(int i=0; i< 5; i++)
+    {
+        std::stringstream ss;
+        ss << "ass_seconda" << i;
+        shared_ptr<manyEx> exp = manyEx::create(ss.str());
+        exass2.push_back(exp);
+        db->persist<manyEx>(exp);
+                
+        shared_ptr<manySh> shp = manySh::create(ss.str());
+        shass2.push_back(shp);
+        db->persist<manySh>(shp);      
+    }   
+    tm->many_ex(exass2);
+    tm->many_sh(shass2);
+    db->update<TypeMain>(tm,true);
     
     typedef odb::result<TypeMain> result;
 
@@ -173,3 +191,4 @@ int main(int argc, char * argv[])
     }
     return 0;
 }
+

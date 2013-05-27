@@ -646,6 +646,8 @@ QLVisitor::type_to_string(type_e t)
 {
   switch(t)
     {
+    case t_char:
+      return "char";
     case t_byte:
       return "byte";
     case t_short:

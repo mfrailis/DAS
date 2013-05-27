@@ -8,15 +8,15 @@
 
 enum type_e {
   t_byte   = 1,
-  t_char   = 1,
   t_short  = 2,
   t_int    = 3,
   t_long   = 4,
   t_float  = 5,
   t_double = 6,
   t_bool   =16,
-  t_string =32,
-  t_text   =32
+  t_char   =32,
+  t_string =64,
+  t_text   =64
 };
 /*
 class Env{// TODO: implement operator= as a swap
