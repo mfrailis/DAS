@@ -89,13 +89,17 @@ void  QLVisitor::visitConstInt(ConstInt *p)
   int   i = (int)   x;
 
   if(x == c)
-    stack.top().type_=t_char;
+    stack.top().type_=t_byte;
   else if(x == s)
     stack.top().type_=t_short;
   else if(x == i)
     stack.top().type_=t_int;
   else
     stack.top().type_=t_long;
+
+#ifdef VDBG
+  std::cout << "long long coerced to " << type_to_string(stack.top().type_) << std::endl;
+#endif
 
   std::stringstream ss;
   ss << x;
