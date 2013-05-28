@@ -31,7 +31,7 @@ void print(const shared_ptr<testLogImage> &img)
        << "  format : " << img->format() << endl;
 }
 
-int main()
+int main(int argc, char * argv[])
 {/*
     shared_ptr<D::Database> db = D::Database::create("local");
 
@@ -152,35 +152,16 @@ int main()
         tm->one_ex(oe);
         tm->many_sh(msv);
         tm->many_ex(mev);
-        
+
+	D::Transaction t (db->begin ());       
         db->persist<TypeMain>(tm);
+	t.commit();
     }
-    tm->many_ex(exass);
-    tm->many_sh(shass);
-    db->persist<TypeMain>(tm);
- 
-    TypeMain::many_ex_vector exass2;
-    TypeMain::many_sh_vector shass2;   
-    for(int i=0; i< 5; i++)
-    {
-        std::stringstream ss;
-        ss << "ass_seconda" << i;
-        shared_ptr<manyEx> exp = manyEx::create(ss.str());
-        exass2.push_back(exp);
-        db->persist<manyEx>(exp);
-                
-        shared_ptr<manySh> shp = manySh::create(ss.str());
-        shass2.push_back(shp);
-        db->persist<manySh>(shp);      
-    }   
-    tm->many_ex(exass2);
-    tm->many_sh(shass2);
-    db->update<TypeMain>(tm,true);
     
     typedef odb::result<TypeMain> result;
 
     if(argc == 3 ){
-      odb::transaction t (db->begin ());
+      D::Transaction t (db->begin ());
       result r (db->query<TypeMain> (argv[1],argv[2]));
       cout << "result:" << endl;
       for (result::iterator i (r.begin ()); i != r.end (); ++i)
@@ -191,4 +172,3 @@ int main()
     }
     return 0;
 }
-
