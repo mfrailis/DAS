@@ -15,7 +15,7 @@ class ListName;
 
 typedef union
 {
-  int int_;
+  long long int_;
   char char_;
   double double_;
   char* string_;
