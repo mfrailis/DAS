@@ -247,6 +247,7 @@ inline const shared_ptr<'''+self._class_name+'''>&
     self._src_header.append('#include "tpl/Database.hpp"')
     self._src_header.append('#include "dbms/mysql/ddl_'+self._class_name+'-odb.hxx"')
     self._src_header.append('#include "exceptions.hpp"')
+    self._src_header.append('#include "internal/db_bundle.hpp"')
 
     s = open(_os.path.join(self._src_dir, src_name), 'w') 
     s.writelines(['#include "'+hdr_name+'"\n'])
@@ -631,10 +632,10 @@ def _def_setter_assoc(association, pub_type, priv_type, class_name):
   else //if is_new()
   {
     shared_ptr<'''+association.atype+'''> current = '''+association.name +'''();
-
-    shared_ptr<odb::database> db = bundle_.db();
-    shared_ptr<odb::session> session = bundle_.session();
-    if(!bundle_.expired())
+    das::tpl::DbBundle bundle = bundle_.lock();
+    shared_ptr<odb::database> db = bundle.db();
+    shared_ptr<odb::session> session = bundle.session();
+    if(bundle.valid())
     {
       if(!current)
       {
@@ -661,7 +662,7 @@ def _def_setter_assoc(association, pub_type, priv_type, class_name):
       // add old association to the cache if is not new
       if(!current->is_new())
       {
-        bundle_.attach<'''+association.atype+'''>(current);
+        bundle.attach<'''+association.atype+'''>(current);
       }
 
       // perform old association  decoupling
@@ -691,9 +692,9 @@ def _def_setter_assoc(association, pub_type, priv_type, class_name):
     else: #association.multiplicity == 'one'
       method_definition.extend(['''  if(is_new())
   {
-    for('''+pub_type+'''::itarator i='''+association.name+'''_new.begin();i!='''+association.name+'''_new.end();i++)
+    for('''+pub_type+'''::iterator i='''+association.name+'''_new.begin();i!='''+association.name+'''_new.end();i++)
     {
-      if(!i->is_new())
+      if(!(*i)->is_new())
       {
 #ifdef VDBG
         std::cout << "DAS info: object needs to be persisted before get setted by already persistent objects" << std::endl;
@@ -703,7 +704,7 @@ def _def_setter_assoc(association, pub_type, priv_type, class_name):
     }
 
     '''+pub_type+''' current_vec = '''+association.name+'''(); //no loading from database implied because this a new object
-    for('''+pub_type+'''::itarator i= current_vec.begin(); i!=current_vec.end();i++)
+    for('''+pub_type+'''::iterator i= current_vec.begin(); i!=current_vec.end();i++)
     {
       (*i)->'''+class_name+'''_'''+association.name+'''_.reset();
       (*i)->is_dirty_ = true;
@@ -713,19 +714,21 @@ def _def_setter_assoc(association, pub_type, priv_type, class_name):
   {
 // not new
     '''+pub_type+''' current_vec = '''+association.name+'''();
-
-    shared_ptr<odb::database> db = bundle_.db();
-    shared_ptr<odb::session> session = bundle_.session();
-    if(!bundle_.expired())
+    das::tpl::DbBundle bundle = bundle_.lock();
+    shared_ptr<odb::database> db = bundle.db();
+    shared_ptr<odb::session> session = bundle.session();
+    if(bundle.valid())
     {
-      if(!current)
+      for('''+pub_type+'''::iterator i= current_vec.begin(); i!=current_vec.end();i++)
       {
+        if(!(*i))
+        {
 #ifdef VDBG
-        std::cout << "DAS info: old association weak pointer expired" << std::endl;
+          std::cout << "DAS info: old association weak pointer expired" << std::endl;
 #endif
-        throw das::not_in_managed_context();
+          throw das::not_in_managed_context();
+        }
       }
-      
 
       //check new association compatibility
        for ('''+pub_type+'''::iterator i = '''+association.name+'''_new.begin(); i != '''+association.name+'''_new.end(); ++i)
@@ -741,23 +744,23 @@ def _def_setter_assoc(association, pub_type, priv_type, class_name):
                   session_n != session ||
                   (*i)->bundle_.alias() != bundle_.alias()))
              {
-               throw das::wrong_dtabase();
+               throw das::wrong_database();
              }
            }
          }// should we throw an exception if any pointer is null?
       }
      
       // add old association to the cache if is not new
-      for('''+pub_type+'''::itarator i= current_vec.begin(); i!=current_vec.end();i++)
+      for('''+pub_type+'''::iterator i= current_vec.begin(); i!=current_vec.end();i++)
        {
            if(!(*i)->is_new())
            {
-             bundle_.attach<'''+association.atype+'''>(*i);
+             bundle.attach<'''+association.atype+'''>(*i);
            }
       }
 
       // perform old association  decoupling
-      for('''+pub_type+'''::itarator i= current_vec.begin(); i!=current_vec.end();i++)
+      for('''+pub_type+'''::iterator i= current_vec.begin(); i!=current_vec.end();i++)
       {
         (*i)->'''+class_name+'''_'''+association.name+'''_.reset();
         (*i)->is_dirty_ = true;
@@ -766,7 +769,7 @@ def _def_setter_assoc(association, pub_type, priv_type, class_name):
     }
     else //(if !bundle_.expired())
     {
-      for('''+pub_type+'''::itarator i= current_vec.begin(); i!=current_vec.end();i++)
+      for('''+pub_type+'''::iterator i= current_vec.begin(); i!=current_vec.end();i++)
       {
         if(!(*i)->is_new())
         {
@@ -791,7 +794,7 @@ def _def_setter_assoc(association, pub_type, priv_type, class_name):
          }
        }
       // perform old association  decoupling
-      for('''+pub_type+'''::itarator i= current_vec.begin(); i!=current_vec.end();i++)
+      for('''+pub_type+'''::iterator i= current_vec.begin(); i!=current_vec.end();i++)
       {
         (*i)->'''+class_name+'''_'''+association.name+'''_.reset();
         (*i)->is_dirty_ = true;
@@ -827,7 +830,14 @@ def _def_persist_assoc(association, priv_type):
       return '''  for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
   {
     shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = (*i).get_eager().lock();
-    if('''+association.name+'''_temp)
+    if(!'''+association.name+'''_temp)
+    {
+#ifdef VDBG
+      std::cout << "associated weak pointer expired" << std::endl;
+#endif
+      throw das::not_in_managed_context();
+    }
+    if('''+association.name+'''_temp != '''+association.atype+'''::get_null_ptr() )
       db->persist<'''+association.atype+'''> ('''+association.name+'''_temp);
   }
 '''
@@ -843,8 +853,15 @@ def _def_persist_assoc(association, priv_type):
     else:
       return '''
   shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = '''+association.name+'''_.get_eager().lock();
-  if('''+association.name+'''_temp) // the association may not be setted
-    db->persist<'''+association.atype+'''> ('''+association.name+'''_temp);
+    if(!'''+association.name+'''_temp)
+    {
+#ifdef VDBG
+      std::cout << "associated weak pointer expired" << std::endl;
+#endif
+      throw das::not_in_managed_context();
+    }
+    if('''+association.name+'''_temp != '''+association.atype+'''::get_null_ptr() )
+      db->persist<'''+association.atype+'''> ('''+association.name+'''_temp);
 
 '''
 
@@ -862,7 +879,15 @@ def _def_update_assoc(association, priv_type):
       return '''  for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
   {
     shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = (*i).get_eager().lock();
-    if('''+association.name+'''_temp)
+    if(!'''+association.name+'''_temp)
+    {
+#ifdef VDBG
+      std::cout << "trying to update expired weak pointer" << std::endl;
+#endif
+      throw das::not_in_managed_context();
+    }
+    
+    if('''+association.name+'''_temp != '''+association.atype+'''::get_null_ptr())
       '''+association.name+'''_temp->update();
   }
 '''
@@ -876,7 +901,16 @@ def _def_update_assoc(association, priv_type):
     else:
       return '''
   shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = '''+association.name+'''_.get_eager().lock();
-  if('''+association.name+'''_temp)
+  
+  if(!'''+association.name+'''_temp)
+  {
+#ifdef VDBG
+    std::cout << "trying to update expired weak pointer" << std::endl;
+#endif
+    throw das::not_in_managed_context();
+  }
+  
+  if('''+association.name+'''_temp != '''+association.atype+'''::get_null_ptr())
     '''+association.name+'''_temp->update();
 '''
 

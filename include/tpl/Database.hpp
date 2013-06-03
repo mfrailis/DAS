@@ -20,7 +20,7 @@
 #include "../src/cpp/ql/qlvisitor.hpp"
 #include "DasObject.hpp"
 #include "transaction.hpp"
-#include "interal/db_bundle.hpp"
+#include "internal/db_bundle.hpp"
 
 #include <odb/mysql/database.hxx>
 using std::tr1::shared_ptr;
@@ -74,11 +74,11 @@ namespace das {
             bool
             find(const std::string& name, int version = -1);
             
-/*
+
             template<typename T>
             void
             attach(typename odb::object_traits<T>::pointer_type& obj);
-*/            
+           
             void
             flush();
             
