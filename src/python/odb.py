@@ -464,7 +464,7 @@ def _def_getter_assoc(association, pub_type, priv_type, class_name):
   if association.multiplicity == 'many':
     src = [class_name+'::'+pub_type]
   else:
-     src = [pub_type]   
+    src = [pub_type]   
   src.extend([class_name+"::"+association.name + " ()",'''{
   odb::transaction *transaction;
 
@@ -486,7 +486,7 @@ def _def_getter_assoc(association, pub_type, priv_type, class_name):
       if(!sp)
       {
 #ifdef VDBG
-        std::cout << "DAS info: association weak pointer expired" << std::endl;
+        std::cout << "DAS error0001: association weak pointer expired" << std::endl;
 #endif
         throw das::not_in_managed_context();
       }
@@ -504,7 +504,7 @@ def _def_getter_assoc(association, pub_type, priv_type, class_name):
     if(!associated)
     {
 #ifdef VDBG
-      std::cout << "DAS info: association weak pointer expired" << std::endl;
+      std::cout << "DAS error0002: association weak pointer expired" << std::endl;
 #endif
       throw das::not_in_managed_context();
     }
@@ -561,7 +561,7 @@ def _def_getter_assoc(association, pub_type, priv_type, class_name):
           if(!sp)
           {
 #ifdef VDBG
-            std::cout << "DAS info: association weak pointer expired" << std::endl;
+            std::cout << "DAS error0003: association weak pointer expired" << std::endl;
 #endif
             throw das::not_in_managed_context();
           }
@@ -610,7 +610,7 @@ def _def_setter_assoc(association, pub_type, priv_type, class_name):
     if(!'''+association.name+'''_new->is_new())
     {
 #ifdef VDBG
-      std::cout << "DAS info: object needs to be persisted before get setted by already persistent objects" << std::endl;
+      std::cout << "DAS error0004: object needs to be persisted before get setted by already persistent objects" << std::endl;
 #endif      
       throw das::not_in_managed_context();
     }
@@ -619,7 +619,7 @@ def _def_setter_assoc(association, pub_type, priv_type, class_name):
     if(!current)
     {
 #ifdef VDBG
-      std::cout << "DAS info: old association weak pointer expired" << std::endl;
+      std::cout << "DAS error0005: old association weak pointer expired" << std::endl;
 #endif
       throw das::not_in_managed_context();
     }
@@ -640,7 +640,7 @@ def _def_setter_assoc(association, pub_type, priv_type, class_name):
       if(!current)
       {
 #ifdef VDBG
-        std::cout << "DAS info: old association weak pointer expired" << std::endl;
+        std::cout << "DAS error0006: old association weak pointer expired" << std::endl;
 #endif
         throw das::not_in_managed_context();
       }
@@ -680,7 +680,7 @@ def _def_setter_assoc(association, pub_type, priv_type, class_name):
       else
       {
 #ifdef VDBG
-        std::cout << "DAS info: trying to set new association in a detached object with non new objects" << std::endl;
+        std::cout << "DAS error0007: trying to set new association in a detached object with non new objects" << std::endl;
 #endif
         throw das::not_in_managed_context();
       }
@@ -697,7 +697,7 @@ def _def_setter_assoc(association, pub_type, priv_type, class_name):
       if(!(*i)->is_new())
       {
 #ifdef VDBG
-        std::cout << "DAS info: object needs to be persisted before get setted by already persistent objects" << std::endl;
+        std::cout << "DAS error0017: object needs to be persisted before been setted by already persistent objects" << std::endl;
 #endif      
         throw das::not_in_managed_context();
       }
@@ -724,7 +724,7 @@ def _def_setter_assoc(association, pub_type, priv_type, class_name):
         if(!(*i))
         {
 #ifdef VDBG
-          std::cout << "DAS info: old association weak pointer expired" << std::endl;
+          std::cout << "DAS error0008: old association weak pointer expired" << std::endl;
 #endif
           throw das::not_in_managed_context();
         }
@@ -774,7 +774,7 @@ def _def_setter_assoc(association, pub_type, priv_type, class_name):
         if(!(*i)->is_new())
         {
  #ifdef VDBG
-          std::cout << "DAS info: trying to set new association in a detached object with non new objects" << std::endl;
+          std::cout << "DAS error0010: trying to set new association in a detached object with non new objects" << std::endl;
 #endif
           throw das::not_in_managed_context();
         }
@@ -787,7 +787,7 @@ def _def_setter_assoc(association, pub_type, priv_type, class_name):
            if(!(*i)->is_new())
            {
  #ifdef VDBG
-             std::cout << "DAS info: trying to set new association in a detached object with non new objects" << std::endl;
+             std::cout << "DAS error0011: trying to set new association in a detached object with non new objects" << std::endl;
 #endif
              throw das::not_in_managed_context();
            }
@@ -833,12 +833,11 @@ def _def_persist_assoc(association, priv_type):
     if(!'''+association.name+'''_temp)
     {
 #ifdef VDBG
-      std::cout << "associated weak pointer expired" << std::endl;
+      std::cout << "DAS error0012: associated weak pointer expired" << std::endl;
 #endif
       throw das::not_in_managed_context();
     }
-    if('''+association.name+'''_temp != '''+association.atype+'''::get_null_ptr() )
-      db->persist<'''+association.atype+'''> ('''+association.name+'''_temp);
+    db->persist<'''+association.atype+'''> ('''+association.name+'''_temp);
   }
 '''
 
@@ -856,7 +855,7 @@ def _def_persist_assoc(association, priv_type):
     if(!'''+association.name+'''_temp)
     {
 #ifdef VDBG
-      std::cout << "associated weak pointer expired" << std::endl;
+      std::cout << "DAS error0013: associated weak pointer expired" << std::endl;
 #endif
       throw das::not_in_managed_context();
     }
@@ -882,13 +881,12 @@ def _def_update_assoc(association, priv_type):
     if(!'''+association.name+'''_temp)
     {
 #ifdef VDBG
-      std::cout << "trying to update expired weak pointer" << std::endl;
+      std::cout << "DAS error 0013: trying to update expired weak pointer" << std::endl;
 #endif
       throw das::not_in_managed_context();
     }
     
-    if('''+association.name+'''_temp != '''+association.atype+'''::get_null_ptr())
-      '''+association.name+'''_temp->update();
+    '''+association.name+'''_temp->update();
   }
 '''
   else:
@@ -905,7 +903,7 @@ def _def_update_assoc(association, priv_type):
   if(!'''+association.name+'''_temp)
   {
 #ifdef VDBG
-    std::cout << "trying to update expired weak pointer" << std::endl;
+    std::cout << "DAS error0014: trying to update expired weak pointer" << std::endl;
 #endif
     throw das::not_in_managed_context();
   }
