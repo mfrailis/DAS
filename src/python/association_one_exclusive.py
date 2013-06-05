@@ -8,14 +8,14 @@ def getter(association, pub_type, priv_type, class_name):
   '''+pub_type+''' associated;
   if(is_new())
   {
-    // returns previously setted pointer on this transient object
+    // previously setted pointer on this transient object or null
     associated = '''+association.name+'''_.get_eager();
   }
   else
   {
     das::tpl::DbBundle bundle = bundle_.lock();
-    shared_ptr<odb::database> db = bundle.db();
-    shared_ptr<odb::session> session = bundle.session();
+    const shared_ptr<odb::database> &db = bundle.db();
+    const shared_ptr<odb::session> &session = bundle.session();
     if(bundle.valid())
     {
       odb::session::current(*session);
@@ -70,41 +70,27 @@ def setter(association, pub_type, priv_type, class_name):
 void
 '''+class_name+"::"+association.name + " ("+pub_type+" &"+association.name+'''_new)
 {
+  shared_ptr<'''+association.atype+'''> current;
+  
   if(is_new())
   {
-/*    if(!'''+association.name+'''_new->is_new())
-    {
-#ifdef VDBG
-      std::cout << "DAS error0004: object needs to be persisted before get setted by already persistent objects" << std::endl;
-#endif      
-      throw das::not_in_managed_context();
-    }
-*/
-    shared_ptr<'''+association.atype+'''> current = '''+association.name +'''_.get_eager();
-    if(current)
-    {
-      current->'''+class_name+'''_'''+association.name+'''_.reset();
-      current->is_dirty_ = true;
-    }
+    current = '''+association.name +'''_.get_eager();
   }
   else //if is_new()
   {
     shared_ptr<'''+association.atype+'''> current = '''+association.name +'''();
     das::tpl::DbBundle bundle = bundle_.lock();
-    shared_ptr<odb::database> db = bundle.db();
-    shared_ptr<odb::session> session = bundle.session();
+    const shared_ptr<odb::database> &db = bundle.db();
+    const shared_ptr<odb::session> &session = bundle.session();
     if(bundle.valid())
     {
 
       //check new association compatibility
       if(!'''+association.name+'''_new->is_new())
       {
-        shared_ptr<odb::database> db_n = '''+association.name+'''_new->bundle_.db();
-        shared_ptr<odb::session> session_n = '''+association.name+'''_new->bundle_.session();
-        if(!'''+association.name+'''_new->bundle_.expired() && 
-           ( db_n != db ||
-             session_n != session ||
-             '''+association.name+'''_new->bundle_.alias() != bundle_.alias()))
+        das::tpl::DbBundle new_bundle = '''+association.name+'''_new->bundle_.lock();
+        if((new_bundle.valid() && new_bundle != bundle) ||
+           (new_bundle.alias() != bundle.alias()))
         {
           throw das::wrong_database();
         }
@@ -116,33 +102,33 @@ void
         {
           bundle.attach<'''+association.atype+'''>(current);
         }
-
-        // perform old association  decoupling
-        current->'''+class_name+'''_'''+association.name+'''_.reset();
-        current->is_dirty_ = true;
       }
     }
     else //(if bundle.valid())
     {
-      if((!current || current->is_new()) && '''+association.name+'''_new->is_new())
-      {
-        if(current)
-        {
-          current->'''+class_name+'''_'''+association.name+'''_.reset();
-          current->is_dirty_ = true; 
-        }       
-      }
-      else
+      if(current && !current->is_new())
       {
 #ifdef VDBG
-        std::cout << "DAS error0007: trying to set new association in a detached object with non new objects" << std::endl;
+        std::cout << "DAS error0007: trying to set new association in a detached object with non new objects associated" << std::endl;
 #endif
         throw das::not_in_managed_context();
       }
     }
   }
+
+  if(current == '''+association.name+'''_new)
+    return;
+
+  if(current)
+  {
+    // perform old association  decoupling
+    current->'''+class_name+'''_'''+association.name+'''_.reset();
+    current->is_dirty_ = true;
+  }
   '''+association.name+'''_new->'''+class_name+'''_'''+association.name+'''_ = self_.lock();
   '''+association.name+'''_new->is_dirty_ = true;
+
+  '''+association.name+'''_ = '''+association.name+'''_new;
 }''']
 ###############################################################################################################################################
 
@@ -152,7 +138,15 @@ def update(association, priv_type):
     return '''
   shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = '''+association.name+'''_.get_eager();
   if('''+association.name+'''_temp)
+  {
+    if('''+association.name+'''_temp->is_new())
+    {
+      //das::tpl::DbBundle bundle = bundle_.lock();
+      bundle.persist<'''+association.atype+'''> ('''+association.name+'''_temp);
+    }
+    // call update anyways because of the nested associated objects
     '''+association.name+'''_temp->update();
+  }
 ''' 
 ###############################################################################################################################################
 
@@ -162,5 +156,5 @@ def persist(association, priv_type):
     return '''
   shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = '''+association.name+'''_.get_eager();
   if('''+association.name+'''_temp) // the association may not be setted
-    db->persist<'''+association.atype+'''> ('''+association.name+'''_temp);
+    db.persist<'''+association.atype+'''> ('''+association.name+'''_temp);
 '''

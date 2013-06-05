@@ -9,7 +9,6 @@
 #include <odb/traits.hxx>
 #include <odb/transaction.hxx>
 #include <odb/database.hxx>
-#include <odb/traits.hxx>
 #include <odb/session.hxx>
 
 #include "../build/dbms/mysql/aux_query-odb.hxx"
@@ -20,7 +19,7 @@
 #include "../src/cpp/ql/qlvisitor.hpp"
 #include "DasObject.hpp"
 #include "transaction.hpp"
-#include "internal/db_bundle.hpp"
+#include "internal/db_bundle.ipp"
 
 #include <odb/mysql/database.hxx>
 using std::tr1::shared_ptr;

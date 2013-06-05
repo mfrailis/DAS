@@ -14,8 +14,8 @@ def getter(association, pub_type, priv_type, class_name):
   else
   {
     das::tpl::DbBundle bundle = bundle_.lock(); 
-    shared_ptr<odb::database> db = bundle.db();
-    shared_ptr<odb::session> session = bundle.session();
+    const shared_ptr<odb::database> &db = bundle.db();
+    const shared_ptr<odb::session> &session = bundle.session();
     if(bundle.valid())
     {
       odb::session::current(*session);
@@ -80,7 +80,15 @@ def update(association, priv_type):
     return '''
   shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = '''+association.name+'''_.get_eager();
   if('''+association.name+'''_temp)
+  {
+    if('''+association.name+'''_temp->is_new())
+    {
+      //das::tpl::DbBundle bundle = bundle_.lock();
+      bundle.persist<'''+association.atype+'''> ('''+association.name+'''_temp);
+    }
+    // call update anyways because of the nested associated objects
     '''+association.name+'''_temp->update();
+  }
 ''' 
 ###############################################################################################################################################
 
@@ -90,6 +98,6 @@ def persist(association, priv_type):
     return '''
   shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = '''+association.name+'''_.get_eager();
   if('''+association.name+'''_temp) // the association may not be setted
-    db->persist<'''+association.atype+'''> ('''+association.name+'''_temp);
+    db.persist<'''+association.atype+'''> ('''+association.name+'''_temp);
 
 '''

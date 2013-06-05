@@ -67,7 +67,7 @@ class DdlOdbGenerator(DdlVisitor):
     self._init_list = []
     self._default_init = []
     self._init = []
-    self._friends = ["friend class odb::access;","friend class das::tpl::Transaction;"]
+    self._friends = ["friend class odb::access;","friend class das::tpl::Transaction;","friend class das::tpl::DbBundle;"]
     self._has_associations = False
     self._store_as = None
     self._keyword_touples = []
@@ -86,7 +86,7 @@ class DdlOdbGenerator(DdlVisitor):
     self._init_list = []
     self._default_init = []
     self._init = []
-    self._friends = ["friend class odb::access;","friend class das::tpl::Transaction;"]
+    self._friends = ["friend class odb::access;","friend class das::tpl::Transaction;","friend class das::tpl::DbBundle;"]
     self._has_associations = False
     self._store_as = None
     self._keyword_touples = []
@@ -252,7 +252,7 @@ inline const shared_ptr<'''+self._class_name+'''>&
     self._src_header.append('#include "tpl/Database.hpp"')
     self._src_header.append('#include "dbms/mysql/ddl_'+self._class_name+'-odb.hxx"')
     self._src_header.append('#include "exceptions.hpp"')
-    self._src_header.append('#include "internal/db_bundle.hpp"')
+    self._src_header.append('#include "internal/db_bundle.ipp"')
 
     s = open(_os.path.join(self._src_dir, src_name), 'w') 
     s.writelines(['#include "'+hdr_name+'"\n'])
@@ -285,7 +285,7 @@ inline const shared_ptr<'''+self._class_name+'''>&
         s.writelines(l+'\n' for l in _def_setter_assoc(i[0],i[1],i[2],self._class_name))
       
       # persist pre
-      s.writelines(['void\n',self._class_name+'::persist_associated_pre(das::tpl::Database *db)\n{\n'])
+      s.writelines(['void\n',self._class_name+'::persist_associated_pre(das::tpl::DbBundle &db)\n{\n'])
       if self._inherit != 'DasObject':
         s.writelines(['  '+self._inherit+'::persist_associated_pre(db);\n'])
       for i in self._assoc_touples:
@@ -294,7 +294,7 @@ inline const shared_ptr<'''+self._class_name+'''>&
       s.writelines(['}\n'])
       
       #persist post
-      s.writelines(['void\n',self._class_name+'::persist_associated_post(das::tpl::Database *db)\n{\n'])
+      s.writelines(['void\n',self._class_name+'::persist_associated_post(das::tpl::DbBundle &db)\n{\n'])
       if self._inherit != 'DasObject':
         s.writelines(['  '+self._inherit+'::persist_associated_post(db);\n'])
       for i in self._assoc_touples:
@@ -303,18 +303,31 @@ inline const shared_ptr<'''+self._class_name+'''>&
       s.writelines(['}\n'])
 
       s.writelines(['void\n',self._class_name+'::update()\n{\n'])
-      s.writelines(['  if(is_dirty_ && !is_new())\n','    bundle_.db()->update(*this);\n'])      
+      s.writelines(['''  if(is_dirty_ && !is_new())
+  {
+#ifdef VDBG
+    std::cout << "DAS debug INFO: UPD name:'" << name() << "' version:" << version() <<"...";
+#endif   
+    bundle_.db()->update(*this);
+    is_dirty_ = false;
+#ifdef VDBG
+    std::cout << "done." << std::endl;
+#endif 
+  }
+'''])      
       if self._inherit != 'DasObject':
         s.writelines(['  '+self._inherit+'::update();\n'])
-      for i in self._assoc_touples:
-        s.writelines([_def_update_assoc(i[0],i[2])])
+      if self._assoc_touples:
+        s.writelines(['  das::tpl::DbBundle bundle = bundle_.lock();\n'])
+        for i in self._assoc_touples:
+          s.writelines([_def_update_assoc(i[0],i[2])])
       s.writelines(['}\n'])
     else:
       s.writelines(['''
 void
 '''+self._class_name+'''::update()
 {
-  if(is_dirty_ && !is_new()) //can be new!?!?
+  if(is_dirty_)
    bundle_.db()->update(*this);
 }
 '''])
@@ -333,8 +346,8 @@ void
       self._header.append("using odb::tr1::lazy_shared_ptr;")
       self._header.append("using std::tr1::shared_ptr;")
       self._friends.append("friend class das::tpl::Database;")
-      self._protected_section.extend(['virtual void','persist_associated_pre (das::tpl::Database *db);'])
-      self._protected_section.extend(['virtual void','persist_associated_post(das::tpl::Database *db);'])
+      self._protected_section.extend(['virtual void','persist_associated_pre (das::tpl::DbBundle &db);'])
+      self._protected_section.extend(['virtual void','persist_associated_post(das::tpl::DbBundle &db);'])
       self._has_associations = True 
 	
     self._forward_section.append("class " + associated.atype + ";")
@@ -343,7 +356,9 @@ void
       pub_type = associated.name+'_vector'
       priv_type = associated.name+'_lazy_shared_vec'
       self._private_section.append('typedef typename std::vector<lazy_shared_ptr<'+associated.atype+'> > '+priv_type+';')
-      self._type_defs.append('typedef typename std::vector<shared_ptr<'+associated.atype+'> > '+pub_type+';' )       
+      self._type_defs.append('typedef typename std::vector<shared_ptr<'+associated.atype+'> > '+pub_type+';' )
+      if associated.relation != 'shared':
+        self._src_header.append('#include <algorithm>')
     else:
       pub_type = 'shared_ptr<'+associated.atype+'>'
       priv_type = 'lazy_shared_ptr<'+associated.atype+'>'

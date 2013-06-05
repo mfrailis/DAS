@@ -19,15 +19,15 @@ set(ODB_SOURCE_DIR ${DAS_BUILD_DIR})
 set(ODB_OUTPUT_DIR ${DAS_BUILD_DIR}/dbms)
 set(DB_TARGETS_DIR ${DAS_BUILD_DIR}/db)
 
-set(DDL_INSTANCE_DIR ${CMAKE_SOURCE_DIR}/ddl/schemas)
-set(DDL_SCHEMA ${CMAKE_SOURCE_DIR}/ddl/ddl.xsd)
+set(DDL_INSTANCE_DIR ${CMAKE_SOURCE_DIR}/ddl)
+set(DDL_SCHEMA ${CMAKE_SOURCE_DIR}/resources/ddl.xsd)
 
 set(DDL_SIGNATURE ddl_signature.txt)
 
-set(CONF_JSON_SCHEMA ${CMAKE_SOURCE_DIR}/configure/schema.json)
+set(CONF_JSON_SCHEMA ${CMAKE_SOURCE_DIR}/resources/config_schema.json)
 set(CONF_JSON ${CMAKE_SOURCE_DIR}/configure/config.json)
 
-set(DB_ACCESS_JSON_SCHEMA ${CMAKE_SOURCE_DIR}/configure/access_schema.json)
+set(DB_ACCESS_JSON_SCHEMA ${CMAKE_SOURCE_DIR}/resources/access_schema.json)
 set(DB_ACCESS_DIR $ENV{HOME}/.das)
 set(DB_ACCESS_JSON ${DB_ACCESS_DIR}/access.json)
 
