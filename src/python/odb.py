@@ -1,6 +1,11 @@
 import ddl as _d
 import os as _os
 
+import association_many_shared as _a_ms
+import association_many_exclusive as _a_me
+import association_one_shared as _a_os
+import association_one_exclusive as _a_oe
+
 class DdlVisitor:
  
   def clean_env(self):
@@ -163,7 +168,7 @@ class DdlOdbGenerator(DdlVisitor):
       self._header.append('#include "ddl_'+exc[1]+'.hpp"')
       self._forward_section.append('class '+exc[1]+';')
 #      self._friends.append('friend class '+exc[1]+';')
-      self._private_section.append("shared_ptr<"+exc[1]+"> "+exc[1]+"_"+exc[0]+"_;")
+      self._private_section.append("lazy_weak_ptr<"+exc[1]+"> "+exc[1]+"_"+exc[0]+"_;")
  
     all_assoc = self._get_all_associations(datatype.name)
     for ass_type in all_assoc:
@@ -336,21 +341,12 @@ void
     self._header.append('#include "ddl_'+ associated.atype +'.hpp"')
     if associated.multiplicity == 'many':
       pub_type = associated.name+'_vector'
-      if associated.relation == 'exclusive' or associated.relation == 'extend':
-        priv_type = associated.name+'_lazy_weak_vec'
-        self._private_section.append('typedef typename std::vector<lazy_weak_ptr<'+associated.atype+'> > '+priv_type+';')
-        self._type_defs.append('typedef typename std::vector<shared_ptr<'+associated.atype+'> > '+pub_type+';' )
-      else:
-        priv_type = associated.name+'_lazy_shared_vec'
-        self._private_section.append('typedef typename std::vector<lazy_shared_ptr<'+associated.atype+'> > '+priv_type+';')
-        self._type_defs.append('typedef typename std::vector<shared_ptr<'+associated.atype+'> > '+pub_type+';' )       
+      priv_type = associated.name+'_lazy_shared_vec'
+      self._private_section.append('typedef typename std::vector<lazy_shared_ptr<'+associated.atype+'> > '+priv_type+';')
+      self._type_defs.append('typedef typename std::vector<shared_ptr<'+associated.atype+'> > '+pub_type+';' )       
     else:
       pub_type = 'shared_ptr<'+associated.atype+'>'
-      if associated.relation == 'exclusive' or associated.relation == 'extend':
-        priv_type = 'lazy_weak_ptr<'+associated.atype+'>'
-        self._default_init.append(associated.name+'_ = '+associated.atype+'::get_null_ptr();')
-      else:
-        priv_type = 'lazy_shared_ptr<'+associated.atype+'>'
+      priv_type = 'lazy_shared_ptr<'+associated.atype+'>'
     
     self._public_section.extend(_dec_getter_assoc(associated.name, pub_type))
     self._public_section.extend(_dec_setter_assoc(associated.name, pub_type))
@@ -459,458 +455,59 @@ def _def_setter(attribute_name, attribute_type, class_name):
   method_definition.extend(["  "+attribute_name+"_ = "+attribute_name+";","  is_dirty_ = true;","}"])
   return method_definition
 
-def _def_getter_assoc(association, pub_type, priv_type, class_name):
-  src = []
-  if association.multiplicity == 'many':
-    src = [class_name+'::'+pub_type]
-  else:
-    src = [pub_type]   
-  src.extend([class_name+"::"+association.name + " ()",'''{
-  odb::transaction *transaction;
 
-  '''+pub_type+''' associated;
-  if(is_new())
-  {'''])
+def _def_getter_assoc(association, pub_type, priv_type, class_name):
   if association.multiplicity == 'many':
     if association.relation == 'shared':
-      src.extend([''' 
-    // returns previously setted pointers on this transient object
-    for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
-      associated.push_back(i->get_eager());
-'''])
+      return _a_ms.getter(association, pub_type, priv_type, class_name)
     else:
-      src.extend(['''    // returns previously setted pointers on this transient object
-    for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
-    {
-      shared_ptr<'''+association.atype+'''> sp = i->get_eager().lock();
-      if(!sp)
-      {
-#ifdef VDBG
-        std::cout << "DAS error0001: association weak pointer expired" << std::endl;
-#endif
-        throw das::not_in_managed_context();
-      }
-      associated.push_back(sp);
-    }
-'''])
+      return _a_me.getter(association, pub_type, priv_type, class_name)
   else:
     if association.relation == 'shared':
-      src.extend(['''    // returns previously setted pointer on this transient object
-     associated = '''+association.name+'''_.get_eager();'''])
+      return _a_os.getter(association, pub_type, priv_type, class_name)
     else:
-      src.extend([''' 
-    // returns previously setted pointer on this transient object
-    associated = '''+association.name+'''_.get_eager().lock();
-    if(!associated)
-    {
-#ifdef VDBG
-      std::cout << "DAS error0002: association weak pointer expired" << std::endl;
-#endif
-      throw das::not_in_managed_context();
-    }
-'''])      
-  src.extend(['''  }
-  else
-  {
-    shared_ptr<odb::database> db = bundle_.db();
-    shared_ptr<odb::session> session = bundle_.session();
-    if(!bundle_.expired())
-    {
-      odb::session::current(*session);
-      bool local_trans = !odb::transaction::has_current();
-      if(local_trans)
-      {
-        transaction = new odb::transaction(db->begin());
-      }
-      else
-      {
-        transaction = &odb::transaction::current();
-      }
-      try
-      {'''])
-  if association.multiplicity == 'many':
-    src.extend(['''        for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
-          associated.push_back(i->load()); //note2: load() implies lock() as well'''])
-  else:
-    src.extend(['        associated = '+association.name+'_.load(); //note3: load() implies lock() as well'])
-  src.extend(['''      }
-      catch(std::exception &e)
-      {
-        if(local_trans)
-        {
-          transaction->rollback();
-          delete transaction;
-        }
-        throw;
-      }
-      if(local_trans)
-      {
-        transaction->commit();
-        delete transaction;
-      }
-    }
-    else
-    {
-      try
-      {'''])
-  if association.multiplicity == 'many':
-    if association.relation != 'shared':
-      src.extend(['''        for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
-        {
-          shared_ptr<'''+association.atype+'''> sp = i->load(); //note4: load() implies lock() as well
-          if(!sp)
-          {
-#ifdef VDBG
-            std::cout << "DAS error0003: association weak pointer expired" << std::endl;
-#endif
-            throw das::not_in_managed_context();
-          }
-          associated.push_back(sp);
-        }'''])
-    else:
-      src.extend(['''        for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
-        {
-          associated.push_back(i->load());
-        }'''])
-  else:
-    src.extend(['        associated = '+association.name+'_.load(); //note5: load() implies lock() as well'])
-  src.extend(['''      }
-      catch(odb::not_in_transaction &e)
-      {
-        throw das::not_in_managed_context();
-      }
-    }// if bundle.expired()
-  }// if ix_new()
-'''])
-  if association.relation != 'shared' and association.multiplicity == 'one':
-    src.extend(['''  if(associated == '''+association.atype+'''::get_null_ptr())
-    {
-      associated.reset();
-    }
-'''])     
-  src.extend(["  return associated;","}"])
-  return src
+      return _a_oe.getter(association, pub_type, priv_type, class_name)  
+
 
 
 def _def_setter_assoc(association, pub_type, priv_type, class_name):
-  method_definition = ["void"]
-  method_definition.extend([class_name+"::"+association.name + " ("+pub_type+" &"+association.name+"_new)","{"])
-  if association.relation == 'shared':
-    if association.multiplicity == 'many':
-      method_definition.append('  '+association.name+"_.clear();")
-      method_definition.append('''  for('''+pub_type+'''::const_iterator i = '''+association.name+'''_new.begin(); i != '''+association.name+'''_new.end(); ++i)
-      '''+association.name+'''_.push_back(*i);
-''')
-    else:# association.multiplicity == 'shared'
-      method_definition.append('  '+association.name+"_ = "+association.name+"_new;")
-  else:# association.relation == 'shared':
-    if association.multiplicity == 'one':
-      method_definition.extend(['''  if(is_new())
-  {
-    if(!'''+association.name+'''_new->is_new())
-    {
-#ifdef VDBG
-      std::cout << "DAS error0004: object needs to be persisted before get setted by already persistent objects" << std::endl;
-#endif      
-      throw das::not_in_managed_context();
-    }
-
-    shared_ptr<'''+association.atype+'''> current = '''+association.name +'''_.get_eager().lock();
-    if(!current)
-    {
-#ifdef VDBG
-      std::cout << "DAS error0005: old association weak pointer expired" << std::endl;
-#endif
-      throw das::not_in_managed_context();
-    }
-    if(current != '''+association.atype+'''::get_null_ptr())
-    {
-      current->'''+class_name+'''_'''+association.name+'''_.reset();
-      current->is_dirty_ = true;
-    }
-  }
-  else //if is_new()
-  {
-    shared_ptr<'''+association.atype+'''> current = '''+association.name +'''();
-    das::tpl::DbBundle bundle = bundle_.lock();
-    shared_ptr<odb::database> db = bundle.db();
-    shared_ptr<odb::session> session = bundle.session();
-    if(bundle.valid())
-    {
-      if(!current)
-      {
-#ifdef VDBG
-        std::cout << "DAS error0006: old association weak pointer expired" << std::endl;
-#endif
-        throw das::not_in_managed_context();
-      }
-
-      //check new association compatibility
-      if(!'''+association.name+'''_new->is_new())
-      {
-        shared_ptr<odb::database> db_n = '''+association.name+'''_new->bundle_.db();
-        shared_ptr<odb::session> session_n = '''+association.name+'''_new->bundle_.session();
-        if(!'''+association.name+'''_new->bundle_.expired() && 
-           ( db_n != db ||
-             session_n != session ||
-             '''+association.name+'''_new->bundle_.alias() != bundle_.alias()))
-        {
-          throw das::wrong_database();
-        }
-      }
+  if association.multiplicity == 'many':
+    if association.relation == 'shared':
+      return _a_ms.setter(association, pub_type, priv_type, class_name)
+    else:
+      return _a_me.setter(association, pub_type, priv_type, class_name)
+  else:
+    if association.relation == 'shared':
+      return _a_os.setter(association, pub_type, priv_type, class_name)
+    else:
+      return _a_oe.setter(association, pub_type, priv_type, class_name) 
       
-      // add old association to the cache if is not new
-      if(!current->is_new())
-      {
-        bundle.attach<'''+association.atype+'''>(current);
-      }
-
-      // perform old association  decoupling
-      current->'''+class_name+'''_'''+association.name+'''_.reset();
-      current->is_dirty_ = true;
-
-    }
-    else //(if !bundle_.expired())
-    {
-      if(current->is_new() && '''+association.name+'''_new->is_new())
-      {
-        current->'''+class_name+'''_'''+association.name+'''_.reset();
-        current->is_dirty_ = true;        
-      }
-      else
-      {
-#ifdef VDBG
-        std::cout << "DAS error0007: trying to set new association in a detached object with non new objects" << std::endl;
-#endif
-        throw das::not_in_managed_context();
-      }
-    }
-  }
-  '''+association.name+'''_new->'''+class_name+'''_'''+association.name+'''_ = self_.lock();
-  '''+association.name+'''_new->is_dirty_ = true;
-'''])
-    else: #association.multiplicity == 'one'
-      method_definition.extend(['''  if(is_new())
-  {
-    for('''+pub_type+'''::iterator i='''+association.name+'''_new.begin();i!='''+association.name+'''_new.end();i++)
-    {
-      if(!(*i)->is_new())
-      {
-#ifdef VDBG
-        std::cout << "DAS error0017: object needs to be persisted before been setted by already persistent objects" << std::endl;
-#endif      
-        throw das::not_in_managed_context();
-      }
-    }
-
-    '''+pub_type+''' current_vec = '''+association.name+'''(); //no loading from database implied because this a new object
-    for('''+pub_type+'''::iterator i= current_vec.begin(); i!=current_vec.end();i++)
-    {
-      (*i)->'''+class_name+'''_'''+association.name+'''_.reset();
-      (*i)->is_dirty_ = true;
-    }
-  }
-  else //if is_new()
-  {
-// not new
-    '''+pub_type+''' current_vec = '''+association.name+'''();
-    das::tpl::DbBundle bundle = bundle_.lock();
-    shared_ptr<odb::database> db = bundle.db();
-    shared_ptr<odb::session> session = bundle.session();
-    if(bundle.valid())
-    {
-      for('''+pub_type+'''::iterator i= current_vec.begin(); i!=current_vec.end();i++)
-      {
-        if(!(*i))
-        {
-#ifdef VDBG
-          std::cout << "DAS error0008: old association weak pointer expired" << std::endl;
-#endif
-          throw das::not_in_managed_context();
-        }
-      }
-
-      //check new association compatibility
-       for ('''+pub_type+'''::iterator i = '''+association.name+'''_new.begin(); i != '''+association.name+'''_new.end(); ++i)
-       {
-         if(*i) // some pointers may be null
-         {
-           if(!(*i)->is_new())
-           {
-             shared_ptr<odb::database> db_n = (*i)->bundle_.db();
-             shared_ptr<odb::session> session_n = (*i)->bundle_.session();
-             if(!(*i)->bundle_.expired() && 
-                ( db_n != db ||
-                  session_n != session ||
-                  (*i)->bundle_.alias() != bundle_.alias()))
-             {
-               throw das::wrong_database();
-             }
-           }
-         }// should we throw an exception if any pointer is null?
-      }
-     
-      // add old association to the cache if is not new
-      for('''+pub_type+'''::iterator i= current_vec.begin(); i!=current_vec.end();i++)
-       {
-           if(!(*i)->is_new())
-           {
-             bundle.attach<'''+association.atype+'''>(*i);
-           }
-      }
-
-      // perform old association  decoupling
-      for('''+pub_type+'''::iterator i= current_vec.begin(); i!=current_vec.end();i++)
-      {
-        (*i)->'''+class_name+'''_'''+association.name+'''_.reset();
-        (*i)->is_dirty_ = true;
-      }
-
-    }
-    else //(if !bundle_.expired())
-    {
-      for('''+pub_type+'''::iterator i= current_vec.begin(); i!=current_vec.end();i++)
-      {
-        if(!(*i)->is_new())
-        {
- #ifdef VDBG
-          std::cout << "DAS error0010: trying to set new association in a detached object with non new objects" << std::endl;
-#endif
-          throw das::not_in_managed_context();
-        }
-      }
-
-       for ('''+pub_type+'''::iterator i = '''+association.name+'''_new.begin(); i != '''+association.name+'''_new.end(); ++i)
-       {
-         if(*i) // some pointers may be null
-         {
-           if(!(*i)->is_new())
-           {
- #ifdef VDBG
-             std::cout << "DAS error0011: trying to set new association in a detached object with non new objects" << std::endl;
-#endif
-             throw das::not_in_managed_context();
-           }
-         }
-       }
-      // perform old association  decoupling
-      for('''+pub_type+'''::iterator i= current_vec.begin(); i!=current_vec.end();i++)
-      {
-        (*i)->'''+class_name+'''_'''+association.name+'''_.reset();
-        (*i)->is_dirty_ = true;
-      }
-    }
-// not new
-  }
-  '''+association.name+'''_.clear();
-  shared_ptr<'''+class_name+'''> self = self_.lock();
-  for ('''+pub_type+'''::iterator i = '''+association.name+'''_new.begin(); i != '''+association.name+'''_new.end(); ++i){
-    if(*i) // some pointers may be null
-    {
-      (*i)->'''+class_name+'''_'''+association.name+'''_ = self;
-      (*i)->is_dirty_ = true;
-    }// should we throw an exception if any pointer is null?
-    '''+association.name+'''_.push_back(*i);
-  }
-'''])
-
-  method_definition.extend(["}"])  
-  return method_definition
 
 def _def_persist_assoc(association, priv_type):
   if association.multiplicity == 'many':
     if association.relation == 'shared':
-      return '''  for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
-  {
-    shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = (*i).get_eager();
-    db->persist<'''+association.atype+'''> ('''+association.name+'''_temp);
-  }
-'''
+      return _a_ms.persist(association, priv_type)
     else:
-      return '''  for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
-  {
-    shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = (*i).get_eager().lock();
-    if(!'''+association.name+'''_temp)
-    {
-#ifdef VDBG
-      std::cout << "DAS error0012: associated weak pointer expired" << std::endl;
-#endif
-      throw das::not_in_managed_context();
-    }
-    db->persist<'''+association.atype+'''> ('''+association.name+'''_temp);
-  }
-'''
-
+      return _a_me.persist(association, priv_type)
   else:
     if association.relation == 'shared':
-      return '''
-  shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = '''+association.name+'''_.get_eager();
-  if('''+association.name+'''_temp) // the association may not be setted
-    db->persist<'''+association.atype+'''> ('''+association.name+'''_temp);
-
-'''
+      return _a_os.persist(association, priv_type)
     else:
-      return '''
-  shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = '''+association.name+'''_.get_eager().lock();
-    if(!'''+association.name+'''_temp)
-    {
-#ifdef VDBG
-      std::cout << "DAS error0013: associated weak pointer expired" << std::endl;
-#endif
-      throw das::not_in_managed_context();
-    }
-    if('''+association.name+'''_temp != '''+association.atype+'''::get_null_ptr() )
-      db->persist<'''+association.atype+'''> ('''+association.name+'''_temp);
+      return _a_oe.persist(association, priv_type)
 
-'''
 
 def _def_update_assoc(association, priv_type):
   if association.multiplicity == 'many':
     if association.relation == 'shared':
-      return '''  for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
-  {
-    shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = (*i).get_eager();
-    if('''+association.name+'''_temp)
-      '''+association.name+'''_temp->update();
-  }
-'''
+      return _a_ms.update(association, priv_type)
     else:
-      return '''  for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
-  {
-    shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = (*i).get_eager().lock();
-    if(!'''+association.name+'''_temp)
-    {
-#ifdef VDBG
-      std::cout << "DAS error 0013: trying to update expired weak pointer" << std::endl;
-#endif
-      throw das::not_in_managed_context();
-    }
-    
-    '''+association.name+'''_temp->update();
-  }
-'''
+      return _a_me.update(association, priv_type)
   else:
     if association.relation == 'shared':
-      return '''
-  shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = '''+association.name+'''_.get_eager();
-  if('''+association.name+'''_temp)
-    '''+association.name+'''_temp->update();
-''' 
+      return _a_os.update(association, priv_type)
     else:
-      return '''
-  shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = '''+association.name+'''_.get_eager().lock();
-  
-  if(!'''+association.name+'''_temp)
-  {
-#ifdef VDBG
-    std::cout << "DAS error0014: trying to update expired weak pointer" << std::endl;
-#endif
-    throw das::not_in_managed_context();
-  }
-  
-  if('''+association.name+'''_temp != '''+association.atype+'''::get_null_ptr())
-    '''+association.name+'''_temp->update();
-'''
+      return _a_oe.update(association, priv_type)
+
 
 def _dec_getter(attribute_name, attribute_type):
   method_declaration = ["const " + attribute_type + "&"]
@@ -1055,8 +652,6 @@ class DdlInheritanceValidator:
         self._check_image(dtype.ancestor)
 
 
-      
-           
 if __name__ == "__main__":  
   import sys
   schema_file_name = sys.argv[1]
@@ -1075,3 +670,14 @@ if __name__ == "__main__":
     exit(1)
   g = DdlOdbGenerator(output_dir, instance)
   g.generate()
+
+
+
+
+
+
+
+
+
+
+
