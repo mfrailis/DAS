@@ -141,18 +141,18 @@ public:
 
 
     template<typename T>
-    void update(T& obj,bool recursive = true)
+    void update(typename odb::object_traits<T>::pointer_type& obj,bool recursive = true)
     {
         shared_ptr<Database> self = self_.lock(); //always succesful
 
-        if (!obj.is_dirty() && !recursive)
+        if (!obj->is_dirty() && !recursive)
         {
 #ifdef VDBG
             std::cout << "DAS debug INFO UPD: no ditry and no recursive: return" << std::endl;
 #endif
             return;
         }
-        if (obj.db_ptr_ != self)
+        if (obj->db_ptr_ != self)
         {
             throw wrong_database();
         }
@@ -163,20 +163,20 @@ public:
         {
             if(recursive)
             {
-                obj.update_associated();
+                obj->update_associated();
             }
-            obj.save_data(); //FIXME chek if is dirty?
-            if(obj.is_dirty_)
+            obj->save_data(); //FIXME chek if is dirty?
+            if(obj->is_dirty_)
             {
 #ifdef VDBG
-                std::cout << "DAS debug INFO UPD: updating   " <<obj.das_id_ <<" "<< obj.name_ << std::endl;
+                std::cout << "DAS debug INFO UPD: updating   " <<obj->das_id_ <<" "<< obj->name_ << std::endl;
 #endif
-                db_->update(obj);
+                db_->update<T>(obj);
             }
 #ifdef VDBG
-            if(!obj.is_dirty_)
+            if(!obj->is_dirty_)
             {
-                std::cout << "DAS debug INFO UPD: up to date " <<obj.das_id_ <<" "<< obj.name_ << std::endl;
+                std::cout << "DAS debug INFO UPD: up to date " <<obj->das_id_ <<" "<< obj->name_ << std::endl;
             }
 #endif
         }
@@ -187,19 +187,19 @@ public:
 
     template<typename T>
     typename odb::object_traits<T>::id_type
-    persist(T& obj, std::string path = "")
+    persist(typename odb::object_traits<T>::pointer_type& obj, std::string path = "")
     {
         shared_ptr<Database> self = self_.lock(); //always succesful
-        if (!obj.is_new())
+        if (!obj->is_new())
         {
-            if (obj.db_ptr_ != self)
+            if (obj->db_ptr_ != self)
             {
                 throw wrong_database();
             }
-            return obj.das_id_;
+            return obj->das_id_;
         } //FIXME should we do an update insted?
 
-        if (obj.db_ptr_.get() != 0)
+        if (obj->db_ptr_.get() != 0)
         {
             throw wrong_database();
         }
@@ -210,36 +210,36 @@ public:
         try
         {
 #ifdef VDBG
-            if(obj.version_ != 0 )std::cout << "DAS debug INFO: WARNING: changing version number while persisting obj " << obj.name_ <<std::endl; //DBG
+            if(obj->version_ != 0 )std::cout << "DAS debug INFO: WARNING: changing version number while persisting obj " << obj->name_ <<std::endl; //DBG
 #endif
             typedef odb::result<max_version> result;
-            result r (db_->query<max_version> ("SELECT MAX(version) FROM " + obj.type_name_ + " WHERE name = '"+obj.name_+"'"));
+            result r (db_->query<max_version> ("SELECT MAX(version) FROM " + obj->type_name_ + " WHERE name = '"+obj->name_+"'"));
             result::iterator i(r.begin());
 
             if(i != r.end())
             {
-                obj.version_ = i->version+1;
+                obj->version_ = i->version+1;
             }
             else
             {
-                obj.version_ = 1;
+                obj->version_ = 1;
             }
 
-            obj.save_data(path);
-            obj.persist_associated_pre(this);
+            obj->save_data(path);
+            obj->persist_associated_pre(this);
 #ifdef VDBG
-            std::cout << "DAS debug INFO: PRS " << obj.name_ <<std::endl; //DBG
+            std::cout << "DAS debug INFO: PRS " << obj->name_ <<std::endl; //DBG
 #endif
             id = db_->persist<T>(obj);
-            obj.persist_associated_post(this);
+            obj->persist_associated_post(this);
         }
         catch(const std::exception &e){auto_catch(local_trans,transaction);}
 
         auto_commit(local_trans,transaction);
 
         // bind new object with this database
-        obj.db_ptr_ = self;
-        obj.is_dirty_ = false;
+        obj->db_ptr_ = self;
+        obj->is_dirty_ = false;
         return id;
     }
 

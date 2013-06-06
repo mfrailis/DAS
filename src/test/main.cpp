@@ -32,8 +32,8 @@ void print(const shared_ptr<testLogImage> &img)
 }
 
 int main()
-{
- /*   shared_ptr<D::Database> db = D::Database::create("local");
+{/*
+    shared_ptr<D::Database> db = D::Database::create("local");
 
     shared_ptr<lfiHkDaeSlowVoltage> hk = lfiHkDaeSlowVoltage::create("LfiDaeSlowVoltage_TOI_0001");
 
@@ -46,7 +46,7 @@ int main()
     hk->PI1_val(1);
     hk->PI2_val(0);
 
-    db->persist (*hk);
+    db->persist<lfiHkDaeSlowVoltage>(hk);
 
     shared_ptr<testLog> log = testLog::create("TestLog_FUNC_0001");
     log->runId("FUNC_0001");
@@ -64,7 +64,7 @@ int main()
 
     log->images(v);
 
-    db->persist (*log);
+    db->persist<testLog>(log);
 
     {
       typedef odb::result<testLog> result;
@@ -84,7 +84,7 @@ int main()
 
       t.commit ();
     }
-*/
+    */
     odb::session s;
     
     shared_ptr<D::Database> db = D::Database::create("benchmark");
@@ -105,7 +105,7 @@ int main()
     }
     tm->many_ex(exass);
     tm->many_sh(shass);
-    db->persist(*tm);
+    db->persist<TypeMain>(tm);
  
     TypeMain::many_ex_vector exass2;
     TypeMain::many_sh_vector shass2;   
@@ -115,22 +115,22 @@ int main()
         ss << "ass_seconda" << i;
         shared_ptr<manyEx> exp = manyEx::create(ss.str());
         exass2.push_back(exp);
-        db->persist(*exp);
+        db->persist<manyEx>(exp);
                 
         shared_ptr<manySh> shp = manySh::create(ss.str());
         shass2.push_back(shp);
-        db->persist(*shp);      
+        db->persist<manySh>(shp);      
     }   
     tm->many_ex(exass2);
     tm->many_sh(shass2);
-    db->update(*tm,true);
+    db->update<TypeMain>(tm,true);
     
     for(TypeMain::many_ex_vector::iterator i = exass2.begin(); i != exass2.end(); ++i)
-        db->update(*(*i),true);       
+      db->update<manyEx>(*i,true);       
   
     for(TypeMain::many_ex_vector::iterator i = exass.begin(); i != exass.end(); ++i)
-        db->update(*(*i),true);
-    
+        db->update<manyEx>(*i,true);
+      
     return 0;
 }
 
