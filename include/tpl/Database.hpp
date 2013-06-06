@@ -11,12 +11,13 @@
 #include <odb/database.hxx>
 #include <odb/traits.hxx>
 
-#include "dbms/mysql/aux_query-odb.hxx"
+#include "../build/dbms/mysql/aux_query-odb.hxx"
 
 #include "ddl/info.hpp"
 #include "exceptions.hpp"
 #include "../src/cpp/aux_query.hpp"
 #include "../src/cpp/ql/qlvisitor.hpp"
+#include "DasObject.hpp"
 
 #include <odb/mysql/database.hxx>
 using std::tr1::shared_ptr;
@@ -119,7 +120,7 @@ public:
                 delete transaction;
             }
 #ifdef VDBG
-            std::cout << "odb not persistent exception" << std::endl;
+            std::cout << "DAS debug INFO: odb not persistent exception" << std::endl;
 #endif
             throw object_not_persistent();
         }
@@ -142,7 +143,7 @@ public:
         if (!obj.is_dirty() && !recursive)
         {
 #ifdef VDBG
-            std::cout << "UPD: no ditry and no recursive: return" << std::endl;
+            std::cout << "DAS debug INFO UPD: no ditry and no recursive: return" << std::endl;
 #endif
             return;
         }
@@ -163,14 +164,14 @@ public:
             if(obj.is_dirty_)
             {
 #ifdef VDBG
-                std::cout << "UPD: updating   " <<obj.das_id_ <<" "<< obj.name_ << std::endl;
+                std::cout << "DAS debug INFO UPD: updating   " <<obj.das_id_ <<" "<< obj.name_ << std::endl;
 #endif
                 db_->update(obj);
             }
 #ifdef VDBG
             if(!obj.is_dirty_)
             {
-                std::cout << "UPD: up to date " <<obj.das_id_ <<" "<< obj.name_ << std::endl;
+                std::cout << "DAS debug INFO UPD: up to date " <<obj.das_id_ <<" "<< obj.name_ << std::endl;
             }
 #endif
         }
@@ -204,7 +205,7 @@ public:
         try
         {
 #ifdef VDBG
-            if(obj.version_ != 0 )std::cout << "WARNING: changing version number while persisting obj " << obj.name_ <<std::endl; //DBG
+            if(obj.version_ != 0 )std::cout << "DAS debug INFO: WARNING: changing version number while persisting obj " << obj.name_ <<std::endl; //DBG
 #endif
             typedef odb::result<max_version> result;
             result r (db_->query<max_version> ("SELECT MAX(version) FROM " + obj.type_name_ + " WHERE name = '"+obj.name_+"'"));
@@ -222,7 +223,7 @@ public:
             obj.save_data(path);
             obj.persist_associated(this);
 #ifdef VDBG
-            std::cout << "PRS " << obj.name_ <<std::endl; //DBG
+            std::cout << "DAS debug INFO: PRS " << obj.name_ <<std::endl; //DBG
 #endif
             id = db_->persist<T>(obj);
         }
@@ -238,19 +239,21 @@ public:
 
     template<typename T>
     void erase(T obj);//TODO
-  /*
+
     template<typename T>
     odb::result<T> query(const std::string& expression, const std::string& ordering = "")
     {
-      QLVisitor exp_visitor(das_traits<T>::type_name,info_);
-      std::string clause = exp_visitor.parse(expression);
+      QLVisitor exp_visitor(das_traits<T>::name,info_);
+      std::string clause = exp_visitor.parse_exp(expression);
+      std::string order = exp_visitor.parse_ord(ordering);
 
-      QLOVisitor order_visitor(das_traits<T>::type_name,info_);
-      //std::string ord = order_visitor.parse(ordering);
-      //return db_->query<T>(clause+ord);
-      return db_->query<T>(clause);
+#ifdef VDBG
+      std::cout << "DAS debug INFO: WHERE " << clause+order <<std::endl; //DBG
+#endif
+
+      return db_->query<T>(clause+order);
     }
-*/
+
     template<typename T>
     bool find(const std::string& name, int version = -1)
     {
