@@ -1,0 +1,52 @@
+{
+  "$schema"         : "http://json-schema.org/draft-03/schema#",
+  "name"            : "Json-schema for configuration file",
+  "type"            : "array",
+  "items"           : { "$ref" : "#database"},
+  "minItems"        : 1,
+  "uniqueItems"     : true,
+  "additionalItems" : false,
+
+  "database"  : {
+     "id"         : "#database",
+     "type"	  : "object",
+     "properties" : {
+         "ip"  : {
+	     "type"     : "string",
+	     "format"   : "ipv4",
+	     "required" : true
+	 },
+	 "port"	  : {
+	     "type" : "integer",
+	     "minimum" : 0,
+	     "maximum" : 65535,
+	     "required" : true
+	 },
+	 "db_type": {
+	     "type" : "string",
+	     "enum" : [ "mysql", "pgsql", "oracle", "sqlite", "mssql" ],
+	     "required" : true
+	 },
+	 "db_name"  : {
+	     "type" : "string",
+	     "required" : true
+	 },
+	 "ddl"  : {
+	     "type"     : "string",
+	     "pattern"  : "^\/",
+	     "required" : true
+	 },
+	 "data_root_dir" : {
+	     "type" : "string",
+	     "pattern"  : "^\/",
+	     "required" : true
+	 },
+	 "time_interval" : {
+	     "type" : "string",
+	     "enum" : ["hour", "day", "month", "week"],
+	     "required" : true
+	 }
+     }
+  } 
+  
+}

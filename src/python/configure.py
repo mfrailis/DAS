@@ -1,63 +1,55 @@
 import odb as _odb
 import introspection as _info
 import ddl as _ddl
+import json as _j
+import jsonschema as _js
+import hashlib as _hash
 
-class ConfigParser:
-    def __init__(self):
-        self._ddl_map = _info.DdlMap()
+class JsonConfigParser:
+    def __init__(self,schema_path):
+        f = open(schema_path,'r')
+        self._schema = _j.load(f)
+        f.close()
+
+        self.ddl_map = _info.DdlMap()
         self._db_map = {}
-        self._ddl_map.add_type('ddl_test1',"essentialMetadata")
-        self._ddl_map.add_type('ddl_test1',"lfiHkDaeSlowVoltage")
-        self._ddl_map.add_type('ddl_test1',"testLogImage")
-        self._ddl_map.add_type('ddl_test1',"testLog")
-        
-        self._ddl_map.add_type('ddl_test2',"essentialMetadata")
-        self._ddl_map.add_type('ddl_test2',"lfiHkDaeSlowVoltage")
+        self._config = []
+        self.ddl_files = set()
 
-        self._db_map = { 'oracle1' : 'ddl_test1' , 'sqlite_cache' : 'ddl_test2', 'oracle2' : 'ddl_test1' }
-        #DUMMY START
-
-        #DUMMY END
-        #TODO
-        pass
-    
+    def parse(self,config_file):
+        f = open(config_file,'r')
+        self._config = _j.load(f)
+        f.close()
+        #TODO do validation
+        #_js.validate(config_file,self._schema)
+        for db in self._config:
+            self._db_map[_assemble_name(db)]=_assemble_ddl(db['ddl'])
+            self.ddl_files.add(db['ddl'])
     def get_db_list(self):
         return self._db_map.keys()
         pass
 
-    def get_ddl_file_list(self):
-        #DUMMY
-        return ['/home/sartor/workspace/CIWS/DAS/ddl/dasInstance.xml']
-        #TODO
-        pass
-    
-    def get_schema_file(self):
-        #DUMMY
-        return '/home/sartor/workspace/CIWS/DAS/ddl/ddl.xsd'
-        #TODO        
-        pass
-
-    def parse(self,config_file):
-        #TODO
-        pass
-
-    def get_ddl_map(self):
-        return self._ddl_map
-
     def get_database_map(self):
         return self._db_map
+
+def _assemble_ddl(path):
+    return "ddl_"+_hash.sha1(path).hexdigest()
+
+def _assemble_db(db):
+    uri=""+db['ip']+db['port']+db['db_name']
+    return "db_"+_hash.sha1(uri).hexdigest()
     
 if __name__ == '__main__':
     import sys
     configuration_file_name = sys.argv[1]
     output_dir = sys.argv[2]
     #FIXME
-    parser = _ddl.DdlParser(sys.argv[3])    
-    c = ConfigParser()
+    parser = _ddl.DdlParser(sys.argv[3])
+    #FIXME json schema file path
+    c = JsonConfigParser(sys.argv[4])
     c.parse(configuration_file_name)
     type_list = _ddl.DdlTypeList()
-    for ddl in c.get_ddl_file_list():
- #       parser = _ddl.DdlParser(c.get_schema_file)
+    for ddl in c.ddl_files:
         temp_type_list = parser.parse_ddl(ddl)
         #check advanced constraints per ddl
         validator = _odb.DdlInheritanceValidator(temp_type_list)
@@ -69,6 +61,7 @@ if __name__ == '__main__':
             exit(1)
         #check redefined types consistency
         for (name,ddl_type) in temp_type_list.type_map.items():
+            c.ddl_map.add_type(_assemble_ddl(ddl),ddl_type)
             if type_list.type_map.get(name,None) is None:
                 type_list.type_map[name] = ddl_type
             else:
@@ -83,5 +76,5 @@ if __name__ == '__main__':
     type_list.accept(odb_generator)
 
     #generate info classes
-    info_generator = _info.DdlInfoGenerator(c.get_ddl_map(),type_list,c.get_database_map(),output_dir)
+    info_generator = _info.DdlInfoGenerator(c.ddl_map(),type_list,c.get_database_map(),output_dir)
     type_list.accept(info_generator)
