@@ -48,7 +48,7 @@ public:
   }
 
   void
-  creationDate (long long creationDate)
+  creationDate (long long &creationDate)
   {
     creationDate_ = creationDate;
     is_dirty_ = true;
@@ -91,10 +91,11 @@ protected:
   bool is_dirty_;                                   // does it need an update?
 
   virtual void save_data(){};                                // update external data.
-  virtual void save_data(std::string path){};                // save external data, check if the path is empty.
+  virtual void save_data(std::string &path){};                // save external data, check if the path is empty.
   virtual void update_associated(){};  // call update  on associated objects
   // we need a database pointer because this ogbject is not bouded to any db yet
-  virtual void persist_associated(das::tpl::Database* db){}; // call persist on associated objects
+  virtual void persist_associated_pre (das::tpl::Database* db){}; // call persist on shared many associated objects
+  virtual void persist_associated_post(das::tpl::Database* db){}; // call persist on exclusive and oneassociated objects
 
 private:
   friend class odb::access;

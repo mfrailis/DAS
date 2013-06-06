@@ -20,14 +20,24 @@ enum type_e {
 
 class Env{// TODO: implement operator= as a swap
 public:
+  //  bool is_assoc_chain_;
   type_e type_;
   std::string code_;
+  std::string current_type_;
   Env& operator= (Env& rhs)
   {
-      type_ = rhs.type_;
-      swap(code_,rhs.code_);
-      return *this;
+    //    is_assoc_chain_ = rhs.is_assoc_chain_;
+    type_ = rhs.type_;
+    current_type_ = rhs.current_type_;
+    swap(code_,rhs.code_);
+    return *this;
   }
+  Env(const Env& rhs)
+  {
+    current_type_ = rhs.current_type_;
+    //is_assoc_chain_ = rhs.assoc_chain_;
+  }
+  Env(){}
 };
 
 

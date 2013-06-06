@@ -18,5 +18,15 @@
 	"ddl"	     	: "dasPointers.xml",
 	"data_root_dir" : "/db/testl3",
 	"time_interval" : "day"
+    },
+    {
+	"host"          : "localhost",
+	"port"          : 3306,
+	"db_type"  	: "mysql",
+	"alias"         : "benchmark",
+	"db_name"  	: "benchmark",
+	"ddl"	     	: "benchmark.xml",
+	"data_root_dir" : "/db/testl2",
+	"time_interval" : "day"
     }
 ]

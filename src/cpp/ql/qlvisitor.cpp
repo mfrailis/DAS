@@ -8,44 +8,44 @@
 #include <utility>
 
 struct OrdTokenizer{
-	bool operator() (
-		std::string::const_iterator& next,
-		std::string::const_iterator& end,
-		std::pair<std::string,std::string> &p)
+  bool operator() (
+		   std::string::const_iterator& next,
+		   std::string::const_iterator& end,
+		   std::pair<std::string,std::string> &p)
+  {
+    bool has_key = false;
+    std::string keyword, direction;
+    while(next != end)if(*next == ' ')next++;else break;
+    while(next != end){
+      if(*next == ' ')
 	{
-		bool has_key = false;
-		std::string keyword, direction;
-		while(next != end)if(*next == ' ')next++;else break;
-		while(next != end){
-			if(*next == ' ')
-			{
-				has_key = true;
-				break;
-			}
-			else
-			{
-				keyword.push_back(*next);
-				next++;
-			}
-		}
-		while(next != end)if(*next == ' ')next++;else break;
-		while(next != end){
-			if(*next == ',')
-			{
-				next++;		
-				break;
-			}
-			else
-			{
-				direction.push_back(*next);
-				next++;
-			}
-		}	
-		p.first = keyword;
-		p.second = direction;	
-		return has_key;
+	  has_key = true;
+	  break;
 	}
-	void reset(){}
+      else
+	{
+	  keyword.push_back(*next);
+	  next++;
+	}
+    }
+    while(next != end)if(*next == ' ')next++;else break;
+    while(next != end){
+      if(*next == ',')
+	{
+	  next++;		
+	  break;
+	}
+      else
+	{
+	  direction.push_back(*next);
+	  next++;
+	}
+    }	
+    p.first = keyword;
+    p.second = direction;	
+    return has_key;
+  }
+  void reset(){}
 };
 
 std::string QLVisitor::parse_ord(const std::string &expression)
@@ -122,23 +122,41 @@ void QLVisitor::visitStr(String x)
   stack.top().code_.append(x);
 }
 
-
-void QLVisitor::visitKeyword(Keyword *p) //just keywords, not associations, yet
+void QLVisitor::visitListName(ListName *p)
 {
   try
-  {
-    stack.top().type_ = string_to_type(info_->get_keyword_info(base_type_,p->ident_).type);
-  }
+    {
+      for(unsigned int i = 0; i < p->size()-1; ++i)
+	{
+	  const std::string &new_type =  info_->get_association_type(stack.top().current_type_,  static_cast<Keyword*>(p->at(i))->ident_);
+	  stack.top().current_type_ = new_type;
+	  // TODO add association table to env;
+	}
+    }
   catch(std::out_of_range &e)
-  {
-    throw das::keyword_not_present();
-  }
+    {
+      throw das::association_not_present();
+    }
+  p->at(p->size()-1)->accept(this);
+}
+
+void QLVisitor::visitKeyword(Keyword *p)
+{
+  try
+    {
+      stack.top().type_ = string_to_type(info_->get_keyword_info( stack.top().current_type_, p->ident_).type);
+    }
+  catch(std::out_of_range &e)
+    {
+      throw das::keyword_not_present();
+    }
   stack.top().code_.append(p->ident_);
 }
 
 void QLVisitor::visitBinExp(Exp *exp_1, Exp *exp_2,const std::string &op)
 {
-  Env e1,e2;
+  Env e1(stack.top());
+  Env e2(stack.top());
   stack.push(e1);
   exp_1->accept(this);
 
@@ -159,17 +177,14 @@ void QLVisitor::visitBinExp(Exp *exp_1, Exp *exp_2,const std::string &op)
   stack.top().code_.append("("+e1.code_+op+e2.code_+")");
 }
 
-void QLVisitor::visitListName(ListName *p)
-{
-  //FIXME implement associations also
-  p->at(0)->accept(this);
-}
+
 
 void QLVisitor::visitCompExpAA(CompExpAA *p)
 {
   stack.top().type_ = t_bool; //we shouldn't neeed this
 
-  Env e1,e2;
+  Env e1(stack.top());
+  Env e2(stack.top());
   stack.push(e1);
   p->exp_1->accept(this);
 
@@ -195,7 +210,7 @@ void QLVisitor::visitCompExpSC(CompExpSC *p)
 {
   stack.top().type_ = t_bool; //we shouldn't neeed this
 
-  Env e;
+  Env e(stack.top());
   stack.push(e);
   p->exp_->accept(this);
 
@@ -212,9 +227,9 @@ void QLVisitor::visitCompExpSC(CompExpSC *p)
 
 void QLVisitor::visitCompExpCS(CompExpCS *p)
 {
-   stack.top().type_ = t_bool; //we shouldn't neeed this
+  stack.top().type_ = t_bool; //we shouldn't neeed this
 
-  Env e;
+  Env e(stack.top());
   stack.push(e);
   p->exp_->accept(this);
 
@@ -231,9 +246,9 @@ void QLVisitor::visitCompExpCS(CompExpCS *p)
 
 void QLVisitor::visitCompExpBA(CompExpBA *p)
 {
-   stack.top().type_ = t_bool; //we shouldn't neeed this
+  stack.top().type_ = t_bool; //we shouldn't neeed this
 
-  Env e;
+  Env e(stack.top());
   stack.push(e);
   p->exp_->accept(this);
 
@@ -253,9 +268,9 @@ void QLVisitor::visitCompExpBA(CompExpBA *p)
 
 void QLVisitor::visitCompExpAB(CompExpAB *p)
 {
-   stack.top().type_ = t_bool; //we shouldn't neeed this
+  stack.top().type_ = t_bool; //we shouldn't neeed this
 
-  Env e;
+  Env e(stack.top());
   stack.push(e);
   p->exp_->accept(this);
 
@@ -278,7 +293,7 @@ void QLVisitor::visitStartsWith(StartsWith *p)
 {
   stack.top().type_ = t_bool; //we shouldn't neeed this
 
-  Env e;
+  Env e(stack.top());
   stack.push(e);
   p->listname_->accept(this);
 
@@ -298,7 +313,7 @@ void QLVisitor::visitEndsWith(EndsWith *p)
 {
   stack.top().type_ = t_bool; //we shouldn't neeed this
 
-  Env e;
+  Env e(stack.top());
   stack.push(e);
   p->listname_->accept(this);
 
@@ -316,45 +331,47 @@ void QLVisitor::visitEndsWith(EndsWith *p)
 
 void QLVisitor::visitBoolExpAnd(BoolExpAnd *p)
 {
-    Env e1,e2;
-    stack.push(e1);
-    p->boolexp_1->accept(this);
-    e1 = stack.top();
-    stack.pop();
+  Env e1(stack.top());
+  Env e2(stack.top());
+  stack.push(e1);
+  p->boolexp_1->accept(this);
+  e1 = stack.top();
+  stack.pop();
 
-    stack.push(e2);
-    p->boolexp_2->accept(this);
-    e2 = stack.top();
-    stack.pop();
+  stack.push(e2);
+  p->boolexp_2->accept(this);
+  e2 = stack.top();
+  stack.pop();
 
-    stack.top().code_.append("("+e1.code_+" AND "+e2.code_+")");
+  stack.top().code_.append("("+e1.code_+" AND "+e2.code_+")");
 }
 
 void QLVisitor::visitBoolExpOr(BoolExpOr *p)
 {
-    Env e1,e2;
-    stack.push(e1);
-    p->boolexp_1->accept(this);
-    e1 = stack.top();
-    stack.pop();
+  Env e1(stack.top());
+  Env e2(stack.top());
+  stack.push(e1);
+  p->boolexp_1->accept(this);
+  e1 = stack.top();
+  stack.pop();
 
-    stack.push(e2);
-    p->boolexp_2->accept(this);
-    e2 = stack.top();
-    stack.pop();
+  stack.push(e2);
+  p->boolexp_2->accept(this);
+  e2 = stack.top();
+  stack.pop();
 
-    stack.top().code_.append("("+e1.code_+" OR "+e2.code_+")");
+  stack.top().code_.append("("+e1.code_+" OR "+e2.code_+")");
 }
 
 void QLVisitor::visitBoolExpNot(BoolExpNot *p)
 {
-    Env e;
-    stack.push(e);
-    p->boolexp_->accept(this);
-    e = stack.top();
-    stack.pop();
+  Env e(stack.top());
+  stack.push(e);
+  p->boolexp_->accept(this);
+  e = stack.top();
+  stack.pop();
 
-    stack.top().code_.append("NOT ("+e.code_+")");
+  stack.top().code_.append("NOT ("+e.code_+")");
 }
 
 type_e QLVisitor::common(const Env& e1,const Env& e2)
@@ -370,17 +387,17 @@ type_e QLVisitor::common(const Env& e1,const Env& e2)
 const char* QLVisitor::compop_to_sql(const std::string &op)
 {
   if(op == "==")
-  {
-    return "=";
-  }
+    {
+      return "=";
+    }
   else if(op == "!=")
-  {
-    return "<>";
-  }
+    {
+      return "<>";
+    }
   else
-  {
-    return op.c_str();
-  }
+    {
+      return op.c_str();
+    }
 
 }
 
@@ -413,26 +430,26 @@ type_e QLVisitor::string_to_type(const std::string &t)
 std::string QLVisitor::type_to_string(type_e t)
 {
   switch(t)
-  {
-  case t_byte:
-    return "byte";
-  case t_short:
-    return "int16";
-  case t_int:
-    return "int32";
-  case t_long:
-    return "int64";
-  case t_float:
-    return "float32";
-  case t_double:
-    return "float64";
-  case t_bool:
-    return "boolean";
-  case t_string:
-    return "string";
-  default:
-    return "unknown";
-  }
+    {
+    case t_byte:
+      return "byte";
+    case t_short:
+      return "int16";
+    case t_int:
+      return "int32";
+    case t_long:
+      return "int64";
+    case t_float:
+      return "float32";
+    case t_double:
+      return "float64";
+    case t_bool:
+      return "boolean";
+    case t_string:
+      return "string";
+    default:
+      return "unknown";
+    }
 }
 
 std::string QLVisitor::parse_exp(const std::string &expression) 
@@ -440,18 +457,19 @@ std::string QLVisitor::parse_exp(const std::string &expression)
 {
   BoolExp *parse_tree = pBoolExp(expression.c_str());
   if(parse_tree)
-  {
-    Env start;
-    stack.push(start);
-    parse_tree->accept(this);
-    std::string s = stack.top().code_;
-    stack.pop();
-    delete parse_tree;
-    return s;
-  }
+    {
+      Env start;
+      start.current_type_ = base_type_;
+      stack.push(start);
+      parse_tree->accept(this);
+      std::string s = stack.top().code_;
+      stack.pop();
+      delete parse_tree;
+      return s;
+    }
   else
-  {
-    delete parse_tree;
-    throw das::incomplete_statement();
-  }
+    {
+      delete parse_tree;
+      throw das::incomplete_statement();
+    }
 }

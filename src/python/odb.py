@@ -123,7 +123,7 @@ class DdlOdbGenerator(DdlVisitor):
     idr_name = "ddl_"+ self._class_name +".ipp"
     src_name = "ddl_"+ self._class_name +".cpp" 
     self._sources.append(self._class_name)
-    macro = "DAS_" + datatype.name.upper() + "_H"
+    macro = "DAS_" + datatype.name.upper() + "_HPP"
     lines.append("#ifndef " + macro + "\n#define " + macro)
     lines.append("#include <odb/core.hxx>")
     lines.append("#include <vector>")
@@ -155,7 +155,15 @@ class DdlOdbGenerator(DdlVisitor):
     
     self._private_section.append('')
 
-     
+    exc_assoc = self._get_exclusive_associations(datatype.name)
+    if exc_assoc != [] and self._assoc_touples == []:
+      self._header.append("#include <odb/tr1/memory.hxx>")
+      self._header.append("using std::tr1::shared_ptr;")
+      
+    for exc in exc_assoc:
+      self._header.append('#include "ddl_'+exc[1]+'.hpp"')
+      self._forward_section.append('class '+exc[1]+';')
+    
     h = open(_os.path.join(self._src_dir, hdr_name), 'w') 
     h.writelines(l + "\n" for l in lines)
     h.writelines(l + "\n" for l in self._header)
@@ -176,6 +184,12 @@ class DdlOdbGenerator(DdlVisitor):
     # private section
     h.writelines([" private:\n"])
     h.writelines("  "+l + "\n" for l in self._private_section)
+    for t in self._assoc_touples:
+      if t[0].multiplicity == 'many' and (t[0].relation == 'exclusive' or t[0].relation == 'extend'):
+        h.writelines(['  #pragma db inverse('+self._class_name+'_'+t[0].name+'_)\n'])
+      h.writelines(['  '+t[2]+' '+t[0].name+'_;\n'])
+
+    h.writelines("  shared_ptr<"+l[1]+"> "+l[1]+"_"+l[0]+"_;\n" for l in exc_assoc)
     # default inizializer method
     h.writelines(["  void init();\n"])
 
@@ -226,21 +240,32 @@ struct das_traits<'''+self._class_name+'''>
       for i in self._assoc_touples:
         s.writelines(l+'\n' for l in _def_getter_assoc(i[0],i[1],i[2],self._class_name))
         s.writelines(l+'\n' for l in _def_setter_assoc(i[0],i[1],self._class_name))
-
-      s.writelines(['void\n',self._class_name+'::persist_associated(das::tpl::Database *db)\n{\n'])
+      
+      # persist pre
+      s.writelines(['void\n',self._class_name+'::persist_associated_pre(das::tpl::Database *db)\n{\n'])
       if self._inherit != 'DasObject':
-        s.writelines(['  '+self._inherit+'::persist_associated(db);\n'])
+        s.writelines(['  '+self._inherit+'::persist_associated_pre(db);\n'])
       for i in self._assoc_touples:
-        s.writelines([_def_persist_assoc(i[0],i[2],i[3])])
+        if i[0].multiplicity == 'one' or (i[0].multiplicity == 'many' and i[0].relation == 'shared'):
+          s.writelines([_def_persist_assoc(i[0],i[2])])
+      s.writelines(['}\n'])
+      
+      #persist post
+      s.writelines(['void\n',self._class_name+'::persist_associated_post(das::tpl::Database *db)\n{\n'])
+      if self._inherit != 'DasObject':
+        s.writelines(['  '+self._inherit+'::persist_associated_post(db);\n'])
+      for i in self._assoc_touples:
+        if i[0].multiplicity == 'many' and (i[0].relation == 'exclusive' or i[0].relation == 'extend'):
+          s.writelines([_def_persist_assoc(i[0],i[2])])
       s.writelines(['}\n'])
 
       s.writelines(['void\n',self._class_name+'::update_associated()\n{\n'])
       if self._inherit != 'DasObject':
         s.writelines(['  '+self._inherit+'::update_associated();\n'])
       for i in self._assoc_touples:
-        s.writelines([_def_update_assoc(i[0],i[2],i[3])])
+        s.writelines([_def_update_assoc(i[0],i[2])])
       s.writelines(['}\n'])
-    
+
     s.close()
 
     self.clean_env()
@@ -253,26 +278,30 @@ struct das_traits<'''+self._class_name+'''>
       self._header.append("using odb::tr1::lazy_weak_ptr;")
       self._header.append("using std::tr1::shared_ptr;")
       self._friends.append("friend class das::tpl::Database;")
-      self._protected_section.extend(['virtual void','persist_associated(das::tpl::Database *db);','virtual void','update_associated();'])
+      self._protected_section.extend(['virtual void','persist_associated_pre (das::tpl::Database *db);'])
+      self._protected_section.extend(['virtual void','persist_associated_post(das::tpl::Database *db);'])
+      self._protected_section.extend(['virtual void','update_associated();'])
       self._has_associations = True 
 	
     self._forward_section.append("class " + associated.atype + ";")
     self._header.append('#include "ddl_'+ associated.atype +'.hpp"')
-    # see Remove multiplicity attribute discussion
-    pub_type = associated.name+'_vector'
-    priv_type = associated.name+'_lazy_weak_vec'
-    self._private_section.append('typedef typename std::vector<lazy_weak_ptr<'+associated.atype+'> > '+priv_type+';')
-    self._type_defs.append('typedef typename std::vector<shared_ptr<'+associated.atype+'> > '+pub_type+';' )
-    self._private_section.append(priv_type + " " + associated.name + "_;")
+    if associated.multiplicity == 'many':
+      pub_type = associated.name+'_vector'
+      priv_type = associated.name+'_lazy_weak_vec'
+      self._private_section.append('typedef typename std::vector<lazy_weak_ptr<'+associated.atype+'> > '+priv_type+';')
+      self._type_defs.append('typedef typename std::vector<shared_ptr<'+associated.atype+'> > '+pub_type+';' )
+    else:
+      pub_type = 'shared_ptr<'+associated.atype+'>'
+      priv_type = 'lazy_weak_ptr<'+associated.atype+'>'
+    
     self._public_section.extend(_dec_getter_assoc(associated.name, pub_type))
     self._public_section.extend(_dec_setter_assoc(associated.name, pub_type))
-
-
     self._src_header.append('#include "tpl/Database.hpp"')
 #TODO: multi-database support    self._src_header.append('#include "dbms/common/ddl_'+associated.atype+'-odb.hxx"')
     self._src_header.append('#include "dbms/mysql/ddl_'+associated.atype+'-odb.hxx"')
     self._src_header.append('#include "exceptions.hpp"')
-    self._assoc_touples.append((associated.name,pub_type,priv_type,associated.atype))
+#    self._assoc_touples.append((associated.name,pub_type,priv_type,associated.atype))
+    self._assoc_touples.append((associated,pub_type,priv_type))
  
   def visit_keyword(self,keyword):
     k_type = self.KTYPE_MAP[keyword.ktype]
@@ -329,13 +358,18 @@ struct das_traits<'''+self._class_name+'''>
         return self.has_inherit_column(obj.ancestor)
       else:
         return False
-    
-#  def createXMLsingleton(self):
-#    shutil.copyfile("../cpp/ddl_info.hpp", _os.path.join(self._src_dir, "ddl_info.hpp"))
-#    shutil.copyfile("../cpp/ddl_info.cpp", _os.path.join(self._src_dir, "ddl_info.cpp"))
 
-#  def createXMLcolumn(self):
-#    shutil.copyfile("../cpp/ddl_column.hpp", _os.path.join(self._src_dir, "ddl_column.hpp"))   
+  def _get_exclusive_associations(self,type_name):
+    exc_assoc = []
+    for data_type in self._instance.type_map.values():
+      for assoc in data_type.associated.values():
+        if assoc.atype == type_name:
+          if assoc.relation == 'exclusive' or assoc.relation == 'extend':
+            exc_assoc.append((assoc.name,data_type.name))
+
+    return exc_assoc
+
+    
 
 def _def_getter(attribute_name, attribute_type, class_name):
   method_definition = ["inline const " + attribute_type + "&"]
@@ -349,17 +383,30 @@ def _def_setter(attribute_name, attribute_type, class_name):
   method_definition.extend(["  "+attribute_name+"_ = "+attribute_name+";","  is_dirty_ = true;","}"])
   return method_definition
 
-def _def_getter_assoc(attribute_name, pub_type, priv_type, class_name):
-  src = [class_name+'::'+pub_type+""]
-  src.extend([class_name+"::"+attribute_name + " ()",'''{
+def _def_getter_assoc(association, pub_type, priv_type, class_name):
+  src = []
+  if association.multiplicity == 'many':
+    src = [class_name+'::'+pub_type]
+  else:
+     src = [pub_type]   
+  src.extend([class_name+"::"+association.name + " ()",'''{
   odb::transaction *transaction;
 
   '''+pub_type+''' associated;
   if(db_ptr_.get() == 0)
-  {
+  {'''])
+  if association.multiplicity == 'many':
+    src.extend([''' 
     // returns previously setted pointers on this transient object
-    for('''+priv_type+'''::iterator i = '''+attribute_name+'''_.begin(); i != '''+attribute_name+'''_.end(); i++)
+    for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
       associated.push_back(i->load()); //note: load() acts just as lock() here
+'''])
+  else:
+    src.extend([''' 
+    // returns previously setted pointer on this transient object
+    associated = '''+association.name+'''_.load(); //note: load() acts just as lock() here
+'''])
+  src.extend(['''
   }
   else
   {
@@ -373,9 +420,17 @@ def _def_getter_assoc(attribute_name, pub_type, priv_type, class_name):
       transaction = &odb::transaction::current();
     }
     try
-    {
-      for('''+priv_type+'''::iterator i = '''+attribute_name+'''_.begin(); i != '''+attribute_name+'''_.end(); i++)
-        associated.push_back(i->load()); //note: load() implies lock() as well
+    {'''])
+  if association.multiplicity == 'many':
+    src.extend([''' 
+    for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
+      associated.push_back(i->load()); //note: load() implies lock() as well
+'''])
+  else:
+    src.extend([''' 
+    associated = '''+association.name+'''_.load(); //note: load() implies lock() as well
+'''])
+  src.extend(['''
     }
     catch(std::exception &e)
     {
@@ -396,49 +451,58 @@ def _def_getter_assoc(attribute_name, pub_type, priv_type, class_name):
   src.extend(["  return associated;","}"])
   return src
   
-def _def_setter_assoc(attribute_name, pub_type, class_name):
+def _def_setter_assoc(association, pub_type, class_name):
   method_definition = ["void"]
-  method_definition.extend([class_name+"::"+attribute_name + " ( const "+pub_type+" &"+attribute_name+")","{"])
-  method_definition.append('  '+attribute_name+"_.clear();")
-  method_definition.append('''  for('''+pub_type+'''::const_iterator i = '''+attribute_name+'''.begin(); i != '''+attribute_name+'''.end(); i++)
-      '''+attribute_name+'''_.push_back(*i);
+  method_definition.extend([class_name+"::"+association.name + " ( const "+pub_type+" &"+association.name+")","{"])
+  if association.multiplicity == 'many':
+    method_definition.append('  '+association.name+"_.clear();")
+    method_definition.append('''  for('''+pub_type+'''::const_iterator i = '''+association.name+'''.begin(); i != '''+association.name+'''.end(); ++i)
+      '''+association.name+'''_.push_back(*i);
 ''')
+  else:
+    method_definition.append('  '+association.name+"_ = "+association.name+";")
+
   method_definition.extend(["  is_dirty_ = true;","}"])
   return method_definition
 
-def _def_persist_assoc(attribute_name, priv_type, assoc_class):
-  return '''  for('''+priv_type+'''::iterator i = '''+attribute_name+'''_.begin(); i != '''+attribute_name+'''_.end(); ++i)
+def _def_persist_assoc(association, priv_type):
+  if association.multiplicity == 'many':
+    return '''  for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
   {
-    db->persist<'''+assoc_class+'''>(*(*i).lock());
+    db->persist<'''+association.atype+'''>(*(*i).lock());
   }
-
 '''
-def _def_update_assoc(attribute_name, priv_type, assoc_class):
-  return '''  for('''+priv_type+'''::iterator i = '''+attribute_name+'''_.begin(); i != '''+attribute_name+'''_.end(); ++i)
+  else:
+    return '  db->persist<'+association.atype+'> (*'+association.name+'_.lock());\n'   
+
+def _def_update_assoc(association, priv_type):
+  if association.multiplicity == 'many':
+    return '''  for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
   {
-    db_ptr_->update<'''+assoc_class+'''>(*(*i).lock(),true);
+    db_ptr_->update<'''+association.atype+'''>(*(*i).lock(),true);
   }
-
 '''
+  else:
+    return '  db_ptr_->update<'+association.atype+'> (*'+association.name+'_.lock());\n' 
 
 def _dec_getter(attribute_name, attribute_type):
   method_declaration = ["const " + attribute_type + "&"]
-  method_declaration.extend([attribute_name + " () const;"])
+  method_declaration.extend([attribute_name + " () const;\n"])
   return method_declaration
   
 def _dec_setter(attribute_name, attribute_type):
   method_declaration = ["void"]
-  method_declaration.extend([attribute_name + " (const "+attribute_type+" &"+attribute_name+");"])
+  method_declaration.extend([attribute_name + " (const "+attribute_type+" &"+attribute_name+");\n"])
   return method_declaration
 
 def _dec_getter_assoc(attribute_name, attribute_type):
   src = [attribute_type]
-  src.extend([attribute_name + " ();"])
+  src.extend([attribute_name + " ();\n"])
   return src
   
 def _dec_setter_assoc(attribute_name, attribute_type):
   method_declaration = ["void"]
-  method_declaration.append(attribute_name + " ( const "+attribute_type+" &"+attribute_name+");")
+  method_declaration.append(attribute_name + " ( const "+attribute_type+" &"+attribute_name+");\n")
   return method_declaration
 
 def _dec_persist_assoc():
@@ -564,6 +628,7 @@ class DdlInheritanceValidator:
     else:
       if dtype.ancestor != dtype.name:
         self._check_image(dtype.ancestor)
+
 
       
            
