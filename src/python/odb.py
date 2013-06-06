@@ -158,47 +158,55 @@ class DdlOdbGenerator(DdlVisitor):
     exc_assoc = self._get_exclusive_associations(datatype.name)
     if exc_assoc != [] and self._assoc_touples == []:
       self._header.append("#include <odb/tr1/memory.hxx>")
-      self._header.append("using std::tr1::shared_ptr;")
       
     for exc in exc_assoc:
       self._header.append('#include "ddl_'+exc[1]+'.hpp"')
       self._forward_section.append('class '+exc[1]+';')
+      self._friends.append('friend class '+exc[1]+';')
+      self._private_section.append("shared_ptr<"+exc[1]+"> "+exc[1]+"_"+exc[0]+"_;")
     
     h = open(_os.path.join(self._src_dir, hdr_name), 'w') 
     h.writelines(l + "\n" for l in lines)
     h.writelines(l + "\n" for l in self._header)
+    h.writelines(['#include <memory>\n'])
+    h.writelines(['using std::tr1::shared_ptr;\n'])
+    h.writelines(['using std::tr1::weak_ptr;\n'])
     h.writelines(l + "\n" for l in self._forward_section)
     h.writelines(l + "\n" for l in intro)
-    # public section
+# public section
     h.writelines([" public:\n"])
+    
+    #factory method
+    h.writelines(["  static","  shared_ptr<"+self._class_name+"> create(const std::string &name);\n"])
     h.writelines("  "+l + "\n" for l in self._type_defs)
     h.writelines("  "+l + "\n" for l in self._public_section)
-    # public constructor with name argument
-    h.writelines(["  "+self._class_name+" (const std::string &name);\n"])
-    # preotected section
+# preotected section
     h.writelines([" protected:\n"])
     h.writelines("  "+l + "\n" for l in self._friends)
     h.writelines("  "+l + "\n" for l in self._protected_section)
     # default constructor.
     h.writelines(["  "+self._class_name+" ();\n"])
-    # private section
+# private section
+    h.writelines(["  "+self._class_name+" (const std::string &name);\n"])
     h.writelines([" private:\n"])
     h.writelines("  "+l + "\n" for l in self._private_section)
     for t in self._assoc_touples:
       if t[0].multiplicity == 'many' and (t[0].relation == 'exclusive' or t[0].relation == 'extend'):
         h.writelines(['  #pragma db inverse('+self._class_name+'_'+t[0].name+'_)\n'])
       h.writelines(['  '+t[2]+' '+t[0].name+'_;\n'])
-
-    h.writelines("  shared_ptr<"+l[1]+"> "+l[1]+"_"+l[0]+"_;\n" for l in exc_assoc)
+#
+#    h.writelines("  shared_ptr<"+l[1]+"> "+l[1]+"_"+l[0]+"_;\n" for l in exc_assoc)
     # default inizializer method
     h.writelines(["  void init();\n"])
-
+    h.writelines(['  #pragma db transient\n'])
+    h.writelines(['  weak_ptr<'+self._class_name+'> self_;\n'])
     h.writelines(["};\n"])
     h.writelines(['#include "'+idr_name+'"\n'])
     h.writelines(["#endif"])
     h.close()
 
     i = open(_os.path.join(self._src_dir, idr_name), 'w')
+    i.writelines([_def_factory_method(self._class_name)])
     for j in self._keyword_touples:
       i.writelines(l+'\n' for l in _def_getter(j[0],j[1],self._class_name))
       i.writelines(l+'\n' for l in _def_setter(j[0],j[1],self._class_name))  
@@ -369,7 +377,17 @@ struct das_traits<'''+self._class_name+'''>
 
     return exc_assoc
 
-    
+def _def_factory_method(class_name):
+  return '''
+inline shared_ptr<'''+class_name+'''>
+'''+class_name+'''::create(const std::string &name)
+{
+  shared_ptr<'''+class_name+'''> ptr(new '''+class_name+'''(name));
+  ptr->self_ = ptr;
+  return ptr;
+}
+'''
+  
 
 def _def_getter(attribute_name, attribute_type, class_name):
   method_definition = ["inline const " + attribute_type + "&"]
@@ -453,37 +471,77 @@ def _def_getter_assoc(association, pub_type, priv_type, class_name):
   
 def _def_setter_assoc(association, pub_type, class_name):
   method_definition = ["void"]
-  method_definition.extend([class_name+"::"+association.name + " ( const "+pub_type+" &"+association.name+")","{"])
-  if association.multiplicity == 'many':
+  method_definition.extend([class_name+"::"+association.name + " ("+pub_type+" &"+association.name+"_new)","{"])
+  if association.multiplicity == 'many' and association.relation == 'shared':
     method_definition.append('  '+association.name+"_.clear();")
-    method_definition.append('''  for('''+pub_type+'''::const_iterator i = '''+association.name+'''.begin(); i != '''+association.name+'''.end(); ++i)
+    method_definition.append('''  for('''+pub_type+'''::const_iterator i = '''+association.name+'''_new.begin(); i != '''+association.name+'''_new.end(); ++i)
       '''+association.name+'''_.push_back(*i);
 ''')
+  elif  association.multiplicity == 'many' and ( association.relation == 'exclusive' or association.relation == 'extend'):
+    method_definition.append('''
+    '''+pub_type+''' current =  '''+association.name+''' ();
+    for ('''+pub_type+'''::iterator i = current.begin(); i != current.end(); ++i){
+        (*i)->'''+class_name+'''_'''+association.name+'''_.reset();
+        (*i)->is_dirty_ = true;
+    }
+    '''+association.name+'''_.clear();
+    for ('''+pub_type+'''::iterator i = '''+association.name+'''_new.begin(); i != '''+association.name+'''_new.end(); ++i){
+        (*i)->'''+class_name+'''_'''+association.name+'''_ = self_.lock();
+        (*i)->is_dirty_ = true;
+        '''+association.name+'''_.push_back(*i);
+    }
+''')
   else:
-    method_definition.append('  '+association.name+"_ = "+association.name+";")
+    method_definition.append('  '+association.name+"_ = "+association.name+"_new;")
 
   method_definition.extend(["  is_dirty_ = true;","}"])
   return method_definition
+
 
 def _def_persist_assoc(association, priv_type):
   if association.multiplicity == 'many':
     return '''  for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
   {
-    db->persist<'''+association.atype+'''>(*(*i).lock());
+    if(!(*i).expired())
+    {
+      shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = (*i).load();
+      // if('''+association.name+'''_temp)
+      db->persist<'''+association.atype+'''> (*'''+association.name+'''_temp);
+    }
   }
 '''
   else:
-    return '  db->persist<'+association.atype+'> (*'+association.name+'_.lock());\n'   
+    return '''
+  if(!'''+association.name+'''_.expired())
+  {
+  shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = '''+association.name+'''_.load(); //it means just lock
+  // if('''+association.name+'''_temp)
+    db->persist<'''+association.atype+'''> (*'''+association.name+'''_temp);
+  }
+'''
 
 def _def_update_assoc(association, priv_type):
   if association.multiplicity == 'many':
     return '''  for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
   {
-    db_ptr_->update<'''+association.atype+'''>(*(*i).lock(),true);
+    if((*i).loaded() && !(*i).expired())
+    {
+      shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = (*i).load(); // it means just lock
+      // if('''+association.name+'''_temp)
+      db_ptr_->update<'''+association.atype+'''> (*'''+association.name+'''_temp,true);
+    }
   }
 '''
-  else:
-    return '  db_ptr_->update<'+association.atype+'> (*'+association.name+'_.lock());\n' 
+  else: 
+    return '''
+  if('''+association.name+'''_.loaded() && !'''+association.name+'''_.expired())
+  {
+    shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = '''+association.name+'''_.load(); // it means just lock
+    //if('''+association.name+'''_temp)
+    db_ptr_->update<'''+association.atype+'''> (*'''+association.name+'''_temp,true);
+  }
+''' 
+
 
 def _dec_getter(attribute_name, attribute_type):
   method_declaration = ["const " + attribute_type + "&"]
@@ -502,7 +560,7 @@ def _dec_getter_assoc(attribute_name, attribute_type):
   
 def _dec_setter_assoc(attribute_name, attribute_type):
   method_declaration = ["void"]
-  method_declaration.append(attribute_name + " ( const "+attribute_type+" &"+attribute_name+");\n")
+  method_declaration.append(attribute_name + " ( "+attribute_type+" &"+attribute_name+");\n")
   return method_declaration
 
 def _dec_persist_assoc():
