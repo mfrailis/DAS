@@ -21,7 +21,9 @@ Transaction::commit()
          
   if (db_it == bundle_->session_->map().end ())
     {
-      std::cout << "error: no database in session" << std::endl;
+#ifdef VDBG
+      std::cout << "DAS debug INFO: session empty" << std::endl;
+ #endif     
       return;
     }
   for(type_map::iterator type_it = db_it->second.begin();
