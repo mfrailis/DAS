@@ -1,5 +1,5 @@
-#ifndef DAS_DDL_COLUMN_HPP
-#define DAS_DDL_COLUMN_HPP
+#ifndef DAS_COLUMN_HPP
+#define DAS_COLUMN_HPP
 
 #pragma db value
 class Column
@@ -88,15 +88,15 @@ public:
     : Column(type)
   {} 
   
-  //TODO methods for streaming in and out the buffer
+
 
  private:
   friend class odb::access;
 
   ColumnBlob()  {}
  
-  #pragma db mysql:type("MEDIUMBLOB") oracle:type("BLOB") pgsql:type("text") sqlite:type("BLOB") mssql:type("varbinary")
+  #pragma db mysql:type("MEDIUMBLOB") oracle:type("BLOB") pgsql:type("BYTEA") sqlite:type("BLOB") mssql:type("varbinary")
   std::vector<char> buffer_;
-  //FIXME is this vector<char> suitable?
+
 };
 #endif

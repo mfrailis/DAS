@@ -1,5 +1,5 @@
-#ifndef DAS_DDL_IMAGE_HPP
-#define DAS_DDL_IMAGE_HPP
+#ifndef DAS_IMAGE_HPP
+#define DAS_IMAGE_HPP
 
 #pragma db value
 class Image
@@ -106,7 +106,7 @@ public:
 
   ImageBlob()  {}
  
-  #pragma db mysql:type("MEDIUMBLOB") oracle:type("BLOB") pgsql:type("text") sqlite:type("BLOB") mssql:type("varbinary")
+  #pragma db mysql:type("MEDIUMBLOB") oracle:type("BLOB") pgsql:type("BYTEA") sqlite:type("BLOB") mssql:type("varbinary")
   std::vector<char> buffer_;
   //FIXME is this vector<char> suitable?
 };
