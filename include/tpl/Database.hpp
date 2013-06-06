@@ -261,9 +261,9 @@ public:
       std::string clause = exp_visitor.parse_exp(expression);
       std::string order = exp_visitor.parse_ord(ordering);
 
-#ifdef VDBG
-      std::cout << "DAS debug INFO: WHERE " << clause+order <<std::endl; //DBG
-#endif
+//#ifdef VDBG
+      std::cout << "DAS debug INFO: WHERE\n" << clause+order <<std::endl; //DBG
+//#endif
 
       return db_->query<T>(clause+order);
     }

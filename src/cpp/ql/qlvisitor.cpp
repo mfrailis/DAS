@@ -99,7 +99,7 @@ void  QLVisitor::visitConstInt(ConstInt *p)
 
   std::stringstream ss;
   ss << x;
-  stack.top().code_.append(ss.str());
+  stack.top().direct_code_.append(ss.str());
 }
 
 void  QLVisitor::visitConstFloat(ConstFloat *p)
@@ -113,24 +113,28 @@ void  QLVisitor::visitConstFloat(ConstFloat *p)
 
   std::stringstream ss;
   ss << x;
-  stack.top().code_.append(ss.str());
+  stack.top().direct_code_.append(ss.str());
 }
 
 void QLVisitor::visitStr(String x)
 {
   stack.top().type_=t_string;
-  stack.top().code_.append(x);
+  stack.top().direct_code_.append(x);
 }
 
 void QLVisitor::visitListName(ListName *p)
 {
+  stack.top().assoc_tables_.insert(stack.top().current_type_); //base type
   try
     {
       for(unsigned int i = 0; i < p->size()-1; ++i)
 	{
-	  const std::string &new_type =  info_->get_association_type(stack.top().current_type_,  static_cast<Keyword*>(p->at(i))->ident_);
-	  stack.top().current_type_ = new_type;
-	  // TODO add association table to env;
+	  const AssociationInfo& info = info_->
+	    get_association_type(stack.top().current_type_,  static_cast<Keyword*>(p->at(i))->ident_);
+	  gen_join_code(info);
+	  stack.top().assoc_tables_.insert(info.association_table);
+	  stack.top().assoc_tables_.insert(info.association_type);
+	  stack.top().current_type_ = info.association_type;
 	}
     }
   catch(std::out_of_range &e)
@@ -150,7 +154,19 @@ void QLVisitor::visitKeyword(Keyword *p)
     {
       throw das::keyword_not_present();
     }
-  stack.top().code_.append(p->ident_);
+  
+  if(stack.top().join_code_ != "")
+  {
+      stack.top().nested_code_.append(stack.top().current_type_);
+      stack.top().nested_code_.append(".");
+      stack.top().nested_code_.append(p->ident_);
+  }
+  else
+  {
+      stack.top().direct_code_.append(stack.top().current_type_);
+      stack.top().direct_code_.append(".");
+      stack.top().direct_code_.append(p->ident_);     
+  }
 }
 
 void QLVisitor::visitBinExp(Exp *exp_1, Exp *exp_2,const std::string &op)
@@ -174,7 +190,29 @@ void QLVisitor::visitBinExp(Exp *exp_1, Exp *exp_2,const std::string &op)
     throw das::bad_type();
 
   stack.top().type_ = common(e1,e2);
-  stack.top().code_.append("("+e1.code_+op+e2.code_+")");
+  stack.top().join_code_ = e1.join_code_;
+  
+  if(e1.join_code_ != "" && e2.join_code_ != "")
+    stack.top().join_code_.append(" AND ");
+
+  stack.top().join_code_.append(e2.join_code_);
+  stack.top().assoc_tables_.insert(e1.assoc_tables_.begin(),e1.assoc_tables_.end());
+  stack.top().assoc_tables_.insert(e2.assoc_tables_.begin(),e2.assoc_tables_.end());
+   
+  if(e1.join_code_ != "" || e2.join_code_ != "")
+  {
+      if(e1.join_code_ != "")
+          stack.top().nested_code_.append("("+e1.nested_code_+op);
+      else
+          stack.top().nested_code_.append("("+e1.direct_code_+op);
+      
+      if(e2.join_code_ != "")
+          stack.top().nested_code_.append(e2.nested_code_+")");
+      else
+          stack.top().nested_code_.append(e2.direct_code_+")");
+  }
+  else
+      stack.top().direct_code_.append("("+e1.direct_code_+op+e2.direct_code_+")");
 }
 
 
@@ -201,9 +239,36 @@ void QLVisitor::visitCompExpAA(CompExpAA *p)
   if(p->compop_ != "==" && p->compop_ != "!=" && t == t_bool)
     throw das::bad_type();
 
-  stack.top().code_.append("("+e1.code_);
-  stack.top().code_.append(compop_to_sql(p->compop_));
-  stack.top().code_.append(e2.code_+")");
+    stack.top().join_code_ = e1.join_code_;
+  
+  if(e1.join_code_ != "" && e2.join_code_ != "")
+    stack.top().join_code_.append(" AND ");
+
+  stack.top().join_code_.append(e2.join_code_);
+  stack.top().assoc_tables_.insert(e1.assoc_tables_.begin(),e1.assoc_tables_.end());
+  stack.top().assoc_tables_.insert(e2.assoc_tables_.begin(),e2.assoc_tables_.end());
+  
+  
+  if(e1.join_code_ != "" || e2.join_code_ != "")
+  {
+      if(e1.join_code_ != "")
+          stack.top().nested_code_.append("("+e1.nested_code_);
+      else
+          stack.top().nested_code_.append("("+e1.direct_code_);
+      
+      stack.top().nested_code_.append(compop_to_sql(p->compop_));
+      
+      if(e2.join_code_ != "")
+          stack.top().nested_code_.append(e2.nested_code_+")");
+      else
+          stack.top().nested_code_.append(e2.direct_code_+")");      
+  }
+  else
+  {
+    stack.top().direct_code_.append("("+e1.direct_code_);
+    stack.top().direct_code_.append(compop_to_sql(p->compop_));
+    stack.top().direct_code_.append(e2.direct_code_+")");
+  }
 }
 
 void QLVisitor::visitCompExpSC(CompExpSC *p)
@@ -220,9 +285,21 @@ void QLVisitor::visitCompExpSC(CompExpSC *p)
   if(e.type_ != t_string)
     throw das::bad_type();
 
-  stack.top().code_.append("("+p->str_);
-  stack.top().code_.append(compop_to_sql(p->compop_));
-  stack.top().code_.append(e.code_+ ")");
+  stack.top().join_code_ = e.join_code_;
+  stack.top().assoc_tables_.insert(e.assoc_tables_.begin(),e.assoc_tables_.end());
+  
+  if(e.join_code_ != "")
+  {
+    stack.top().nested_code_.append("("+p->str_);
+    stack.top().nested_code_.append(compop_to_sql(p->compop_));
+    stack.top().nested_code_.append(e.nested_code_+ ")");      
+  }
+  else
+  {
+    stack.top().direct_code_.append("("+p->str_);
+    stack.top().direct_code_.append(compop_to_sql(p->compop_));
+    stack.top().direct_code_.append(e.direct_code_+ ")");
+  }
 }
 
 void QLVisitor::visitCompExpCS(CompExpCS *p)
@@ -236,11 +313,25 @@ void QLVisitor::visitCompExpCS(CompExpCS *p)
   e = stack.top();
   stack.pop();
 
+  stack.top().join_code_ = e.join_code_;
+  stack.top().assoc_tables_.insert(e.assoc_tables_.begin(),e.assoc_tables_.end());
+  
   if(e.type_ != t_string)
     throw das::bad_type();
-  stack.top().code_.append("(" + e.code_);
-  stack.top().code_.append(compop_to_sql(p->compop_));
-  stack.top().code_.append(p->str_ +")");
+  
+  if(e.join_code_ != "")
+  {
+      stack.top().nested_code_.append("(" + e.nested_code_);
+      stack.top().nested_code_.append(compop_to_sql(p->compop_));
+      stack.top().nested_code_.append(p->str_ +")");     
+  }
+  else
+  {
+      stack.top().direct_code_.append("(" + e.direct_code_);
+      stack.top().direct_code_.append(compop_to_sql(p->compop_));
+      stack.top().direct_code_.append(p->str_ +")");     
+  }
+
 
 }
 
@@ -261,9 +352,21 @@ void QLVisitor::visitCompExpBA(CompExpBA *p)
   if(p->compop_ != "==" && p->compop_ != "!=")
     throw das::bad_type();
 
-  stack.top().code_.append(p->boolconst_);
-  stack.top().code_.append(compop_to_sql(p->compop_));
-  stack.top().code_.append(e.code_);
+  stack.top().join_code_ = e.join_code_;
+  stack.top().assoc_tables_.insert(e.assoc_tables_.begin(),e.assoc_tables_.end());
+  
+  if(e.join_code_ != "")
+  {
+      stack.top().nested_code_.append(e.nested_code_);
+      stack.top().nested_code_.append(compop_to_sql(p->compop_));       
+      stack.top().nested_code_.append(p->boolconst_);
+  }
+  else
+  {
+      stack.top().direct_code_.append(e.direct_code_);
+      stack.top().direct_code_.append(compop_to_sql(p->compop_));       
+      stack.top().direct_code_.append(p->boolconst_);
+  }
 }
 
 void QLVisitor::visitCompExpAB(CompExpAB *p)
@@ -283,9 +386,21 @@ void QLVisitor::visitCompExpAB(CompExpAB *p)
   if(p->compop_ != "==" && p->compop_ != "!=")
     throw das::bad_type();
 
-  stack.top().code_.append(e.code_);
-  stack.top().code_.append(compop_to_sql(p->compop_));
-  stack.top().code_.append(p->boolconst_);
+  stack.top().join_code_ = e.join_code_;
+  stack.top().assoc_tables_.insert(e.assoc_tables_.begin(),e.assoc_tables_.end());
+  
+  if(e.join_code_ != "")
+  {
+      stack.top().nested_code_.append(e.nested_code_);
+      stack.top().nested_code_.append(compop_to_sql(p->compop_));       
+      stack.top().nested_code_.append(p->boolconst_);
+  }
+  else
+  {
+      stack.top().direct_code_.append(e.direct_code_);
+      stack.top().direct_code_.append(compop_to_sql(p->compop_));       
+      stack.top().direct_code_.append(p->boolconst_);
+  }
 }
 
 
@@ -303,10 +418,22 @@ void QLVisitor::visitStartsWith(StartsWith *p)
   if(e.type_ != t_string)
     throw das::bad_type();
 
+  stack.top().join_code_ = e.join_code_;
+  stack.top().assoc_tables_.insert(e.assoc_tables_.begin(),e.assoc_tables_.end());
+  
   std::string::iterator end = p->str_.end();
-  stack.top().code_.append(e.code_ +" LIKE ");
-  stack.top().code_.append(p->str_.begin(),--end);
-  stack.top().code_.append("%' ");
+  if(e.join_code_ != "")
+  {
+      stack.top().nested_code_.append(e.nested_code_ +" LIKE ");
+      stack.top().nested_code_.append(p->str_.begin(),--end);
+      stack.top().nested_code_.append("%' ");
+  }
+  else
+  {
+      stack.top().direct_code_.append(e.direct_code_ +" LIKE ");
+      stack.top().direct_code_.append(p->str_.begin(),--end);
+      stack.top().direct_code_.append("%' ");
+  }
 }
 
 void QLVisitor::visitEndsWith(EndsWith *p)
@@ -323,10 +450,22 @@ void QLVisitor::visitEndsWith(EndsWith *p)
   if(e.type_ != t_string)
     throw das::bad_type();
 
+  stack.top().join_code_ = e.join_code_;
+  stack.top().assoc_tables_.insert(e.assoc_tables_.begin(),e.assoc_tables_.end());
+  
   std::string::iterator start = p->str_.begin();
-  stack.top().code_.append(e.code_ +" LIKE '%");
-  stack.top().code_.append(++start,p->str_.end());
-  stack.top().code_.append(" ");
+  if(e.join_code_ != "")
+  {
+      stack.top().nested_code_.append(e.nested_code_ +" LIKE '%");
+      stack.top().nested_code_.append(++start,p->str_.end());
+      stack.top().nested_code_.append(" ");  
+  }
+  else
+  {
+      stack.top().direct_code_.append(e.direct_code_ +" LIKE '%");
+      stack.top().direct_code_.append(++start,p->str_.end());
+      stack.top().direct_code_.append(" ");
+  }
 }
 
 void QLVisitor::visitBoolExpAnd(BoolExpAnd *p)
@@ -342,8 +481,39 @@ void QLVisitor::visitBoolExpAnd(BoolExpAnd *p)
   p->boolexp_2->accept(this);
   e2 = stack.top();
   stack.pop();
-
-  stack.top().code_.append("("+e1.code_+" AND "+e2.code_+")");
+  
+  if(e1.join_code_ != "" || e2.join_code_ != "")
+  {
+      if(e1.join_code_ != "" && e2.join_code_ != "")
+      {
+          stack.top().join_code_ = e1.join_code_;
+          
+          if(e1.join_code_ != "" && e2.join_code_ != "")
+              stack.top().join_code_.append(" AND ");
+          
+          stack.top().join_code_.append(e2.join_code_);
+          stack.top().assoc_tables_.insert(e1.assoc_tables_.begin(),e1.assoc_tables_.end());
+          stack.top().assoc_tables_.insert(e2.assoc_tables_.begin(),e2.assoc_tables_.end());
+ 
+          stack.top().nested_code_.append("("+e1.nested_code_+" AND "+e2.nested_code_+")");
+      }
+      else if(e1.join_code_ != "")
+      {
+          stack.top().direct_code_.append("( ");
+          gen_nested(e1);
+          stack.top().direct_code_.append(" AND ");
+          stack.top().direct_code_.append(e2.direct_code_+")");
+      }
+      else
+      {
+         stack.top().direct_code_.append("("+e1.direct_code_+" AND ");
+         gen_nested(e2);
+         stack.top().direct_code_.append(")"); 
+         
+      }
+  }
+  else
+      stack.top().direct_code_.append("("+e1.direct_code_+" AND "+e2.direct_code_+")");
 }
 
 void QLVisitor::visitBoolExpOr(BoolExpOr *p)
@@ -360,7 +530,38 @@ void QLVisitor::visitBoolExpOr(BoolExpOr *p)
   e2 = stack.top();
   stack.pop();
 
-  stack.top().code_.append("("+e1.code_+" OR "+e2.code_+")");
+  if(e1.join_code_ != "" || e2.join_code_ != "")
+  {
+      if(e1.join_code_ != "" && e2.join_code_ != "")
+      {
+          stack.top().join_code_ = e1.join_code_;
+          
+          if(e1.join_code_ != "" && e2.join_code_ != "")
+              stack.top().join_code_.append(" AND ");
+          
+          stack.top().join_code_.append(e2.join_code_);
+          stack.top().assoc_tables_.insert(e1.assoc_tables_.begin(),e1.assoc_tables_.end());
+          stack.top().assoc_tables_.insert(e2.assoc_tables_.begin(),e2.assoc_tables_.end());
+ 
+          stack.top().nested_code_.append("("+e1.nested_code_+" OR "+e2.nested_code_+")");
+      }
+      else if(e1.join_code_ != "")
+      {
+          stack.top().direct_code_.append("( ");
+          gen_nested(e1);
+          stack.top().direct_code_.append(" OR ");
+          stack.top().direct_code_.append(e2.direct_code_+")");
+      }
+      else
+      {
+         stack.top().direct_code_.append("("+e1.direct_code_+" OR ");
+         gen_nested(e2);
+         stack.top().direct_code_.append(")"); 
+         
+      }
+  }
+  else
+      stack.top().direct_code_.append("("+e1.direct_code_+" OR "+e2.direct_code_+")");
 }
 
 void QLVisitor::visitBoolExpNot(BoolExpNot *p)
@@ -370,11 +571,19 @@ void QLVisitor::visitBoolExpNot(BoolExpNot *p)
   p->boolexp_->accept(this);
   e = stack.top();
   stack.pop();
-
-  stack.top().code_.append("NOT ("+e.code_+")");
+     
+  stack.top().join_code_ = e.join_code_;
+  stack.top().assoc_tables_.insert(e.assoc_tables_.begin(),e.assoc_tables_.end());
+  
+  if(e.join_code_ != "")
+      stack.top().nested_code_.append("NOT ("+e.nested_code_+")");
+  else
+      stack.top().direct_code_.append("NOT ("+e.direct_code_+")");
 }
 
-type_e QLVisitor::common(const Env& e1,const Env& e2)
+inline
+type_e
+QLVisitor::common(const Env& e1,const Env& e2)
 {
   if(e1.type_ == e2.type_)
     return e1.type_;
@@ -384,7 +593,9 @@ type_e QLVisitor::common(const Env& e1,const Env& e2)
   throw das::non_compatible_types();
 }
 
-const char* QLVisitor::compop_to_sql(const std::string &op)
+inline
+const char*
+QLVisitor::compop_to_sql(const std::string &op)
 {
   if(op == "==")
     {
@@ -401,7 +612,9 @@ const char* QLVisitor::compop_to_sql(const std::string &op)
 
 }
 
-type_e QLVisitor::string_to_type(const std::string &t)
+inline
+type_e
+QLVisitor::string_to_type(const std::string &t)
 {
   if(t == "byte")
     return t_byte;
@@ -427,7 +640,9 @@ type_e QLVisitor::string_to_type(const std::string &t)
   throw das::unknown_kewyword_type();
 }
 
-std::string QLVisitor::type_to_string(type_e t)
+inline
+std::string
+QLVisitor::type_to_string(type_e t)
 {
   switch(t)
     {
@@ -464,7 +679,8 @@ std::string QLVisitor::parse_exp(const std::string &expression)
       start.current_type_ = base_type_;
       stack.push(start);
       parse_tree->accept(this);
-      std::string s = stack.top().code_;
+      gen_nested(stack.top());
+      std::string s = stack.top().direct_code_;
       stack.pop();
       delete parse_tree;
       return s;
@@ -474,4 +690,74 @@ std::string QLVisitor::parse_exp(const std::string &expression)
       delete parse_tree;
       throw das::incomplete_statement();
     }
+}
+
+inline
+void
+QLVisitor::gen_join_code(const AssociationInfo &info)
+{
+  Env &top = stack.top();
+  if(top.join_code_ != "")
+    top.join_code_.append(" AND ");
+
+  if(info.association_key != "" && info.object_key != "") // table of associations
+  {
+    top.join_code_.append(top.current_type_);
+    top.join_code_.append(".das_id = ");
+    top.join_code_.append(info.association_table);
+    top.join_code_.append(".");
+    top.join_code_.append(info.object_key);
+    top.join_code_.append(" AND ");
+    top.join_code_.append(info.association_type);
+    top.join_code_.append(".das_id = ");
+    top.join_code_.append(info.association_table);
+    top.join_code_.append(".");
+    top.join_code_.append(info.association_key);
+  }
+  else
+  {
+    if(info.association_key == "") // foreign key on associated type
+    {
+      top.join_code_.append(top.current_type_);
+      top.join_code_.append(".das_id = ");
+      top.join_code_.append(info.association_table);
+      top.join_code_.append(".");
+      top.join_code_.append(info.object_key);	  
+    }
+    else  // foreign key on base type
+    {
+      top.join_code_.append(info.association_type);
+      top.join_code_.append(".das_id = ");
+      top.join_code_.append(info.association_table);
+      top.join_code_.append(".");
+      top.join_code_.append(info.association_key);	  
+    }
+  }
+}
+
+inline
+void
+QLVisitor::gen_nested(Env& e)
+{
+    if(e.join_code_ == "")
+        return;
+    
+    Env &top = stack.top();
+    e.assoc_tables_.insert(top.current_type_);
+    top.direct_code_.append(top.current_type_+".das_id IN (\n");
+    top.direct_code_.append("SELECT "+top.current_type_+".das_id\n");
+    top.direct_code_.append("FROM ");
+    for (
+      std::set<std::string>::iterator i = e.assoc_tables_.begin();
+      i != e.assoc_tables_.end();
+      ++i)
+    {
+      top.direct_code_.append(" "+*i+",");  
+    }
+    top.direct_code_[top.direct_code_.size()-1]='\n';
+    top.direct_code_.append("WHERE ");
+    top.direct_code_.append(e.join_code_);
+    top.direct_code_.append(" AND\n(");
+    top.direct_code_.append(e.nested_code_);
+    top.direct_code_.append(")\n)\n");
 }

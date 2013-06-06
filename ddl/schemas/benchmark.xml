@@ -7,21 +7,40 @@
     <xi:include href="dasInstance.xml" parse="xml"
 	xpointer="xmlns(das=http://oats.inaf.it/das)xpointer(//das:type[@name='essentialMetadata'])"/>
 
-    <type name="TypeAbs">
+    <type name="TypeAnc">
         <metadata>
             <keyword name="timeStamp" type="int64" unit="ms" description="CPU timestamp"/>
+            <keyword name="intkey" type="int32"/>
         </metadata>
     </type>
     
-    <type name="TypeMain" ancestor="TypeAbs">
+    <type name="assoc">
+        <metadata>
+            <keyword name="stringkey" type="string"/>
+        </metadata>        
+    </type>
+    
+    <type name="TypeMain" ancestor="TypeAnc">
         <associated name="one_ex"  type="oneEx"  multiplicity="one"  relation="exclusive"/>
         <associated name="one_sh"  type="oneSh"  multiplicity="one"  relation="shared"/>
         <associated name="many_ex" type="manyEx" multiplicity="many" relation="exclusive"/>
         <associated name="many_sh" type="manySh" multiplicity="many" relation="shared"/>
     </type>
 
-    <type name="oneEx"  ancestor="TypeAbs"></type>
-    <type name="oneSh"  ancestor="TypeAbs"></type>
-    <type name="manyEx" ancestor="TypeAbs"></type>
-    <type name="manySh" ancestor="TypeAbs"></type>
+    <type name="oneEx"  ancestor="TypeAnc">
+        <associated name="nested_one_ex"  type="assoc"  multiplicity="one"  relation="exclusive"/>     
+    </type>
+    
+    <type name="oneSh"  ancestor="TypeAnc">
+        <associated name="nested_one_sh"  type="assoc"  multiplicity="one"  relation="shared"/>      
+    </type>
+    
+    <type name="manyEx" ancestor="TypeAnc">
+        <associated name="nested_many_ex" type="assoc" multiplicity="many" relation="exclusive"/>      
+    </type>
+    
+    <type name="manySh" ancestor="TypeAnc"> 
+        <associated name="nested_many_sh" type="assoc" multiplicity="many" relation="shared"/>   
+    </type>
+    
 </ddl>

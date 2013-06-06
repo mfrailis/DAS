@@ -84,7 +84,7 @@ int main()
 
       t.commit ();
     }
-    */
+
     odb::session s;
     
     shared_ptr<D::Database> db = D::Database::create("benchmark");
@@ -137,8 +137,21 @@ int main()
   
     for(TypeMain::many_ex_vector::iterator i = exass.begin(); i != exass.end(); ++i)
         db->update<manyEx>(*i,true);
+<<<<<<< HEAD
     */  
     
+=======
+    */
+    shared_ptr<D::Database> db = D::Database::create("benchmark");
+    
+    typedef odb::result<TypeMain> result;
+
+
+      odb::transaction t (db->begin ());
+      result r (db->query<TypeMain> ("(many_sh.nested_many_sh.stringkey == one_ex.nested_one_ex.stringkey) && one_ex.nested_one_ex.stringkey == 'FUNC_0001' && name == 'prova'","version descending"));
+      t.commit ();
+      
+>>>>>>> association query support
     return 0;
 }
 
