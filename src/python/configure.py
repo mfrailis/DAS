@@ -54,7 +54,8 @@ class JsonConfigParser:
             db_str = db['alias']
             self.sub_dirs.append(db_str)
             dir_name = _os.path.join(output_dir,db_str)
-            _os.mkdir(dir_name)
+            if not _os.path.exists(dir_name):
+                _os.mkdir(dir_name)
             ddl_h   = self.db_map[_assemble_db(db)]+'_types.h'
             ddl_sql = self.db_map[_assemble_db(db)]+'_types.sql'
             typelist=self.ddl_map.get_type_list(_assemble_ddl(db['ddl']))
@@ -74,6 +75,7 @@ def _generate_sub_cmake(dir_name,db_str,db_type,ddl_h,ddl_sql,prefix,db,typelist
 '''
 cmake_minimum_required(VERSION 2.8)
 set(SQL_DIR ${CMAKE_CURRENT_BINARY_DIR})
+set(DDL_LOCAL_SIGNATURE ${CMAKE_CURRENT_BINARY_DIR}/${DDL_SIGNATURE})
 
 set(TYPE_NAMES ''')
     for i in typelist:
@@ -92,24 +94,34 @@ foreach(type_name ${TYPE_NAMES})
             -x -I${ODB_SOURCE_DIR}
             -x -I${CPP_INCLUDE_DIR}
 	    ${ODB_SOURCE_DIR}/${TYPE_PREFIX}${type_name}.hpp
+    DEPENDS ${DDL_LOCAL_SIGNATURE}
     COMMENT "Generating schema for type ${type_name} on '''+db['alias']+'''"
     )
   list(APPEND SQL_FILES ${TYPE_PREFIX}${type_name}.sql)
 endforeach()
 
+set(ODB_HXX)
+foreach(type_name ${TYPE_NAMES})
+  add_custom_command(
+    OUTPUT ${TYPE_PREFIX}${type_name}-odb.hxx
+    COMMAND odb
+            --database '''+db_type+'''
+	    -x -I${ODB_SOURCE_DIR}
+            -x -I${CPP_INCLUDE_DIR}
+	    ${ODB_SOURCE_DIR}/${TYPE_PREFIX}${type_name}.hpp
+    DEPENDS ${DDL_LOCAL_SIGNATURE}
+    COMMENT "Generating odb class for type ${type_name} on '''+db['alias']+'''"
+    )
+  list(APPEND ODB_HXX ${TYPE_PREFIX}${type_name}-odb.hxx)
+endforeach()
+
 add_custom_command(
-  OUTPUT  '''+ddl_sql+'''
-  COMMAND odb
-          --database '''+db_type+'''
-          --generate-query
-          --generate-schema 
-          --omit-drop
-          --at-once
-          ${ODB_SOURCE_DIR}/'''+ddl_h+'''
-    	  -x -I${ODB_SOURCE_DIR}
-	  -x -I${CPP_INCLUDE_DIR}
-  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-  COMMENT "Building odb classes for '''+db_str+'''"
+  OUTPUT  SIGNATURE_CHECK ${DDL_LOCAL_SIGNATURE}
+  COMMAND python cache_check.py
+          ${DDL_INSTANCE_DIR}/'''+db['ddl']+'''
+          ${DDL_LOCAL_SIGNATURE}
+  WORKING_DIRECTORY ${PYTHON_SOURCE_DIR}
+  COMMENT "Checking DDL signature"
 )
 
 add_custom_command(
@@ -124,32 +136,66 @@ add_custom_command(
           ${DDL_SCHEMA}
           ${DDL_INSTANCE_DIR}/'''+db['ddl']+'''
           ${TYPE_PREFIX}
+  DEPENDS ${DDL_LOCAL_SIGNATURE}
   WORKING_DIRECTORY ${PYTHON_SOURCE_DIR}
   COMMENT "Executing '''+db['db_type']+''' on '''+db['alias']+'''"
 )
 
 
+add_custom_target(
+  odb-'''+db_str+'''
+  DEPENDS SIGNATURE_CHECK ${ODB_HXX}
+)
 
 add_custom_target(
   schema-'''+db_str+'''
-  DEPENDS ${SQL_FILES}
+  DEPENDS SIGNATURE_CHECK ${SQL_FILES}
 )
 
 add_custom_target(
   '''+prefix+db_str+'''
-  DEPENDS ${SQL_FILES} DBMS_'''+prefix+db_str+'''
+  DEPENDS SIGNATURE_CHECK ${SQL_FILES} DBMS_'''+prefix+db_str+'''
 )
 '''
 )
     f.close()
         
-def generate(output_dir,dirs,prefix):
+def generate(output_dir,dirs,types,prefix):
     f = open(_os.path.join(output_dir,'CMakeLists.txt'),'w')
     f.write('cmake_minimum_required(VERSION 2.8)\n')
+    f.write('set(TYPE_NAMES_ALL \n')
+    for i in types:
+        if i != "essentialMetadata":
+            f.write(' '+i)
+    f.write(')')
+    f.write('''
+#set(ODB_COMMON_HXX)
+#foreach(type_name ${TYPE_NAMES_ALL})
+#  add_custom_command(
+#    OUTPUT ${TYPE_PREFIX}${type_name}-odb.hxx
+#    COMMAND odb
+#            --multi-database static
+#            --database common
+#            --generate-query
+#            --generate-schema
+#            --omit-drop
+#            -x -I${ODB_SOURCE_DIR}
+#            -x -I${CPP_INCLUDE_DIR}
+#	    ${ODB_SOURCE_DIR}/${TYPE_PREFIX}${type_name}.hpp
+#    COMMENT "Generating ORM mapping for type ${type_name}"
+#    )
+#  list(APPEND ODB_COMMON_HXX ${TYPE_PREFIX}${type_name}-odb.hxx)
+#endforeach()
+''')
+
     for l in dirs:
         f.write("add_subdirectory("+l+")\n")
     f.write(
 '''
+#add_custom_target(
+#  odb-common ALL
+#  DEPENDS ${ODB_COMMON_HXX} )
+
 add_custom_target(
   schema-all ALL
   DEPENDS'''
@@ -190,6 +236,7 @@ if __name__ == '__main__':
     c = JsonConfigParser(conf_schema)
     c.parse(conf)
     type_list = _ddl.DdlTypeList()
+    type_set = set()
     for ddl in c.ddl_files:
         temp_type_list = parser.parse_ddl(_os.path.join(ddl_dir,ddl))
         #check advanced constraints per ddl
@@ -205,6 +252,7 @@ if __name__ == '__main__':
         #check redefined types consistency
         for (name,ddl_type) in temp_type_list.type_map.items():
             c.ddl_map.add_type(_assemble_ddl(ddl),ddl_type.name)
+            type_set.add(ddl_type.name)
             if type_list.type_map.get(name,None) is None:
                 type_list.type_map[name] = ddl_type
             else:
@@ -226,4 +274,5 @@ if __name__ == '__main__':
 
     #subdirectories and CmakeLists.txt
     c.generate_sub(output_dir,target_prefix)
-    generate(output_dir,c.sub_dirs,target_prefix)
+    generate(output_dir,c.sub_dirs,type_set,target_prefix)
+

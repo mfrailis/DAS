@@ -15,6 +15,8 @@ set(ODB_OUTPUT_DIR ${DAS_BUILD_DIR}/odb)
 set(DDL_INSTANCE_DIR ${CMAKE_SOURCE_DIR}/ddl/schemas)
 set(DDL_SCHEMA ${CMAKE_SOURCE_DIR}/ddl/ddl.xsd)
 
+set(DDL_SIGNATURE ddl_signature.txt)
+
 set(CONF_JSON_SCHEMA ${CMAKE_SOURCE_DIR}/configure/schema.json)
 set(CONF_JSON ${CMAKE_SOURCE_DIR}/configure/config.json)
 

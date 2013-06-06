@@ -43,10 +43,20 @@
 	"host"          : "localhost",
 	"port"          : 3306,
 	"db_type"  	: "mysql",
-	"alias"         : "my_local",
+	"alias"         : "local",
 	"db_name"  	: "odb_test",
 	"ddl"	     	: "dasInstance.xml",
 	"data_root_dir" : "/db/testl2",
+	"time_interval" : "day"
+    },
+    {
+	"host"          : "localhost",
+	"port"          : 3306,
+	"db_type"  	: "mysql",
+	"alias"         : "localp",
+	"db_name"  	: "odb_test2",
+	"ddl"	     	: "dasPointers.xml",
+	"data_root_dir" : "/db/testl3",
 	"time_interval" : "day"
     }
 ]
