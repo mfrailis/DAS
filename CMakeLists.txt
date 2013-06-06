@@ -35,9 +35,6 @@ set(TARGET_DB_PREFIX "db-")
 
 
 #TODO check for all user defined files.
-#set(ODB_HXX)
-#set(ODB_CXX)
-#set(TYPES_CPP)
 
 set(DAS_QL_SRC 
   ${CPP_SOURCE_DIR}/ql/qlvisitor.cpp
