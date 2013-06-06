@@ -4,6 +4,7 @@
 #include <odb/core.hxx>
 #include <string>
 #include "ddl/info.hpp"
+#include "tpl/Database.hpp"
 
 #pragma db object abstract
 class DasObject
@@ -53,32 +54,41 @@ public:
     return name_;
   }
 
-  void
-  name (std::string name)
+  const std::string&
+  database ()
   {
-    name_ = name;
+    return database_;
   }
 
   DasObject()
   {
     type_name_ = "DasObject";
+    database_ = "none";
     version_ = 0;
     das_id_ = 0;
   }
 
 protected:
-  std::string type_name_; 
+#pragma db transient
+  std::string type_name_;
+  
+#pragma db transient
+  std::string database_;
+  
 private:
   friend class odb::access;
-
-  #pragma db id auto
+  friend class das::tpl::Database;
+  
+#pragma db id auto
   long long das_id_;
-
+  
+#pragma db type("VARCHAR(256)")
   std::string dbUserId_;
   long long creationDate_;
   short version_;
-
-  #pragma db index
+  
+#pragma db type("VARCHAR(256)")
+#pragma db index
   std::string name_;
 };
 

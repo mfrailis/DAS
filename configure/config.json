@@ -1,38 +1,52 @@
 [
-{
-  "ip"            : "192.168.1.10",
-  "port"          : 3306,
-  "db_type"  	  : "mysql",
-  "db_name"  	  : "testl2",
-  "ddl"	     	  : "dasInstance.xml",
-  "data_root_dir" : "/db/testl2",
-  "time_interval" : "day"
-},
-{
-  "ip"            : "192.168.1.11",
-  "port"          : 5432,
-  "db_type"  	  : "sqlite",
-  "db_name"  	  : "log_only",
-  "ddl"	     	  : "dasInstance.xml",
-  "data_root_dir" : "/db/testl2-logs",
-  "time_interval" : "month"
-},
-{
-  "ip"            : "192.168.1.11",
-  "port"          : 5432,
-  "db_type"  	  : "pgsql",
-  "db_name"  	  : "testl2_backup",
-  "ddl"	     	  : "dasInstance.xml",
-  "data_root_dir" : "/db/testl2_bak",
-  "time_interval" : "day"
-},
-{
-  "ip"            : "192.168.1.11",
-  "port"          : 5432,
-  "db_type"  	  : "pgsql",
-  "db_name"  	  : "testl2_backup2",
-  "ddl"	     	  : "dasInstance.xml",
-  "data_root_dir" : "/db/testl2_bak",
-  "time_interval" : "week"
-}
+    {
+	"host"          : "192.168.1.10",
+	"port"          : 3306,
+	"db_type"  	: "mysql",
+	"db_name"  	: "testl2",
+	"ddl"	     	: "dasInstance.xml",
+	"alias"         : "testl2",
+	"data_root_dir" : "/db/testl2",
+	"time_interval" : "day"
+    },
+    {
+	"host"          : "192.168.1.11",
+	"port"          : 5432,
+	"db_type"  	: "sqlite",
+	"db_name"  	: "log_only",
+	"alias"         : "log_only",
+	"ddl"	     	: "dasInstance.xml",
+	"data_root_dir" : "/db/testl2-logs",
+	"time_interval" : "month"
+    },
+    {
+	"host"          : "192.168.1.11",
+	"port"          : 5432,
+	"db_type"  	: "pgsql",
+	"alias"         : "testl2-bak",
+	"db_name"  	: "testl2_backup",
+	"ddl"	     	: "dasInstance.xml",
+	"data_root_dir" : "/db/testl2_bak",
+	"time_interval" : "day"
+    },
+    {
+	"host"          : "192.168.1.11",
+	"port"          : 5432,
+	"db_type"  	: "pgsql",
+	"alias"         : "pg_l2",
+	"db_name"  	: "testl2_backup2",
+	"ddl"	     	: "dasInstance.xml",
+	"data_root_dir" : "/db/testl2_bak",
+	"time_interval" : "week"
+    },
+    {
+	"host"          : "localhost",
+	"port"          : 3306,
+	"db_type"  	: "mysql",
+	"alias"         : "local",
+	"db_name"  	: "odb_test",
+	"ddl"	     	: "dasInstance.xml",
+	"data_root_dir" : "/db/testl2",
+	"time_interval" : "day"
+    }
 ]

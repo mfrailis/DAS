@@ -189,13 +189,16 @@ class DdlOdbGenerator(DdlVisitor):
   def visit_keyword(self,keyword):
     k_type = self.KTYPE_MAP[keyword.ktype]
 
+    if keyword.ktype == 'string':
+      self._private_section.append('#pragma db type("VARCHAR(256)")')
     if keyword.index is not None and keyword.index == "yes":
       self._private_section.append("#pragma db index")
     if keyword.default is not None:
       self._default_init.append(keyword.name+"_ = "+keyword.default+";")
     if k_type == 'CBLOB':
       self._private_section.append('#pragma db mysql:type("MEDIUMTEXT") oracle:type("CLOB") pgsql:type("TEXT") sqlite:type("TEXT") mssql:type("varbinary")')
-      self._header.append('typedef std::string CBLOB;')    
+      self._header.append('typedef std::string CBLOB;')
+
     self._private_section.append(k_type + " " + keyword.name + "_;")
     self._public_section.extend(_getter_template(keyword.name, self.KTYPE_MAP[keyword.ktype]))
 

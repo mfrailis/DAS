@@ -16,6 +16,12 @@ set(DDL_SCHEMA ${CMAKE_SOURCE_DIR}/ddl/ddl.xsd)
 set(CONF_JSON_SCHEMA ${CMAKE_SOURCE_DIR}/configure/schema.json)
 set(CONF_JSON ${CMAKE_SOURCE_DIR}/configure/config.json)
 
+set(DB_ACCESS_JSON_SCHEMA ${CMAKE_SOURCE_DIR}/configure/access_schema.json)
+set(DB_ACCESS_DIR $ENV{HOME}/.das)
+set(DB_ACCESS_JSON ${DB_ACCESS_DIR}/access.json)
+
+set(TARGET_DB_PREFIX "db-")
+
 #TODO check for all user defined files.
 
 include_directories(${CPP_SOURCE_DIR})
@@ -37,7 +43,7 @@ add_custom_command(
 
 execute_process(
   COMMAND python configure.py ${DAS_BUILD_DIR} ${CONF_JSON_SCHEMA} ${CONF_JSON}
-          ${DDL_SCHEMA} ${DDL_INSTANCE_DIR}
+          ${DDL_SCHEMA} ${DDL_INSTANCE_DIR} ${TARGET_DB_PREFIX}
   WORKING_DIRECTORY ${PYTHON_SOURCE_DIR}
 )
 

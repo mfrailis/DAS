@@ -1,0 +1,29 @@
+{
+  "$schema"         : "http://json-schema.org/draft-03/schema#",
+  "name"            : "Json-schema for configuration file",
+  "type"            : "array",
+  "items"           : { "$ref" : "#db-access"},
+  "minItems"        : 1,
+  "uniqueItems"     : true,
+  "additionalItems" : false,
+
+  "db-access"  : {
+     "id"         : "#db-access",
+     "type"	  : "object",
+     "properties" : {
+	 "alias"  : {
+	     "type" : "string",
+	     "required" : true
+	 },
+	 "user"  : {
+	     "type" : "string",
+	     "required" : true
+	 },
+	 "password"  : {
+	     "type" : "string",
+	     "required" : true
+	 }
+     }
+  } 
+  
+}
