@@ -93,6 +93,13 @@ Database::load(const std::string& name, int version) {
 }
 
 template<typename T>
+inline
+typename odb::object_traits<T>::id_type
+Database::persist(typename odb::object_traits<T>::pointer_type& obj, std::string path){
+    return bundle_.persist<T>(obj,path);
+}
+/*
+template<typename T>
 typename odb::object_traits<T>::id_type
 Database::persist(typename odb::object_traits<T>::pointer_type& obj, std::string path) {
     odb::session::current(*(bundle_.session()));
@@ -139,9 +146,9 @@ Database::persist(typename odb::object_traits<T>::pointer_type& obj, std::string
 
     // bind new object with this database
     obj->bundle_ = bundle_;
-    obj->is_dirty_ = false;
     return id;
 }
+*/
 
 template<typename T>
 inline
@@ -187,56 +194,12 @@ Database::attach(typename odb::object_traits<T>::pointer_type& obj) {
     bundle_.attach<T>(obj);
 }
 
-//TODO move this method in he bundle!!!
-
-/*template<typename T>
-inline
-void
-Database::attach(typename odb::object_traits<T>::pointer_type& obj) {
-    if (obj->is_new()) {
-#ifdef VDBG
-        std::cout << "DAS info: trying to attach an object without persisting firts" << std::endl;
-#endif
-        throw das::new_object();
-    }
-    if (!obj->bundle_.expired()) {
-        if (obj->bundle_ != bundle_) {
-#ifdef VDBG
-            std::cout << "DAS info: ERROR: trying to attach an object managed by other database" << std::endl;
-#endif
-            throw das::wrong_database();
-        } else
-            return;
-    }
-
-    odb::session::current(*(bundle_.session()));
-    shared_ptr<T> cache_hit = bundle_.session()->cache_find<T>(*(bundle_.db()), obj->das_id_);
-    if (cache_hit) {
-        if (cache_hit != obj) {
-#ifdef VDBG
-            std::cout << "DAS info: ERROR: another copy of this object found in cache" << std::endl;
-#endif              
-            throw das::object_not_unique();
-        } else {
-#ifdef VDBG
-            std::cout << "DAS info: object found in the cache but not bound to the database" << std::endl;
-#endif              
-            cache_hit->bundle_ = bundle_;
-        }
-    } else {
-        bundle_.session()->cache_insert<T>(*(bundle_.db()), obj->das_id_, obj);
-        obj->bundle_ = bundle_;
-    }
-
-}
- */
-
 inline
 void
 Database::flush() {
     if (odb::transaction::has_current()) {
 #ifdef VDBG
-        std::cout << "DAS info: calling db flush() while another transaction was open." << std::endl;
+        std::cout << "DAS info: WARNING: calling db flush() while another transaction was open." << std::endl;
 #endif                   
         return;
     }

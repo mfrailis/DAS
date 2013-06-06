@@ -16,8 +16,8 @@ def getter(association, pub_type, priv_type, class_name):
   {
     das::tpl::DbBundle bundle = bundle_.lock();
 
-    shared_ptr<odb::database> db = bundle.db();
-    shared_ptr<odb::session> session = bundle.session();
+    const shared_ptr<odb::database> &db = bundle.db();
+    const shared_ptr<odb::session> &session = bundle.session();
 
     if(bundle.valid())
     {
@@ -51,21 +51,13 @@ def getter(association, pub_type, priv_type, class_name):
         delete transaction;
       }
     }
-    else
+    else //if(bundle.valid())
     {
       try
       {
         for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
         {
-          shared_ptr<'''+association.atype+'''> sp = i->load();
-          if(!sp)
-          {
-#ifdef VDBG
-            std::cout << "DAS error0003: association weak pointer expired" << std::endl;
-#endif
-            throw das::not_in_managed_context();
-          }
-          associated.push_back(sp);
+          associated.push_back(i->load());
         }
       }
       catch(odb::not_in_transaction &e)
@@ -96,11 +88,20 @@ void
 
 ###############################################################################################################################################
 def update(association, priv_type):
-    return '''  for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
+    return '''
+  //das::tpl::DbBundle bundle = bundle_.lock();
+  for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
   {
     shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = (*i).get_eager();
     if('''+association.name+'''_temp)
+    {
+      if('''+association.name+'''_temp->is_new())
+      {
+        bundle.persist<'''+association.atype+'''> ('''+association.name+'''_temp);
+      }
+      // call update anyways because of the nested associated objects
       '''+association.name+'''_temp->update();
+    }
   }
 '''
 ###############################################################################################################################################
@@ -112,6 +113,6 @@ def persist(association, priv_type):
     return '''  for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
   {
     shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = (*i).get_eager();
-    db->persist<'''+association.atype+'''> ('''+association.name+'''_temp);
+    db.persist<'''+association.atype+'''> ('''+association.name+'''_temp);
   }
 '''

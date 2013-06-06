@@ -17,8 +17,8 @@ def getter(association, pub_type, priv_type, class_name):
   else
   {
     das::tpl::DbBundle bundle = bundle_.lock();
-    shared_ptr<odb::database> db = bundle.db();
-    shared_ptr<odb::session> session = bundle.session();
+    const shared_ptr<odb::database> &db = bundle.db();
+    const shared_ptr<odb::session> &session = bundle.session();
     if(bundle.valid())
     {
       odb::session::current(*session);
@@ -64,7 +64,7 @@ def getter(association, pub_type, priv_type, class_name):
       {
         throw das::not_in_managed_context();
       }
-    }// if bundle.expired()
+    }// if bundle.valid()
   }// if ix_new()   
   return associated;
 }''']
@@ -78,52 +78,34 @@ def setter(association, pub_type, priv_type, class_name):
 void
 '''+class_name+"::"+association.name + " ("+pub_type+" &"+association.name+'''_new)
 {
+  '''+pub_type+''' current_vec;
   if(is_new())
   {
-/*    for('''+pub_type+'''::iterator i='''+association.name+'''_new.begin();i!='''+association.name+'''_new.end();i++)
-    {
-      if(!(*i)->is_new())
-      {
-#ifdef VDBG
-        std::cout << "DAS error0017: object needs to be persisted before been setted by already persistent objects" << std::endl;
-#endif      
-        throw das::not_in_managed_context();
-      }
-    }
-*/
-    '''+pub_type+''' current_vec = '''+association.name+'''(); //no loading from database implied because this a new object
-    for('''+pub_type+'''::iterator i= current_vec.begin(); i!=current_vec.end();i++)
-    {
-      (*i)->'''+class_name+'''_'''+association.name+'''_.reset();
-      (*i)->is_dirty_ = true;
-    }
+    current_vec = '''+association.name+'''(); //no loading from database implied because this is a new object
   }
   else //if is_new()
   {
-    '''+pub_type+''' current_vec = '''+association.name+'''();
+    current_vec = '''+association.name+'''();
     das::tpl::DbBundle bundle = bundle_.lock();
-    shared_ptr<odb::database> db = bundle.db();
-    shared_ptr<odb::session> session = bundle.session();
+    const shared_ptr<odb::database> &db = bundle.db();
+    const shared_ptr<odb::session> &session = bundle.session();
     if(bundle.valid())
     {
       //check new association compatibility
-       for ('''+pub_type+'''::iterator i = '''+association.name+'''_new.begin(); i != '''+association.name+'''_new.end(); ++i)
-       {
-         if(*i) // some pointers may be null
-         {
-           if(!(*i)->is_new())
-           {
-             shared_ptr<odb::database> db_n = (*i)->bundle_.db();
-             shared_ptr<odb::session> session_n = (*i)->bundle_.session();
-             if(!(*i)->bundle_.expired() && 
-                ( db_n != db ||
-                  session_n != session ||
-                  (*i)->bundle_.alias() != bundle_.alias()))
-             {
-               throw das::wrong_database();
-             }
-           }
-         }// should we throw an exception if any pointer is null?
+      for ('''+pub_type+'''::iterator i = '''+association.name+'''_new.begin(); i != '''+association.name+'''_new.end(); ++i)
+      {
+        if(*i) // some pointers may be null
+        {
+          if(!(*i)->is_new())
+          {
+            das::tpl::DbBundle new_bundle = (*i)->bundle_.lock();
+            if((new_bundle.valid() && new_bundle != bundle) ||
+               (new_bundle.alias() != bundle.alias()))
+            {
+              throw das::wrong_database();
+            }
+          }
+        }// should we throw an exception if any pointer is null?
       }
      
       // add old association to the cache if is not new
@@ -135,13 +117,6 @@ void
         }
       }
 
-      // perform old association  decoupling
-      for('''+pub_type+'''::iterator i= current_vec.begin(); i!=current_vec.end();i++)
-      {
-        (*i)->'''+class_name+'''_'''+association.name+'''_.reset();
-        (*i)->is_dirty_ = true;
-      }
-
     }
     else //(if bundle.valid())
     {
@@ -149,44 +124,38 @@ void
       {
         if(!(*i)->is_new())
         {
+          //WARNING: linear search
+          '''+pub_type+'''::iterator found = std::find('''+association.name+'''_new.begin(),'''+association.name+'''_new.end(), *i);
+          if(found == '''+association.name+'''_new.end())
+          {
  #ifdef VDBG
-          std::cout << "DAS error0010: trying to set new association in a detached object with non new objects" << std::endl;
+            std::cout << "DAS error0010: trying to release associated object in a non managed context" << std::endl;
 #endif
-          throw das::not_in_managed_context();
+            throw das::not_in_managed_context();
+          }
         }
       }
 
-       for ('''+pub_type+'''::iterator i = '''+association.name+'''_new.begin(); i != '''+association.name+'''_new.end(); ++i)
-       {
-         if(*i) // some pointers may be null
-         {
-           if(!(*i)->is_new())
-           {
- #ifdef VDBG
-             std::cout << "DAS error0011: trying to set new association in a detached object with non new objects" << std::endl;
-#endif
-             throw das::not_in_managed_context();
-           }
-         }
-       }
-      // perform old association  decoupling
-      for('''+pub_type+'''::iterator i= current_vec.begin(); i!=current_vec.end();i++)
-      {
-        (*i)->'''+class_name+'''_'''+association.name+'''_.reset();
-        (*i)->is_dirty_ = true;
-      }
     }
-// not new
   }
+
+  // perform old association  decoupling
+  for('''+pub_type+'''::iterator i= current_vec.begin(); i!=current_vec.end();i++)
+  {
+    (*i)->'''+class_name+'''_'''+association.name+'''_.reset();
+    (*i)->is_dirty_ = true;
+  }
+
   '''+association.name+'''_.clear();
   shared_ptr<'''+class_name+'''> self = self_.lock();
+
   for ('''+pub_type+'''::iterator i = '''+association.name+'''_new.begin(); i != '''+association.name+'''_new.end(); ++i){
     if(*i) // some pointers may be null
     {
       (*i)->'''+class_name+'''_'''+association.name+'''_ = self;
       (*i)->is_dirty_ = true;
+      '''+association.name+'''_.push_back(*i);
     }// should we throw an exception if any pointer is null?
-    '''+association.name+'''_.push_back(*i);
   }
 }''']
 ###############################################################################################################################################
@@ -195,11 +164,20 @@ void
 
 ###############################################################################################################################################
 def update(association, priv_type):
-    return '''  for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
+    return '''
+  //das::tpl::DbBundle bundle = bundle_.lock();
+  for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
   {
     shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = (*i).get_eager();
     if('''+association.name+'''_temp)
+    {
+      if('''+association.name+'''_temp->is_new())
+      {
+        bundle.persist<'''+association.atype+'''> ('''+association.name+'''_temp);
+      }
+      // call update anyways because of the nested associated objects
       '''+association.name+'''_temp->update();
+    }
   }
 '''
 ###############################################################################################################################################
@@ -211,6 +189,6 @@ def persist(association, priv_type):
     return '''  for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
   {
     shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = (*i).get_eager();
-    db->persist<'''+association.atype+'''> ('''+association.name+'''_temp);
+    db.persist<'''+association.atype+'''> ('''+association.name+'''_temp);
   }
 '''

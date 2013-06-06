@@ -90,8 +90,8 @@ protected:
   virtual void save_data(std::string &path){};                // save external data, check if the path is empty.
   virtual void update(){};  // update self and associated if necessary
   // we need a database pointer because this ogbject is not bouded to any db yet
-  virtual void persist_associated_pre (das::tpl::Database* db){}; // call persist on shared many associated objects
-  virtual void persist_associated_post(das::tpl::Database* db){}; // call persist on exclusive and oneassociated objects
+  virtual void persist_associated_pre (das::tpl::DbBundle &db){}; // call persist on shared many associated objects
+  virtual void persist_associated_post(das::tpl::DbBundle &db){}; // call persist on exclusive and oneassociated objects
 
 private:
   friend class odb::access;

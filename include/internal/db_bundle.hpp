@@ -4,8 +4,10 @@
 #include <odb/session.hxx>
 #include <odb/transaction.hxx>
 #include <memory>
+#include <odb/traits.hxx>
 #include <odb/tr1/memory.hxx>
 #include "exceptions.hpp"
+
 using std::tr1::shared_ptr;
 using std::tr1::weak_ptr;
 
@@ -55,16 +57,19 @@ namespace das {
             session() const {
                 return session_;
             }
-            
+
             bool
-            valid() const
-            {
+            valid() const {
                 return db_ && session_;
             }
 
             template<typename T>
             void
             attach(typename odb::object_traits<T>::pointer_type& obj);
+
+            template<typename T>
+            typename odb::object_traits<T>::id_type
+            persist(typename odb::object_traits<T>::pointer_type& obj, std::string path = "");
 
         private:
             friend class WeakDbBundle;
@@ -130,7 +135,14 @@ namespace das {
 
                 shared_ptr<odb::database> db = db_.lock();
                 shared_ptr<odb::session> session = session_.lock();
-                return DbBundle(db_alias_,db,session);
+                return DbBundle(db_alias_, db, session);
+            }
+
+            void
+            reset() {
+                db_alias_ = "";
+                db_.reset();
+                session_.reset();
             }
 
         private:
@@ -142,55 +154,6 @@ namespace das {
         inline bool
         DbBundle::operator==(const WeakDbBundle &rhs) const {
             return db_ == rhs.db() && session_ == rhs.session();
-        }
-
-        //TODO move this method in he bundle!!!
-
-        template<typename T>
-        inline
-        void
-        DbBundle::attach(typename odb::object_traits<T>::pointer_type& obj) {
-            if (!valid()) {
-#ifdef VDBG
-                std::cout << "DAS info: pointers to db or session not valid" << std::endl;
-#endif               
-                throw das::not_in_managed_context();
-            }
-            if (obj->is_new()) {
-#ifdef VDBG
-                std::cout << "DAS info: trying to attach an object without persisting firts" << std::endl;
-#endif
-                throw das::new_object();
-            }
-            if (!obj->bundle_.expired()) {
-                if (obj->bundle_ != *this) {
-#ifdef VDBG
-                    std::cout << "DAS info: ERROR: trying to attach an object managed by other database" << std::endl;
-#endif
-                    throw das::wrong_database();
-                } else
-                    return;
-            }
-
-            odb::session::current(*session_);
-            shared_ptr<T> cache_hit = session_->cache_find<T>(*db_, obj->das_id_);
-            if (cache_hit) {
-                if (cache_hit != obj) {
-#ifdef VDBG
-                    std::cout << "DAS info: ERROR: another copy of this object found in cache" << std::endl;
-#endif              
-                    throw das::object_not_unique();
-                } else {
-#ifdef VDBG
-                    std::cout << "DAS info: object found in the cache but not bound to the database" << std::endl;
-#endif              
-                    cache_hit->bundle_ = *this;
-                }
-            } else {
-                session_->cache_insert<T>(*db_, obj->das_id_, obj);
-                obj->bundle_ = *this;
-            }
-
         }
 
 
