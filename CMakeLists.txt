@@ -45,7 +45,6 @@ set(DAS_QL_SRC
 set(DAS_SRC
   ${CPP_SOURCE_DIR}/info.cpp
   ${CPP_SOURCE_DIR}/tpl/transaction.cpp
-  ${CPP_SOURCE_DIR}/database_config.cpp
 )
 
 include_directories(${CPP_INCLUDE_DIR})
