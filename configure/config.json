@@ -5,7 +5,7 @@
 	"db_type"  	: "mysql",
 	"db_name"  	: "testl2",
 	"ddl"	     	: "dasInstance.xml",
-	"alias"         : "testl2",
+	"alias"         : "my_testl2",
 	"data_root_dir" : "/db/testl2",
 	"time_interval" : "day"
     },
@@ -14,7 +14,7 @@
 	"port"          : 5432,
 	"db_type"  	: "sqlite",
 	"db_name"  	: "log_only",
-	"alias"         : "log_only",
+	"alias"         : "sq_log_only",
 	"ddl"	     	: "dasInstance.xml",
 	"data_root_dir" : "/db/testl2-logs",
 	"time_interval" : "month"
@@ -24,7 +24,7 @@
 	"port"          : 5432,
 	"db_type"  	: "pgsql",
 	"alias"         : "testl2-bak",
-	"db_name"  	: "testl2_backup",
+	"db_name"  	: "pg_testl2_backup",
 	"ddl"	     	: "dasInstance.xml",
 	"data_root_dir" : "/db/testl2_bak",
 	"time_interval" : "day"
@@ -32,8 +32,8 @@
     {
 	"host"          : "192.168.1.11",
 	"port"          : 5432,
-	"db_type"  	: "pgsql",
-	"alias"         : "pg_l2",
+	"db_type"  	: "oracle",
+	"alias"         : "oracle_l2",
 	"db_name"  	: "testl2_backup2",
 	"ddl"	     	: "dasInstance.xml",
 	"data_root_dir" : "/db/testl2_bak",
@@ -43,7 +43,7 @@
 	"host"          : "localhost",
 	"port"          : 3306,
 	"db_type"  	: "mysql",
-	"alias"         : "local",
+	"alias"         : "my_local",
 	"db_name"  	: "odb_test",
 	"ddl"	     	: "dasInstance.xml",
 	"data_root_dir" : "/db/testl2",

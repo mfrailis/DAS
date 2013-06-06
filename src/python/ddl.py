@@ -323,7 +323,13 @@ class DdlParser:
     
   def parse_ddl(self, xml_filename):
     tree = _et.parse(xml_filename, self.ddl_parser)
-    
+    return self._parse(tree)
+
+  def parse_ddl_from_string(self, xml_string):
+    tree = _et.fromstring(xml_string, self.ddl_parser)
+    return self._parse(tree)
+
+  def _parse(self,tree):
     tlist = DdlTypeList()
     dtypes = tree.getroot().findall('ddl:type', DdlParser.NSMAP)
     for dtype in dtypes:
@@ -331,6 +337,10 @@ class DdlParser:
       tlist.type_map[ptype.name] = ptype
     
     return tlist
+
+  def serialize_tree(self,xml_filename):
+    tree =  _et.parse(xml_filename, self.ddl_parser)
+    return _et.tostring(tree)
   
   def _parse_datatype(self, dtype):
     

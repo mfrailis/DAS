@@ -56,8 +56,9 @@ class JsonConfigParser:
             dir_name = _os.path.join(output_dir,db_str)
             _os.mkdir(dir_name)
             ddl_h   = self.db_map[_assemble_db(db)]+'_types.h'
-            ddl_sql = self.db_map[_assemble_db(db)]+'_types.sql'           
-            _generate_sub_cmake(dir_name,db_str,db['db_type'],ddl_h, ddl_sql, t_pre,db)
+            ddl_sql = self.db_map[_assemble_db(db)]+'_types.sql'
+            typelist=self.ddl_map.get_type_list(_assemble_ddl(db['ddl']))
+            _generate_sub_cmake(dir_name,db_str,db['db_type'],ddl_h, ddl_sql, t_pre,db,typelist)
 
         
 def _assemble_ddl(path):
@@ -67,16 +68,44 @@ def _assemble_db(db):
     uri=""+db['host']+str(db['port'])+db['db_name']
     return "db_"+_hash.sha1(uri).hexdigest()
 
-def _generate_sub_cmake(dir_name,db_str,db_type,ddl_h,ddl_sql,prefix,db):
+def _generate_sub_cmake(dir_name,db_str,db_type,ddl_h,ddl_sql,prefix,db,typelist):
     f = open(_os.path.join(dir_name,'CMakeLists.txt'),'w')
     f.write(
 '''
 cmake_minimum_required(VERSION 2.8)
+set(SQL_DIR ${CMAKE_CURRENT_BINARY_DIR})
+
+set(TYPE_NAMES ''')
+    for i in typelist:
+        if i != "essentialMetadata":
+            f.write(' '+i)
+    f.write(''')
+
+set(SQL_FILES)
+foreach(type_name ${TYPE_NAMES})
+  add_custom_command(
+    OUTPUT ${TYPE_PREFIX}${type_name}.sql
+    COMMAND odb
+            --database '''+db_type+'''
+	    --generate-schema-only
+            --omit-drop
+            -x -I${ODB_SOURCE_DIR}
+            -x -I${CPP_INCLUDE_DIR}
+	    ${ODB_SOURCE_DIR}/${TYPE_PREFIX}${type_name}.hpp
+    COMMENT "Generating schema for type ${type_name} on '''+db['alias']+'''"
+    )
+  list(APPEND SQL_FILES ${TYPE_PREFIX}${type_name}.sql)
+endforeach()
+
 add_custom_command(
   OUTPUT  '''+ddl_sql+'''
-  COMMAND odb --database '''+db_type+'''
-          --generate-query --generate-schema
-          --at-once ${ODB_SOURCE_DIR}/'''+ddl_h+'''
+  COMMAND odb
+          --database '''+db_type+'''
+          --generate-query
+          --generate-schema 
+          --omit-drop
+          --at-once
+          ${ODB_SOURCE_DIR}/'''+ddl_h+'''
     	  -x -I${ODB_SOURCE_DIR}
 	  -x -I${CPP_INCLUDE_DIR}
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
@@ -85,20 +114,30 @@ add_custom_command(
 
 add_custom_command(
   OUTPUT  DBMS_'''+prefix+db_str+'''
-  COMMAND python db_access.py ${CONF_JSON_SCHEMA} ${DB_ACCESS_JSON_SCHEMA} ${CONF_JSON} ${DB_ACCESS_JSON}
-          "'''+db['alias']+'''" ${CMAKE_CURRENT_BINARY_DIR}/'''+ddl_sql+''' 
+  COMMAND python db_access.py
+          ${CONF_JSON_SCHEMA}
+          ${DB_ACCESS_JSON_SCHEMA}
+          ${CONF_JSON}
+          ${DB_ACCESS_JSON}
+          "'''+db['alias']+'''"
+          ${SQL_DIR}
+          ${DDL_SCHEMA}
+          ${DDL_INSTANCE_DIR}/'''+db['ddl']+'''
+          ${TYPE_PREFIX}
   WORKING_DIRECTORY ${PYTHON_SOURCE_DIR}
   COMMENT "Executing '''+db['db_type']+''' on '''+db['alias']+'''"
 )
 
+
+
 add_custom_target(
   schema-'''+db_str+'''
-  DEPENDS '''+ddl_sql+'''
+  DEPENDS ${SQL_FILES}
 )
 
 add_custom_target(
   '''+prefix+db_str+'''
-  DEPENDS '''+ddl_sql+''' DBMS_'''+prefix+db_str+'''
+  DEPENDS ${SQL_FILES} DBMS_'''+prefix+db_str+'''
 )
 '''
 )
@@ -116,7 +155,7 @@ add_custom_target(
   DEPENDS'''
 )
     for l in dirs:
-        f.write(" schema-"+l)
+        f.write("\n      schema-"+l)
     f.write(
 '''
 )
@@ -129,7 +168,7 @@ add_custom_target(
   DEPENDS'''
 )
     for l in dirs:
-        f.write(" "+prefix+l)
+        f.write("\n      "+prefix+l)
     f.write(
 '''
 )
