@@ -33,7 +33,7 @@
 	 },
 	 "ddl"  : {
 	     "type"     : "string",
-	     "pattern"  : "^\/",
+	     "pattern"  : "^[^\/]",
 	     "required" : true
 	 },
 	 "data_root_dir" : {

@@ -1,7 +1,5 @@
-
 import ddl as _d
 import os as _os
-import shutil
 
 class DdlVisitor:
  
@@ -13,9 +11,6 @@ class DdlVisitor:
       
   def visit_datatype(self, datatype):
     pass
-    
-#  def visit_ancestor(self, ancestor):
-#    pass
     
   def visit_associated(self, associated):
     pass
@@ -47,13 +42,13 @@ class DdlOdbGenerator(DdlVisitor):
                'int64':'long long', 'float32':'float', 'float64':'double', 
                'boolean':'bool', 'string':'std::string', 'text' : 'CBLOB'}
 
-  def __init__(self, source_dir, tree):
+  def __init__(self, source_dir, instance):
     if not _os.path.exists(source_dir):
       _os.makedirs(source_dir)
       
     self._src_dir = source_dir  
     self._sources = []
-    self._obj_tree = tree
+    self._instance = instance
  
     self._header = []
     self._inherit = ""
@@ -81,8 +76,12 @@ class DdlOdbGenerator(DdlVisitor):
     self._const_init = []
     self._has_associations = False
     self._store_as = None
-    
-  def visit_type_list(self, type_list):  
+
+  def generate(self):
+    self.clean_env()
+    self._instance.accept(self)
+
+  def visit_type_list(self, _ ):  
     lines = []
 #    lines.append('#include "ddl_BLOB.hpp"')
     for k in self._sources:
@@ -118,8 +117,8 @@ class DdlOdbGenerator(DdlVisitor):
       self._header.append('#include "ddl_' + datatype.ancestor + '.hpp"')
       self._inhetit = datatype.ancestor
     else:
-      self._header.append('#include "ddl_DdlObject.hpp"')
-      self._inherit = "DdlObject"
+      self._header.append('#include "ddl_DasObject.hpp"')
+      self._inherit = "DasObject"
       
     if datatype.data is not None:
       self._header.append('#include "ddl_column.hpp"')
@@ -134,8 +133,8 @@ class DdlOdbGenerator(DdlVisitor):
     if self._inherit != "":
       intro[-1] += ": public "+self._inherit
     else:
-      intro[-1] += ": public DdlObject"
-      lines.append('#include "ddl_DdlObject.hpp"')
+      intro[-1] += ": public DasObject"
+      lines.append('#include "ddl_DasObject.hpp"')
 
     intro.append("{")
     
@@ -202,9 +201,9 @@ class DdlOdbGenerator(DdlVisitor):
       self._public_section.extend(_setter_template(keyword.name, self.KTYPE_MAP[keyword.ktype]))     
 
    
-  def visit_binary_table(self,binaryTable):
+  def visit_binary_table(self,_):
     if self._inherit != "":
-      if not self._obj_tree.has_inherit_column(self._inherit):
+      if not self.has_inherit_column(self._inherit):
         self._protected_section.append("std::map<std::string, Column"+self._store_as+"> columns_;")
     else:
       self._protected_section.append("std::map<std::string, Column"+self._store_as+"> columns_;")
@@ -219,7 +218,7 @@ class DdlOdbGenerator(DdlVisitor):
     else:
       self._store_as = 'File'
 
-  def visit_image(self,image):
+  def visit_image(self,_):
     self._protected_section.append("Image"+self._store_as+" image_;")
     self._header.append('#include "ddl_image.hpp"')
     if self._init_list: # if is not empty
@@ -227,6 +226,16 @@ class DdlOdbGenerator(DdlVisitor):
     else:
       self._init_list.append('  :image_("")')
 
+
+  def has_inherit_column(self,key):
+    obj = self._instance.type_map[key]
+    if obj.data is not None:
+      return obj.data.isTable()
+    else:
+      if obj.ancestor != obj.name:
+        return self.has_inherit_column(obj.ancestor)
+      else:
+        return False
     
 #  def createXMLsingleton(self):
 #    shutil.copyfile("../cpp/ddl_info.hpp", _os.path.join(self._src_dir, "ddl_info.hpp"))
@@ -247,6 +256,7 @@ def _setter_template(attribute_name, attribute_type):
   method_definition.extend(["  "+attribute_name+"_ = "+attribute_name+";","}"])
   return method_definition
 
+
 class DdlInheritanceValidator:
   def __init__(self, i):
     self._map = {}
@@ -256,16 +266,6 @@ class DdlInheritanceValidator:
     self._column_violation = False
     self._data_type_violation = False
 
-  def has_inherit_column(self,key):
-    obj = self._instance.type_map[key]
-    if obj.data is not None:
-      return obj.data.isTable()
-    else:
-      if obj.ancestor != obj.name:
-        return self.has_inherit_column(obj.ancestor)
-      else:
-        return False
-    
   def check_redefined_keywords(self):
     self._keyword_violation = False     
     for (name,dtype) in self._instance.type_map.items():
@@ -314,6 +314,23 @@ class DdlInheritanceValidator:
         if obj.ancestor != obj.name:
           return self._check_column(key_name,obj.ancestor)         
 
+  def check_ancestor_loop(self):
+    errors = False
+    for type_ in self._instance.type_map.values():
+      errors = errors or self._ancestor_loop(type_,[])
+    return errors
+  
+  def _ancestor_loop(self,type_,type_set):
+    if type_.name == 'essentialMetadata':
+      return False
+    elif type_.name in type_set:
+      print "Error: self inheritance or inheritance loops are forbidden."
+      print "  type "+type_.name+" found in the inheritance chain started from type "+type_set[0]
+      return True
+    else:
+      type_set.append(type_.name)
+      return self._ancestor_loop(self._instance.type_map[type_.ancestor],type_set)
+
   def check_image_table_mismatch(self):
     self._data_type_violation = False  
     for (name,dtype) in self._instance.type_map.items():   
@@ -346,11 +363,11 @@ class DdlInheritanceValidator:
     dtype = self._instance.type_map[type_name]
     if dtype.data is not None:
       if dtype.data.isTable():
-        print "Error data: type "+ self.current_type +" defines image data"
+        print "Error data: type "+ self._current_type +" defines image data"
         print "  while ascendant type "+ type_name +" defines table data" 
         self.data_type_violation = True
       else:
-        print "Error in type "+self.current_type+": multiple images are not allowed."
+        print "Error in type "+self._current_type+": multiple images are not allowed."
         print "  previously image defined in ascendant type "+ type_name
         self.data_type_violation = True
     else:
@@ -375,5 +392,5 @@ if __name__ == "__main__":
     exit(1)
   if validator.check_redefined_columns():
     exit(1)
-  visitor = DdlOdbGenerator(output_dir, validator)
-  instance.accept(visitor)
+  g = DdlOdbGenerator(output_dir, instance)
+  g.generate()
