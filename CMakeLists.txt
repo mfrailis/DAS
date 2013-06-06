@@ -38,6 +38,7 @@ set(TARGET_DB_PREFIX "db-")
 #set(ODB_HXX)
 #set(ODB_CXX)
 #set(TYPES_CPP)
+
 set(DAS_QL_SRC 
   ${CPP_SOURCE_DIR}/ql/qlvisitor.cpp
   ${CPP_SOURCE_DIR}/ql/bnfc/Absyn.C
@@ -47,6 +48,7 @@ set(DAS_QL_SRC
 set(DAS_SRC
   ${CPP_SOURCE_DIR}/info.cpp
   ${CPP_SOURCE_DIR}/tpl/transaction.cpp
+  ${CPP_SOURCE_DIR}/database_config.cpp
 )
 
 include_directories(${CPP_INCLUDE_DIR})

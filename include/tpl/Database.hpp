@@ -20,6 +20,7 @@
 #include "DasObject.hpp"
 #include "transaction.hpp"
 #include "internal/db_bundle.ipp"
+#include "internal/database_config.hpp"
 
 #include <odb/mysql/database.hxx>
 using std::tr1::shared_ptr;
@@ -72,30 +73,31 @@ namespace das {
             template<typename T>
             bool
             find(const std::string& name, int version = -1);
-            
+
 
             template<typename T>
             void
             attach(typename odb::object_traits<T>::pointer_type& obj);
-           
+
             void
             flush();
-            
+
         protected:
+
             Database(const std::string &db_alias,
                     const shared_ptr<odb::database> &db,
                     const shared_ptr<odb::session> &session)
-            : bundle_(db_alias, db, session) 
-            {}
+            : bundle_(db_alias, db, session) {
+            }
         private:
             friend class Transaction;
 
             odb::transaction*
             auto_begin(bool &is_auto);
-            
+
             void
             auto_catch(bool is_auto, odb::transaction *t);
-            
+
             void
             auto_commit(bool is_auto, odb::transaction *t);
 

@@ -1,18 +1,17 @@
+
 inline
 shared_ptr<Database>
 Database::create(const std::string& alias) {
     shared_ptr<odb::database> db;
     shared_ptr<odb::session> session;
-    //TODO look for configured databases
-    //TODO select proper database
-    //db->db_.reset(new odb::mysql::database(user,password,database,host,port));
-    if (alias == "local")
-        db.reset(new odb::mysql::database("odb_test", "", "odb_test"));
-    else if (alias == "benchmark")
-        db.reset(new odb::mysql::database("odb_test", "", "benchmark"));
-    else
+    const das::DatabaseInfo &info = das::DatabaseConfig::database(alias);
+    if (info.db_type != "mysql") {
+#ifdef VDBG
+        std::cout << "DAS debug INFO: non mysql dbms aren't supported yet" << std::endl;
+#endif    
         throw das::wrong_database();
-
+    }
+    db.reset(new odb::mysql::database(info.user,info.password,info.db_name,info.host,info.port));
     session.reset(new odb::session(false));
     shared_ptr<Database> das_db(new Database(alias, db, session));
     das_db->info_ = DdlInfo::get_instance(alias);
