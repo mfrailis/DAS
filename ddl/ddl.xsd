@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- DAS Data Definition Layer  -->
+
+<!-- The DAS DDL is a list of one or more data types. -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://oats.inaf.it/das"
+  targetNamespace="http://oats.inaf.it/das" elementFormDefault="qualified">
+  <xs:element name="ddl">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="type"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  
+  <!--
+    A data type has zero or one ancestor, an arbitrary number of associated
+    data types, a mandatory metadata section (if not inherited from an ancestor) 
+    and an optional data section. 
+  -->
+  <xs:element name="type">
+    <xs:complexType>
+      <xs:choice>
+        <xs:sequence>
+          <xs:element minOccurs="1" maxOccurs="1" ref="ancestor"/>
+          <xs:element minOccurs="0" maxOccurs="unbounded" ref="associated"/>
+          <xs:element minOccurs="0" maxOccurs="1" ref="metadata" />
+          <xs:element minOccurs="0" maxOccurs="1" ref="data" />
+        </xs:sequence>       
+        <xs:sequence>
+          <xs:element minOccurs="0" maxOccurs="unbounded" ref="associated"/>
+          <xs:element minOccurs="1" maxOccurs="1" ref="metadata" />
+          <xs:element minOccurs="0" maxOccurs="1" ref="data" />
+        </xs:sequence>        
+      </xs:choice>
+      <xs:attribute name="name" use="required" type="xs:ID"/>
+      <xs:attribute name="description"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!--
+    A data type inherits from an ancestor its metadata and data definitions
+  -->
+  <xs:element name="ancestor">
+    <xs:complexType>
+      <xs:attribute name="type" use="required" type="xs:IDREF"/>
+      <xs:attribute name="description"/>
+    </xs:complexType>
+  </xs:element>
+
+
+  <!--
+    A data type can have associated data types. Each association can be a 1 to 1 or
+    a 1 to many relation
+  -->
+  <xs:element name="associated">
+    <xs:complexType>
+      <xs:attribute name="name" use="required"/>
+      <xs:attribute name="type" use="required" type="xs:IDREF"/>
+      <xs:attribute name="multiplicity" default="one">
+        <xs:simpleType>
+          <xs:restriction base="xs:token">
+            <xs:enumeration value="one"/>
+            <xs:enumeration value="many"/>
+          </xs:restriction>  
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="description"/>
+    </xs:complexType>
+  </xs:element>
+ 
+  <!--
+    The metadata section defines a list of keywords
+  -->
+  <xs:element name="metadata">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="1" maxOccurs="unbounded" ref="keyword"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+
+  <!--
+    A keyword has a name, a type, a unit  and a description.  If a default value
+    is set for a meta data, it will not be necessary to set explicitely a value
+    for this meta data during runtime. A (database) index will be generated for a
+    keyword if "index" is set to "yes", default "no".
+  -->
+  <xs:element name="keyword">
+    <xs:complexType>
+      <xs:attribute name="name" use="required"/>
+      <xs:attribute name="description"/>
+      <xs:attribute name="type" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:token">
+            <xs:enumeration value="byte"/>
+            <xs:enumeration value="int16"/>
+            <xs:enumeration value="int32"/>
+            <xs:enumeration value="int64"/>
+            <xs:enumeration value="float32"/>
+            <xs:enumeration value="float64"/>
+            <xs:enumeration value="boolean"/>
+            <xs:enumeration value="char"/>
+            <xs:enumeration value="string"/>
+            <xs:enumeration value="text"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="unit" default="none"/>
+      <xs:attribute name="default"/>
+      <xs:attribute name="index" default="no">
+        <xs:simpleType>
+          <xs:restriction base="xs:token">
+            <xs:enumeration value="no"/>
+            <xs:enumeration value="yes"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+
+  <!--
+    The data section defines either a binary table or an image. Both the image or
+    the binary table can be stored as external files or as blobs within the database.
+    The default is storing the data as external files.
+  -->
+  <xs:element name="data">
+    <xs:complexType>
+      <xs:choice minOccurs="1" maxOccurs="1">
+        <xs:element ref="binaryTable" />
+        <xs:element ref="image" />
+      </xs:choice>
+      <xs:attribute name="storeAs" default="file">
+        <xs:simpleType>
+          <xs:restriction base="xs:token">
+            <xs:enumeration value="blob"/>
+            <xs:enumeration value="file"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>      
+    </xs:complexType>   
+  </xs:element>
+  
+  <!--
+    The binary table defines a list of columns
+  --> 
+  <xs:element name="binaryTable">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="1" maxOccurs="unbounded" ref="column" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>  
+ 
+  <!--
+    A column has a name, a type, a unit  and a description. If the type of the column is string,
+    then the maximum length of the string should be specified. The default value is 256.
+  -->
+  <xs:element name="column">
+    <xs:complexType>
+      <xs:attribute name="name" use="required"/>
+      <xs:attribute name="type" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:token">
+            <xs:enumeration value="byte"/>
+            <xs:enumeration value="int16"/>
+            <xs:enumeration value="int32"/>
+            <xs:enumeration value="int64"/>
+            <xs:enumeration value="float32"/>
+            <xs:enumeration value="float64"/>
+            <xs:enumeration value="boolean"/>
+            <xs:enumeration value="char"/>
+            <xs:enumeration value="uint8"/>
+            <xs:enumeration value="uint16"/>
+            <xs:enumeration value="uint32"/>
+            <xs:enumeration value="string"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="unit" default="none"/>
+      <xs:attribute name="maxStringLength" type="xs:short" default="256"/>
+      <xs:attribute name="description"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!--
+    The image provides a two dimensional array of pixels (data cubes are currently
+    not considered). A pixel type must be specified. 
+  --> 
+  <xs:element name="image">
+    <xs:complexType>
+      <xs:attribute name="pixType" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:token">
+            <xs:enumeration value="byte"/>
+            <xs:enumeration value="int16"/>
+            <xs:enumeration value="int32"/>
+            <xs:enumeration value="float32"/>
+            <xs:enumeration value="float64"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="description"/>
+    </xs:complexType>
+  </xs:element>
+
+
+</xs:schema>

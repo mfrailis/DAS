@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ddl xmlns="http://oats.inaf.it/das"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://oats.inaf.it/das ddl.xsd">
+ 
+    <!-- 
+        Data type providing essential metadata. It shell be inherited (directly or indirecty)
+        by all the other data types
+    -->
+    <type name="essentialMetadata" description="Provides common essential metadata information">
+        <metadata>
+            <keyword name="name" description="object name" type="string" index="yes"/>
+            <keyword name="version" description="object version" type="int16" default="0"/>
+            <keyword name="dbUserId" description="object creator" type="string"/>
+            <keyword name="creationDate" type="int64" unit="s"/>
+        </metadata>
+    </type>
+    
+    <!-- 
+        An example of a data type storing housekeeping timelines    
+    -->
+    <type name="lfiHkDaeSlowVoltage" description="DAE voltages - slow telemetry">
+        <ancestor type="essentialMetadata"/>
+        <metadata>
+            <keyword name="runId" type="string" description="test run ID (e.g. FUNC_0001)"/>
+            <keyword name="startSCET" description="start time of the timeline in UCT" type="int64" unit="ms"/>
+            <keyword name="endSCET" description="start time of the timeline in UCT" type="int64" unit="ms"/>
+            <keyword name="APID" type="int16" description="application process ID of the source packet" default="1538"/>
+            <keyword name="type" type="byte" description="type of the source packet" default="3"/>
+            <keyword name="subtype" type="byte" description="subtype of the source packet" default="25"/>
+            <keyword name="PI1_val" type="int16" description="source packet identifier from MIB - first" default="1"/>
+            <keyword name="PI2_val" type="int16" description="source packet identifier from MIB - second" default="0"/>
+        </metadata>
+        <data>
+            <binaryTable>
+                <column name="sampleSCET" type="int64" unit="ms" description="sample time in UTC"/>
+                <column name="LM151322Raw" type="uint16" unit="ADU" description="I1 LFI27 M1 - Raw value"/>
+                <column name="LM151322Eng" type="float64" unit="V" description="I1 LFI27 M1 - Eng. value"/>
+                <column name="LM151322Flag" type="int32" description="I1 LFI27 M1 - Flags"/>
+                <column name="LM152322Raw" type="uint16" unit="ADU" description="I1 LFI27 M2 - Raw value"/>
+                <column name="LM152322Eng" type="float64" unit="V" description="I1 LFI27 M2 - Eng. value"/>
+                <column name="LM152322Flag" type="int32" description="I1 LFI27 M2 - Flags"/>                
+            </binaryTable>
+        </data>
+    </type>
+ 
+    <!-- 
+        Data type to store images generated when producing the log of a test run   
+    -->
+    <type name="testLogImage">
+        <ancestor type="essentialMetadata"/>
+        <metadata>
+            <keyword name="format" type="string" description="e.g. jpeg, tiff, etc."/>
+        </metadata>
+        <data storeAs="blob">
+            <image pixType="byte"/>
+        </data>
+    </type>
+    
+    <!-- 
+        Data type to archive log information for a specific test run   
+    -->    
+    <type name="testLog">
+        <ancestor type="essentialMetadata"/>
+        <associated name="images" type="testLogImage" multiplicity="many"/>
+        <metadata>
+            <keyword name="runId" type="string" description="test run ID (e.g. FUNC_0001)"/>
+            <keyword name="startSCET" type="int64" unit="ms" description="start time of the test run in UCT"/>
+            <keyword name="endSCET" type="int64" unit="ms" description="end time of the test run in UCT"/>
+            <keyword name="log" type="text"/>
+        </metadata>
+    </type>
+    
+</ddl>
