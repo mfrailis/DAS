@@ -1,8 +1,10 @@
 #ifndef DAS_INFO_HPP
 #define DAS_INFO_HPP
 #include <boost/unordered_map.hpp>
+#include <string>
 
 struct KeywordInfo{
+  KeywordInfo(){}
   KeywordInfo(std::string _name,
 	      std::string _type,
 	      std::string _unit,
@@ -42,7 +44,7 @@ class DdlInfo
 public:
   virtual
   const KeywordInfo&
-  get_keyword_info(std::string type_name, std::string keyword_name)
+  get_keyword_info(const std::string &type_name,const std::string &keyword_name)
     const throw(std::out_of_range)
   {
     return all_keywords_.at(type_name).at(keyword_name);
@@ -50,7 +52,7 @@ public:
 
   virtual
   const ColumnInfo&
-  get_column_info(std::string type_name, std::string column_name)
+  get_column_info(const std::string &type_name, const std::string &column_name)
     const throw(std::out_of_range)
   {
     return all_columns_.at(type_name).at(column_name);
@@ -66,9 +68,9 @@ public:
       }
     return instance_;
   }
-  
+
   static DdlInfo*
-  get_instance(std::string ddl_name)
+  get_instance(const std::string &ddl_name)
     throw(std::out_of_range)
   {
     return get_instance()->ddl_map_.at(ddl_name);
@@ -85,4 +87,5 @@ private:
   boost::unordered_map< std::string, DdlInfo* > ddl_map_;
   static DdlInfo* instance_;
 };
+
 #endif
