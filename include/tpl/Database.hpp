@@ -48,7 +48,7 @@ public:
         shared_ptr<Database> db(new Database());
         //TODO select proper database
         //db->db_.reset(new odb::mysql::database(user,password,database,host,port));
-        db->db_.reset(new odb::mysql::database("odb_test","","prova"));
+        db->db_.reset(new odb::mysql::database("odb_test","","odb_test"));
         db->self_ = db;
 	db->info_ = DdlInfo::get_instance(alias);
         return db;

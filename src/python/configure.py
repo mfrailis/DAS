@@ -187,7 +187,7 @@ VERBATIM
 '''
 
 add_custom_target(
-  odb ALL
+  odb-gen
   DEPENDS ${ODB_CXX}
 )
 
@@ -234,6 +234,11 @@ foreach(das_ql_src_ ${DAS_QL_SRC})
 endforeach()
 
 add_library(das ${DAS_QL_SRC} ${DAS_SRC} ${TYPES_CPP} ${ODB_CXX})
+
+add_executable(test ${TEST_SOURCE_DIR}/main.cpp)
+target_link_libraries(test das)
+target_link_libraries(test odb)
+target_link_libraries(test odb-mysql)
 '''
 )
         f.close()
