@@ -33,9 +33,13 @@ void print(const shared_ptr<testLogImage> &img)
 }
 
 int main(int argc, char * argv[])
+<<<<<<< HEAD
 {
 
     /*
+=======
+{/*
+>>>>>>> working prototype
     shared_ptr<D::Database> db = D::Database::create("local");
 
     shared_ptr<lfiHkDaeSlowVoltage> hk = lfiHkDaeSlowVoltage::create("LfiDaeSlowVoltage_TOI_0001");
@@ -212,15 +216,20 @@ int main(int argc, char * argv[])
         tm->one_ex(oe);
         tm->many_sh(msv);
         tm->many_ex(mev);
-        
+
+	D::Transaction t (db->begin ());       
         db->persist<TypeMain>(tm);
+	t.commit();
     }
+<<<<<<< HEAD
 >>>>>>> upgraded test
+=======
+>>>>>>> working prototype
     
     typedef odb::result<TypeMain> result;
 
     if(argc == 3 ){
-      odb::transaction t (db->begin ());
+      D::Transaction t (db->begin ());
       result r (db->query<TypeMain> (argv[1],argv[2]));
       cout << "result:" << endl;
       for (result::iterator i (r.begin ()); i != r.end (); ++i)

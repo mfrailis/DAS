@@ -7,13 +7,14 @@
 //#include "tpl/Database.hpp"
 //template <typename T>
 //class DasVector;
-
+#include <odb/database.hxx>
 #include <odb/tr1/memory.hxx>
 #include <odb/tr1/lazy-ptr.hxx>
+#include "interal/db_bundle.hpp"
 using std::tr1::shared_ptr;
 
 class QLVisitor;
-namespace das{namespace tpl{class Database;}}
+namespace das{namespace tpl{class Database; class Transaction;}}
 #pragma db object abstract
 class DasObject
 {
@@ -66,11 +67,6 @@ public:
     return name_;
   }
 
-  shared_ptr<das::tpl::Database>
-  database ()
-  {
-    return db_ptr_;
-  }
 
 protected:
   DasObject()
@@ -85,14 +81,14 @@ protected:
   std::string type_name_;
 
 #pragma db transient
-  shared_ptr<das::tpl::Database> db_ptr_;
+  shared_ptr<das::tpl::DbBundle> bundle_;
 
 #pragma db transient
   bool is_dirty_;                                   // does it need an update?
 
   virtual void save_data(){};                                // update external data.
   virtual void save_data(std::string &path){};                // save external data, check if the path is empty.
-  virtual void update_associated(){};  // call update  on associated objects
+  virtual void update(){};  // update self and associated if necessary
   // we need a database pointer because this ogbject is not bouded to any db yet
   virtual void persist_associated_pre (das::tpl::Database* db){}; // call persist on shared many associated objects
   virtual void persist_associated_post(das::tpl::Database* db){}; // call persist on exclusive and oneassociated objects
@@ -100,6 +96,7 @@ protected:
 private:
   friend class odb::access;
   friend class das::tpl::Database;
+  friend class das::tpl::Transaction;
   friend class QLVisitor;
 //  template <typename T> friend class DasVector;
 //  template <typename T> friend void ::swap(DasVector<T> &x, DasVector<T> &y);

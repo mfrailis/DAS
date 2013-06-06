@@ -62,7 +62,7 @@ class DdlOdbGenerator(DdlVisitor):
     self._init_list = []
     self._default_init = []
     self._init = []
-    self._friends = ["friend class odb::access;"]
+    self._friends = ["friend class odb::access;","friend class das::tpl::Transaction;"]
     self._has_associations = False
     self._store_as = None
     self._keyword_touples = []
@@ -81,7 +81,7 @@ class DdlOdbGenerator(DdlVisitor):
     self._init_list = []
     self._default_init = []
     self._init = []
-    self._friends = ["friend class odb::access;"]
+    self._friends = ["friend class odb::access;","friend class das::tpl::Transaction;"]
     self._has_associations = False
     self._store_as = None
     self._keyword_touples = []
@@ -162,9 +162,13 @@ class DdlOdbGenerator(DdlVisitor):
     for exc in exc_assoc:
       self._header.append('#include "ddl_'+exc[1]+'.hpp"')
       self._forward_section.append('class '+exc[1]+';')
-      self._friends.append('friend class '+exc[1]+';')
+#      self._friends.append('friend class '+exc[1]+';')
       self._private_section.append("shared_ptr<"+exc[1]+"> "+exc[1]+"_"+exc[0]+"_;")
-    
+ 
+    all_assoc = self._get_all_associations(datatype.name)
+    for ass_type in all_assoc:
+      self._friends.append('friend class '+ass_type+';')
+
     h = open(_os.path.join(self._src_dir, hdr_name), 'w') 
     h.writelines(l + "\n" for l in lines)
     h.writelines(l + "\n" for l in self._header)
@@ -180,19 +184,22 @@ class DdlOdbGenerator(DdlVisitor):
     h.writelines(["  static","  shared_ptr<"+self._class_name+"> create(const std::string &name);\n"])
     h.writelines("  "+l + "\n" for l in self._type_defs)
     h.writelines("  "+l + "\n" for l in self._public_section)
-    h.writelines(["  virtual ~"+self._class_name+"();\n"])
+#    h.writelines(["  virtual ~"+self._class_name+"();\n"])
 # preotected section
     h.writelines([" protected:\n"])
     h.writelines("  "+l + "\n" for l in self._friends)
     h.writelines("  "+l + "\n" for l in self._protected_section)
     # default constructor.
     h.writelines(["  "+self._class_name+" ();\n"])
+    h.writelines(["  virtual\n"])
+    h.writelines(["  void\n"])
+    h.writelines(["  update();\n"])
 # private section
     h.writelines(["  "+self._class_name+" (const std::string &name);\n"])
     h.writelines([" private:\n"])
     h.writelines("  "+l + "\n" for l in self._private_section)
     for t in self._assoc_touples:
-      if t[0].multiplicity == 'many' and (t[0].relation == 'exclusive' or t[0].relation == 'extend'):
+      if (t[0].multiplicity == 'many' and t[0].relation != 'shared') or (t[0].multiplicity == 'one' and t[0].relation != 'shared'):
         h.writelines(['  #pragma db inverse('+self._class_name+'_'+t[0].name+'_)\n'])
       h.writelines(['  '+t[2]+' '+t[0].name+'_;\n'])
 #
@@ -244,15 +251,6 @@ struct das_traits<'''+self._class_name+'''>
     s.writelines(["{\n"])
     s.writelines(["  init();\n"])
     s.writelines(["}\n"])
-    # destructor
-    s.writelines(self._class_name+'::~'+self._class_name+'''()
-{
-  if(!is_new() && db_ptr_ && is_dirty_)
-  {
-    db_ptr_->update<'''+self._class_name+'''>(*this,false);
-  }
-}
-''')
     # private section
     s.writelines(["void\n",self._class_name+"::init()\n"])
     s.writelines(["{\n"])
@@ -270,7 +268,7 @@ struct das_traits<'''+self._class_name+'''>
       if self._inherit != 'DasObject':
         s.writelines(['  '+self._inherit+'::persist_associated_pre(db);\n'])
       for i in self._assoc_touples:
-        if i[0].multiplicity == 'one' or (i[0].multiplicity == 'many' and i[0].relation == 'shared'):
+        if i[0].relation == 'shared':
           s.writelines([_def_persist_assoc(i[0],i[2])])
       s.writelines(['}\n'])
       
@@ -279,16 +277,27 @@ struct das_traits<'''+self._class_name+'''>
       if self._inherit != 'DasObject':
         s.writelines(['  '+self._inherit+'::persist_associated_post(db);\n'])
       for i in self._assoc_touples:
-        if i[0].multiplicity == 'many' and (i[0].relation == 'exclusive' or i[0].relation == 'extend'):
+        if i[0].relation != 'shared':
           s.writelines([_def_persist_assoc(i[0],i[2])])
       s.writelines(['}\n'])
 
-      s.writelines(['void\n',self._class_name+'::update_associated()\n{\n'])
+      s.writelines(['void\n',self._class_name+'::update()\n{\n'])
+      s.writelines(['  if(is_dirty_ && !is_new())\n','    bundle_->db_->update(*this);\n'])      
       if self._inherit != 'DasObject':
-        s.writelines(['  '+self._inherit+'::update_associated();\n'])
+        s.writelines(['  '+self._inherit+'::update();\n'])
       for i in self._assoc_touples:
         s.writelines([_def_update_assoc(i[0],i[2])])
       s.writelines(['}\n'])
+    else:
+      s.writelines(['''
+void
+'''+self._class_name+'''::update()
+{
+  if(is_dirty_ && !is_new()) //can be new!?!?
+   bundle_->db_->update(*this);
+}
+'''])
+      
 
     s.close()
 
@@ -299,13 +308,13 @@ struct das_traits<'''+self._class_name+'''>
       self._header.append("#include <odb/tr1/memory.hxx>")
       self._header.append("#include <odb/tr1/lazy-ptr.hxx>")
       self._header.append("#include <odb/transaction.hxx>")
+      self._header.append("#include <odb/session.hxx>")
       self._header.append("using odb::tr1::lazy_weak_ptr;")
       self._header.append("using odb::tr1::lazy_shared_ptr;")
       self._header.append("using std::tr1::shared_ptr;")
       self._friends.append("friend class das::tpl::Database;")
       self._protected_section.extend(['virtual void','persist_associated_pre (das::tpl::Database *db);'])
       self._protected_section.extend(['virtual void','persist_associated_post(das::tpl::Database *db);'])
-      self._protected_section.extend(['virtual void','update_associated();'])
       self._has_associations = True 
 	
     self._forward_section.append("class " + associated.atype + ";")
@@ -322,7 +331,10 @@ struct das_traits<'''+self._class_name+'''>
         self._type_defs.append('typedef typename std::vector<shared_ptr<'+associated.atype+'> > '+pub_type+';' )       
     else:
       pub_type = 'shared_ptr<'+associated.atype+'>'
-      priv_type = 'lazy_shared_ptr<'+associated.atype+'>'
+      if associated.relation == 'exclusive' or associated.relation == 'extend':
+        priv_type = 'lazy_weak_ptr<'+associated.atype+'>'
+      else:
+        priv_type = 'lazy_shared_ptr<'+associated.atype+'>'
     
     self._public_section.extend(_dec_getter_assoc(associated.name, pub_type))
     self._public_section.extend(_dec_setter_assoc(associated.name, pub_type))
@@ -399,6 +411,14 @@ struct das_traits<'''+self._class_name+'''>
 
     return exc_assoc
 
+  def _get_all_associations(self,type_name):
+    assoc_l = []
+    for data_type in self._instance.type_map.values():
+      for assoc in data_type.associated.values():
+        if assoc.atype == type_name:
+          assoc_l.append(data_type.name)
+    return assoc_l
+
 def _def_factory_method(class_name):
   return '''
 inline shared_ptr<'''+class_name+'''>
@@ -433,7 +453,7 @@ def _def_getter_assoc(association, pub_type, priv_type, class_name):
   odb::transaction *transaction;
 
   '''+pub_type+''' associated;
-  if(db_ptr_.get() == 0)
+  if(is_new())
   {'''])
   if association.multiplicity == 'many':
     src.extend([''' 
@@ -450,10 +470,11 @@ def _def_getter_assoc(association, pub_type, priv_type, class_name):
   }
   else
   {
+    odb::session::current(*(bundle_->session_));
     bool local_trans = !odb::transaction::has_current();
     if(local_trans)
     {
-      transaction = new odb::transaction(db_ptr_->begin());
+      transaction = new odb::transaction(bundle_->db_->begin());
     }
     else
     {
@@ -494,27 +515,48 @@ def _def_getter_assoc(association, pub_type, priv_type, class_name):
 def _def_setter_assoc(association, pub_type, class_name):
   method_definition = ["void"]
   method_definition.extend([class_name+"::"+association.name + " ("+pub_type+" &"+association.name+"_new)","{"])
-  if association.multiplicity == 'many' and association.relation == 'shared':
-    method_definition.append('  '+association.name+"_.clear();")
-    method_definition.append('''  for('''+pub_type+'''::const_iterator i = '''+association.name+'''_new.begin(); i != '''+association.name+'''_new.end(); ++i)
+  if association.multiplicity == 'many':
+    if association.relation == 'shared':
+      method_definition.append('  '+association.name+"_.clear();")
+      method_definition.append('''  for('''+pub_type+'''::const_iterator i = '''+association.name+'''_new.begin(); i != '''+association.name+'''_new.end(); ++i)
       '''+association.name+'''_.push_back(*i);
 ''')
-  elif  association.multiplicity == 'many' and ( association.relation == 'exclusive' or association.relation == 'extend'):
-    method_definition.append('''
+    else:
+      method_definition.append('''
     '''+pub_type+''' current =  '''+association.name+''' ();
     for ('''+pub_type+'''::iterator i = current.begin(); i != current.end(); ++i){
-        (*i)->'''+class_name+'''_'''+association.name+'''_.reset();
-        (*i)->is_dirty_ = true;
+        if(*i) // some pointers may be null
+        {
+          (*i)->'''+class_name+'''_'''+association.name+'''_.reset();
+          (*i)->is_dirty_ = true;
+        }
     }
     '''+association.name+'''_.clear();
     for ('''+pub_type+'''::iterator i = '''+association.name+'''_new.begin(); i != '''+association.name+'''_new.end(); ++i){
-        (*i)->'''+class_name+'''_'''+association.name+'''_ = self_.lock();
-        (*i)->is_dirty_ = true;
+        if(*i) // some pointers may be null
+        {
+          (*i)->'''+class_name+'''_'''+association.name+'''_ = self_.lock();
+          (*i)->is_dirty_ = true;
+        }
         '''+association.name+'''_.push_back(*i);
     }
 ''')
   else:
-    method_definition.append('  '+association.name+"_ = "+association.name+"_new;")
+    if association.relation == 'shared':
+      method_definition.append('  '+association.name+"_ = "+association.name+"_new;")
+    else:
+      method_definition.append('''
+  '''+pub_type+''' current =  '''+association.name+''' ();
+  if(current) // association may not be setted yet
+  {
+    current->'''+class_name+'''_'''+association.name+'''_.reset();
+    current->is_dirty_ = true;
+  }
+  '''+association.name+'''_new->'''+class_name+'''_'''+association.name+'''_ = self_.lock();
+  '''+association.name+'''_new->is_dirty_ = true;
+
+  '''+association.name+'_ = '+association.name+'''_new;
+''')      
 
   method_definition.extend(["  is_dirty_ = true;","}"])
   return method_definition
@@ -539,8 +581,16 @@ def _def_persist_assoc(association, priv_type):
 '''
 
   else:
-    return '''
+    if association.relation == 'shared':
+      return '''
   shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = '''+association.name+'''_.get_eager();
+  if('''+association.name+'''_temp) // the association may not be setted
+    db->persist<'''+association.atype+'''> ('''+association.name+'''_temp);
+
+'''
+    else:
+      return '''
+  shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = '''+association.name+'''_.get_eager().lock();
   if('''+association.name+'''_temp) // the association may not be setted
     db->persist<'''+association.atype+'''> ('''+association.name+'''_temp);
 
@@ -551,38 +601,32 @@ def _def_update_assoc(association, priv_type):
     if association.relation == 'shared':
       return '''  for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
   {
-  //we should check the cache: if is already loaded then update, otherwise don't load and go on
-    shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = (*i).load(); // it means just lock
-    // if('''+association.name+'''_temp)
-    db_ptr_->update<'''+association.atype+'''> ('''+association.name+'''_temp,true);
+    shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = (*i).get_eager();
+    if('''+association.name+'''_temp)
+      '''+association.name+'''_temp->update();
   }
 '''
     else:
       return '''  for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
   {
-    if((*i).loaded() && !(*i).expired())
-    {
-      shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = (*i).load(); // it means just lock
-      // if('''+association.name+'''_temp)
-      db_ptr_->update<'''+association.atype+'''> ('''+association.name+'''_temp,true);
-    }
+    shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = (*i).get_eager().lock();
+    if('''+association.name+'''_temp)
+      '''+association.name+'''_temp->update();
   }
 '''
-  else: 
-    return '''
-/*  if('''+association.name+'''_.loaded() && !'''+association.name+'''_.expired())
-  {
-    shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = '''+association.name+'''_.load(); // it means just lock
-    //if('''+association.name+'''_temp)
-    db_ptr_->update<'''+association.atype+'''> ('''+association.name+'''_temp,true);
-  }
-*/
-  //we should check the cache: if is already loaded then update, otherwise don't load and go on
-  shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = '''+association.name+'''_.load(); // it means just lock
-  db_ptr_->update<'''+association.atype+'''> ('''+association.name+'''_temp,true);
-
+  else:
+    if association.relation == 'shared':
+      return '''
+  shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = '''+association.name+'''_.get_eager();
+  if('''+association.name+'''_temp)
+    '''+association.name+'''_temp->update();
 ''' 
-
+    else:
+      return '''
+  shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = '''+association.name+'''_.get_eager().lock();
+  if('''+association.name+'''_temp)
+    '''+association.name+'''_temp->update();
+'''
 
 def _dec_getter(attribute_name, attribute_type):
   method_declaration = ["const " + attribute_type + "&"]
@@ -607,8 +651,6 @@ def _dec_setter_assoc(attribute_name, attribute_type):
 def _dec_persist_assoc():
   src = ['virtual void']
   src.append('persist_associated(das::tpl::Database *db);')
-  src.append('virtual void')
-  src.append('update_associated();')
 
 
 class DdlInheritanceValidator:

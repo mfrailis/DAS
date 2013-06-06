@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 2.8)
 project(libdas)
 
+set(CMAKE_BUILD_TYPE debug)
+set(CMAKE_CXX_FLAGS_DEBUG "-g -DVDBG")
+
 set(CPP_SOURCE_DIR ${CMAKE_SOURCE_DIR}/src/cpp)
 set(CPP_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
 set(CPP_INCLUDE_INTERNAL_DIR ${CPP_SOURCE_DIR})
@@ -43,6 +46,7 @@ set(DAS_QL_SRC
 )
 set(DAS_SRC
   ${CPP_SOURCE_DIR}/info.cpp
+  ${CPP_SOURCE_DIR}/tpl/transaction.cpp
 )
 
 include_directories(${CPP_INCLUDE_DIR})
