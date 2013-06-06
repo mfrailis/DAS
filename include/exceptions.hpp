@@ -132,6 +132,16 @@ namespace das
       return "bad ordering clause";
     }
     
+  }; //TODO  
+  class bad_path : public std::exception
+  {
+  public :
+    virtual const char*
+    what() const throw()
+    {
+      return "cannot access file";
+    }
+    
   }; //TODO
 }
 

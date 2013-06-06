@@ -78,7 +78,7 @@ class JsonConfigParser:
                 f.write(' '+i)
         f.write(')')
         f.write('''
-set(TYPES_CPP ${TYPE_PREFIX}info.cpp)
+set(TYPES_CPP ${TYPE_PREFIX}info.cpp database_config.cpp)
 foreach(type_name ${TYPE_NAMES_ALL})
   list(APPEND TYPES_CPP ${TYPE_PREFIX}${type_name}.cpp)
 endforeach()
@@ -333,7 +333,34 @@ add_custom_target(
 '''
 )
     f.close()
-        
+ 
+def generate_database_config(db_list,filename):
+    f = open(filename,'w')
+    f.writelines(['''
+#include "internal/database_config.hpp"
+namespace das{
+  void 
+  DatabaseConfig::prepare_config()
+  {
+'''])
+    for db in db_list:
+        f.writelines(['''
+    {
+      DatabaseInfo &info = db_map_["''',str(db['alias']),'''"];
+      info.host = "''',str(db['host']),'''";
+      info.port = ''',str(db['port']),''';
+      info.db_name = "''',str(db['db_name']),'''";
+      info.db_type = "''',str(db['db_type']),'''";
+      info.data_root_dir = "''',str(db['data_root_dir']),'''";
+      info.time_interval = "''',str(db['time_interval']),'''";
+    }
+'''])
+
+    f.writelines(['''
+  }
+}
+'''])
+    f.close()      
       
 
     
@@ -383,6 +410,9 @@ if __name__ == '__main__':
     #generate info classes
     info_generator = _info.DdlInfoGenerator(type_list,c.ddl_map,c.db_map,cmake_dir)
     type_list.accept(info_generator)
+
+    #generate database config method
+    generate_database_config(c._config,cmake_dir+"/database_config.cpp")
 
     #generate per database header
     c.generate_db_headers(cmake_dir)
