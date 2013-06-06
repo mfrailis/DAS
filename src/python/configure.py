@@ -101,11 +101,15 @@ foreach(type_name ${TYPE_NAMES})
 endforeach()
 
 set(ODB_HXX)
+list(APPEND ODB_HXX aux_query-odb.hxx)
+list(APPEND ODB_HXX DasObject-odb.hxx)
+
 foreach(type_name ${TYPE_NAMES})
   add_custom_command(
     OUTPUT ${TYPE_PREFIX}${type_name}-odb.hxx
     COMMAND odb
             --database '''+db_type+'''
+            --generate-query
 	    -x -I${ODB_SOURCE_DIR}
             -x -I${CPP_INCLUDE_DIR}
 	    ${ODB_SOURCE_DIR}/${TYPE_PREFIX}${type_name}.hpp
@@ -114,6 +118,28 @@ foreach(type_name ${TYPE_NAMES})
     )
   list(APPEND ODB_HXX ${TYPE_PREFIX}${type_name}-odb.hxx)
 endforeach()
+
+add_custom_command(
+OUTPUT DasObject-odb.hxx
+COMMAND odb
+    --database mysql
+    --generate-query
+    -x -I${ODB_SOURCE_DIR}
+    -x -I${CPP_INCLUDE_DIR}
+    ${CPP_INCLUDE_DIR}/DasObject.hpp
+COMMENT "Generating odb DasObject class on '''+db['alias']+'''"
+)
+
+add_custom_command(
+OUTPUT aux_query-odb.hxx
+COMMAND odb
+    --database mysql
+    --generate-query
+    -x -I${ODB_SOURCE_DIR}
+    -x -I${CPP_INCLUDE_DIR}
+    ${CPP_INCLUDE_DIR}/aux_query.hpp
+COMMENT "Generating odb auxiliary query on '''+db['alias']+'''"
+)
 
 add_custom_command(
   OUTPUT  SIGNATURE_CHECK ${DDL_LOCAL_SIGNATURE}

@@ -9,17 +9,17 @@ class Image
   Image(unsigned int size1, unsigned int size2, std::string pixel_type)
     : size1_(size1), size2_(size2), pixel_type_(pixel_type)
   {}
-  
+
   Image(std::string pixel_type)
     : size1_(0), size2_(0), pixel_type_(pixel_type)
   {}
-  
+
   const std::string&
   pixel_type() const
   {
     return pixel_type_;
   }
-  
+
   void
   pixel_type(std::string type)
   {
@@ -68,7 +68,7 @@ public:
   {}
   ImageFile(std::string type)
     : Image(type)
-  {}  
+  {}
   const std::string&
   fname()
   {
@@ -83,7 +83,7 @@ public:
 
  private:
   friend class odb::access;
-
+  void save();
   ImageFile()  {}
   std::string fname_;
 };
@@ -97,15 +97,15 @@ public:
   {}
   ImageBlob(std::string type)
     : Image(type)
-  {}  
-  
+  {}
+
   //TODO methods for streaming in and out the buffer
 
  private:
   friend class odb::access;
 
   ImageBlob()  {}
- 
+
   #pragma db mysql:type("MEDIUMBLOB") oracle:type("BLOB") pgsql:type("BYTEA") sqlite:type("BLOB") mssql:type("varbinary")
   std::vector<char> buffer_;
   //FIXME is this vector<char> suitable?

@@ -4,8 +4,15 @@
 #include <odb/core.hxx>
 #include <string>
 #include "ddl/info.hpp"
-#include "tpl/Database.hpp"
+//#include "tpl/Database.hpp"
+//template <typename T>
+//class DasVector;
 
+#include <odb/tr1/memory.hxx>
+#include <odb/tr1/lazy-ptr.hxx>
+#include <boost/shared_ptr.hpp>
+
+namespace das{namespace tpl{class Database;}}
 #pragma db object abstract
 class DasObject
 {
@@ -22,7 +29,10 @@ public:
   {
     return DdlInfo::get_instance()->
       get_column_info(type_name_, column_name);
-  }  
+  }
+
+  bool is_dirty() const{return is_dirty_;}
+  bool is_new()   const{return das_id_ == 0;  }
 
   const std::string&
   dbUserId () const
@@ -40,6 +50,7 @@ public:
   creationDate (long long creationDate)
   {
     creationDate_ = creationDate;
+    is_dirty_ = true;
   }
 
   const short&
@@ -54,39 +65,49 @@ public:
     return name_;
   }
 
-  const std::string&
+  boost::shared_ptr<das::tpl::Database>
   database ()
   {
-    return database_;
-  }
-
-  DasObject()
-  {
-    type_name_ = "DasObject";
-    database_ = "none";
-    version_ = 0;
-    das_id_ = 0;
+    return db_ptr_;
   }
 
 protected:
+  DasObject()
+  {
+    type_name_ = "DasObject";
+    version_ = 0;
+    das_id_ = 0;
+    is_dirty_ = false;
+  }
+
 #pragma db transient
   std::string type_name_;
-  
+
 #pragma db transient
-  std::string database_;
-  
+  boost::shared_ptr<das::tpl::Database> db_ptr_;
+
+#pragma db transient
+  bool is_dirty_;                                   // does it need an update?
+
+  virtual void save_data(){};                                // update external data.
+  virtual void save_data(std::string path){};                // save external data, check if the path is empty.
+  virtual void update_associated(das::tpl::Database* db){};  // call update  on associated objects
+  virtual void persist_associated(das::tpl::Database* db){}; // call persist on associated objects
+
 private:
   friend class odb::access;
   friend class das::tpl::Database;
-  
+//  template <typename T> friend class DasVector;
+//  template <typename T> friend void ::swap(DasVector<T> &x, DasVector<T> &y);
 #pragma db id auto
   long long das_id_;
-  
+
 #pragma db type("VARCHAR(256)")
   std::string dbUserId_;
   long long creationDate_;
+
+protected:
   short version_;
-  
 #pragma db type("VARCHAR(256)")
 #pragma db index
   std::string name_;
