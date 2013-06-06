@@ -10,7 +10,7 @@
 #include <odb/database.hxx>
 #include <odb/tr1/memory.hxx>
 #include <odb/tr1/lazy-ptr.hxx>
-#include "interal/db_bundle.hpp"
+#include "internal/db_bundle.hpp"
 using std::tr1::shared_ptr;
 
 class QLVisitor;
@@ -97,6 +97,7 @@ private:
   friend class odb::access;
   friend class das::tpl::Database;
   friend class das::tpl::Transaction;
+  friend class das::tpl::DbBundle;
   friend class QLVisitor;
 //  template <typename T> friend class DasVector;
 //  template <typename T> friend void ::swap(DasVector<T> &x, DasVector<T> &y);

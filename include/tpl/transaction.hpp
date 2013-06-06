@@ -9,7 +9,7 @@
 #include <odb/session.hxx>
 
 #include "exceptions.hpp"
-#include "interal/db_bundle.hpp"
+#include "internal/db_bundle.hpp"
 using std::tr1::shared_ptr;
 using std::tr1::weak_ptr;
 

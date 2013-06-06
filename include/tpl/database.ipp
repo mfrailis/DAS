@@ -180,8 +180,16 @@ Database::find(const std::string& name, int version) {
     return found;
 }
 
-//TODO move this method in he bundle!!!
 template<typename T>
+inline
+void
+Database::attach(typename odb::object_traits<T>::pointer_type& obj) {
+    bundle_.attach<T>(obj);
+}
+
+//TODO move this method in he bundle!!!
+
+/*template<typename T>
 inline
 void
 Database::attach(typename odb::object_traits<T>::pointer_type& obj) {
@@ -221,6 +229,7 @@ Database::attach(typename odb::object_traits<T>::pointer_type& obj) {
     }
 
 }
+ */
 
 inline
 void
