@@ -14,8 +14,8 @@ class DdlVisitor:
   def visit_datatype(self, datatype):
     pass
     
-  def visit_ancestor(self, ancestor):
-    pass
+#  def visit_ancestor(self, ancestor):
+#    pass
     
   def visit_associated(self, associated):
     pass
@@ -101,6 +101,8 @@ class DdlOdbGenerator(DdlVisitor):
       f.close()
       
   def visit_datatype(self, datatype):
+    if datatype.name == "essentialMetadata":
+      return
     lines = []
     intro = []
     self._class_name = datatype.name
@@ -112,6 +114,13 @@ class DdlOdbGenerator(DdlVisitor):
     lines.append("#include <vector>")
     lines.append("#include <map>")
     lines.append('#include "ddl_info.hpp"')
+    if datatype.ancestor != "essentialMetadata":
+      self._header.append('#include "ddl_' + datatype.ancestor + '.hpp"')
+      self._inhetit = datatype.ancestor
+    else:
+      self._header.append('#include "ddl_DdlObject.hpp"')
+      self._inherit = "DdlObject"
+      
     if datatype.data is not None:
       self._header.append('#include "ddl_column.hpp"')
     
@@ -161,10 +170,6 @@ class DdlOdbGenerator(DdlVisitor):
     f.close()
     self.clean_env()
     
-  def visit_ancestor(self, ancestor):
-    self._header.append('#include "ddl_' + ancestor.atype + '.hpp"')
-    self._inherit = ancestor.atype
-  
   
   def visit_associated(self, associated):
     if not self._has_associations:
@@ -256,8 +261,8 @@ class DdlInheritanceValidator:
     if obj.data is not None:
       return obj.data.isTable()
     else:
-      if obj.ancestor is not None:
-        return self.has_inherit_column(obj.ancestor.atype)
+      if obj.ancestor != obj.name:
+        return self.has_inherit_column(obj.ancestor)
       else:
         return False
     
@@ -265,60 +270,60 @@ class DdlInheritanceValidator:
     self._keyword_violation = False     
     for (name,dtype) in self._instance.type_map.items():
       self._current_type = name
-      if dtype.ancestor is not None and dtype.metadata is not None:
+      if dtype.metadata is not None and dtype.ancestor != dtype.name:
         for key_name in dtype.metadata.keywords.keys():
-          self._check_keyword(key_name,dtype.ancestor.atype)
+          self._check_keyword(key_name,dtype.ancestor)
     self._current_type = None
     return self._keyword_violation   
     
   def _check_keyword(self,key_name, type_name):
     obj = self._instance.type_map[type_name]
     if obj.metadata is None:
-      if obj.ancestor is not None:
-        return self._check_keyword(key_name,obj.ancestor.atype)
+      if obj.ancestor != obj.name:
+        return self._check_keyword(key_name,obj.ancestor)
     else:
       if obj.metadata.keywords.get(key_name,None) is not None:
         print "Error: type " + self._current_type + " redefines keyword " + key_name
         print "  previous declaration in ascendant type "+ type_name
         self._keyword_violation = True
       else:
-        if obj.ancestor is not None:
-          return self._check_keyword(key_name,obj.ancestor.atype)         
+        if obj.ancestor != obj.name:
+          return self._check_keyword(key_name,obj.ancestor)         
 
   def check_redefined_columns(self):
     self._column_violation = False     
     for (name,dtype) in self._instance.type_map.items():
       self._current_type = name
-      if dtype.ancestor is not None and dtype.data is not None and dtype.data.isTable():
+      if dtype.ancestor != dtype.name and dtype.data is not None and dtype.data.isTable():
         for key_name in dtype.data.data_obj.columns.keys():
-          self._check_column(key_name,dtype.ancestor.atype)
+          self._check_column(key_name,dtype.ancestor)
     self._current_type = None
     return self._column_violation   
     
   def _check_column(self,key_name, type_name):
     obj = self._instance.type_map[type_name]
     if obj.data is None:
-      if obj.ancestor is not None:
-        return self._check_column(key_name,obj.ancestor.atype)
+      if obj.ancestor != obj.name:
+        return self._check_column(key_name,obj.ancestor)
     else:
       if obj.data.isTable() and obj.data.data_obj.columns.get(key_name,None) is not None:
         print "Error: type " + self._current_type + " redefines column " + key_name
         print "  previous declaration in ascendant type "+ type_name
         self._column_violation = True
       else:
-        if obj.ancestor is not None:
-          return self._check_column(key_name,obj.ancestor.atype)         
+        if obj.ancestor != obj.name:
+          return self._check_column(key_name,obj.ancestor)         
 
   def check_image_table_mismatch(self):
     self._data_type_violation = False  
     for (name,dtype) in self._instance.type_map.items():   
       self._current_type = name
       if dtype.data is not None:
-        if dtype.ancestor is not None:
+        if dtype.ancestor != dtype.name:
           if dtype.data.isTable():
-            self._check_table(dtype.ancestor.atype,dtype.data.store_as)
+            self._check_table(dtype.ancestor,dtype.data.store_as)
           else:
-            self._check_image(dtype.ancestor.atype)
+            self._check_image(dtype.ancestor)
     self._current_type = None
     return self._data_type_violation
   
@@ -333,8 +338,8 @@ class DdlInheritanceValidator:
         print "Error. mismatch value for attribute 'storeAs' in type "+self._current_type
         print "  expected "+dtype.data.store_as+", found "+store_type
         self._data_type_violation = True
-    if dtype.ancestor is not None:
-      self._check_table(dtype.ancestor.atype,store_type)
+    if dtype.ancestor != dtype.name:
+      self._check_table(dtype.ancestor,store_type)
 
   
   def _check_image(self,type_name):
@@ -349,8 +354,8 @@ class DdlInheritanceValidator:
         print "  previously image defined in ascendant type "+ type_name
         self.data_type_violation = True
     else:
-      if dtype.ancestor is not None:
-        self._check_image(dtype.ancestor.atype)
+      if dtype.ancestor != dtype.name:
+        self._check_image(dtype.ancestor)
 
       
            

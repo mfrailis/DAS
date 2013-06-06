@@ -20,7 +20,6 @@
         An example of a data type storing housekeeping timelines    
     -->
     <type name="lfiHkDaeSlowVoltage" description="DAE voltages - slow telemetry">
-        <ancestor type="essentialMetadata"/>
         <metadata>
             <keyword name="runId" type="string" description="test run ID (e.g. FUNC_0001)"/>
             <keyword name="startTime" description="start time of the timeline in UCT" type="int64" unit="ms"/>
@@ -48,7 +47,6 @@
         Data type to store images generated when producing the log of a test run   
     -->
     <type name="testLogImage">
-        <ancestor type="essentialMetadata"/>
         <metadata>
             <keyword name="naxis1" type="int32" description="image height"/>
             <keyword name="naxis2" type="int32" description="image width"/>
@@ -63,7 +61,6 @@
         Data type to archive log information for a specific test run   
     -->    
     <type name="testLog">
-        <ancestor type="essentialMetadata"/>
         <associated name="images" type="testLogImage" multiplicity="many"/>
         <metadata>
             <keyword name="runId" type="string" description="test run ID (e.g. FUNC_0001)"/>

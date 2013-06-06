@@ -14,7 +14,7 @@ class DdlMap:
         return self._map.get(type_name,[])
         
 class DdlInfoGenerator(_odb.DdlVisitor):
-    def __init__(self,ddl_map,type_list,db_map,source_dir):
+    def __init__(self,type_list,ddl_map,db_map,source_dir):
         self._type_list = type_list
         self._ddl_map = ddl_map
         self._db_map = db_map
@@ -81,8 +81,8 @@ class DdlInfoGenerator(_odb.DdlVisitor):
         ddl_type = self._type_list.type_map[type_name]
         if ddl_type.metadata is not None:
             self._keywords.extend(ddl_type.metadata.keywords.values())
-        if ddl_type.ancestor is not None:
-            self._get_keywords(ddl_type.ancestor.atype)
+        if ddl_type.ancestor != ddl_type.name:
+            self._get_keywords(ddl_type.ancestor)
             
     def _get_columns(self, type_name):
         ddl_type = self._type_list.type_map[type_name]
@@ -90,8 +90,8 @@ class DdlInfoGenerator(_odb.DdlVisitor):
             if ddl_type.data.isImage():
                 return
             self._columns.extend(ddl_type.data.data_obj.columns.values())
-        if ddl_type.ancestor is not None:
-            self._get_columns(ddl_type.ancestor.atype)
+        if ddl_type.ancestor != ddl_type.name:
+            self._get_columns(ddl_type.ancestor)
 
 def _write_ddl_class(f, ddl_name, constructor):
     source = [
@@ -148,22 +148,35 @@ private:
 if __name__ == "__main__":
     import sys
     import ddl
-    schema_file_name = sys.argv[1]
-    das_instance_file = sys.argv[2]
-    output_dir = sys.argv[3]
+    das_instance_file = sys.argv[1]
+    output_dir = sys.argv[2]
 
-    parser = ddl.DdlParser(schema_file_name)
+    parser = ddl.DdlParser('../../ddl/ddl.xsd')
     instance = parser.parse_ddl(das_instance_file)
 
-    m = DdlMap()
-    m.add_type('ddl_test1',"essentialMetadata")
-    m.add_type('ddl_test1',"lfiHkDaeSlowVoltage")
-    m.add_type('ddl_test1',"testLogImage")
-    m.add_type('ddl_test1',"testLog")
+    ddl_map = DdlMap()
+    ddl_map.add_type('ddl_test1',"essentialMetadata")
+    ddl_map.add_type('ddl_test1',"lfiHkDaeSlowVoltage")
+    ddl_map.add_type('ddl_test1',"testLogImage")
+    ddl_map.add_type('ddl_test1',"testLog")
     
-    m.add_type('ddl_test2',"essentialMetadata")
-    m.add_type('ddl_test2',"lfiHkDaeSlowVoltage")
+    ddl_map.add_type('ddl_test2',"essentialMetadata")
+    ddl_map.add_type('ddl_test2',"lfiHkDaeSlowVoltage")
     
     db_map = { 'oracle1' : 'ddl_test1' , 'sqlite_cache' : 'ddl_test2', 'oracle2' : 'ddl_test1' }
-    ddl_generator = DdlInfoGenerator(m,instance,db_map,output_dir)
+
+
+    print "ddl_map"
+    for (type,list) in ddl_map._map.items():
+        print type
+        for l in list:
+            print "  ",l
+            
+    print ""
+    print "db_map"
+    for (db,ddl) in db_map.items():
+        print db+"  "+ddl
+
+
+    ddl_generator = DdlInfoGenerator(instance,ddl_map,db_map,output_dir)
     instance.accept(ddl_generator)
