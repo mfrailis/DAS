@@ -31,22 +31,6 @@ include_directories(${ODB_OUTPUT_DIR})
 
 set(ODB_COMMON_TYPES ${ODB_SOURCE_DIR}/ddl_types.hpp)
 
-#add_custom_command(
-#  OUTPUT  odb-common
-#  COMMAND mkdir -p ${ODB_OUTPUT_DIR}
-#  COMMAND odb
-#          --multi-database dynamic 
-#          --database common
-#          --generate-query
-#          --generate-schema
-#          --omit-drop
-#          --output-dir ${ODB_OUTPUT_DIR}
-#          --at-once
-#          ${ODB_COMMON_TYPES}
-#	  -x -I${CPP_INCLUDE_DIR}
-#  COMMENT "Built common odb classes"
-#)
-
 execute_process(
   COMMAND python configure.py
           ${DAS_BUILD_DIR}
@@ -59,14 +43,3 @@ execute_process(
 )
 
 add_subdirectory(${DAS_BUILD_DIR})
-
-add_custom_target(
-  odb-only ALL
-  DEPENDS odb-common
-  COMMENT "generate type classes"
-)
-
-
-#add_library (ddl_runtime_lib ${CPP_SOURCE_DIR}/ddl_info.hpp classes-odb)
-#add_executable(ddl_runtime_info ${CPP_SOURCE_DIR}/main.cpp)
-#target_link_libraries(ddl_runtime_info ddl_runtime_lib xerces-c)

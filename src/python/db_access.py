@@ -4,6 +4,8 @@ import jsonschema as _js
 import MySQLdb as _my
 import ddl as _d
 import os as _os
+from warnings import filterwarnings
+
 
 MYSQL_DDL_SCHEMA='''
 CREATE TABLE IF NOT EXISTS `ddl_schema_types` (
@@ -11,7 +13,7 @@ CREATE TABLE IF NOT EXISTS `ddl_schema_types` (
 )
 ENGINE=InnoDB;
 '''
-
+MYSQL_GET_DDL_SCHEMA="SELECT * FROM `ddl_schema_types`;"
 
 class JsonAccessParser:
     def __init__(self,f_conf_sc,f_acc_sc,sql_dir,prefix):
@@ -78,6 +80,7 @@ class JsonAccessParser:
             exit(1)
 
     def execute(self, xsd_schema, xml_new):
+        filterwarnings('ignore', category = _my.Warning)
         is_new = True
         if  self._db_type == 'mysql':
             db = _my.connect(host=self._host,
@@ -89,15 +92,23 @@ class JsonAccessParser:
             c = db.cursor()
             c.execute(MYSQL_DDL_SCHEMA)
             c.close()
-            #TODO load from database
-#            schema_cur = "" #load from database
+
+            cur_types = _d.DdlTypeList()
+
+            c = db.cursor()
+            c.execute(MYSQL_GET_DDL_SCHEMA)
+            schema_query = c.fetchone()
+            c.close()           
+
             parser = _d.DdlParser(xsd_schema)
-            
-            cur_types = _d.DdlTypeList()#parser.parse_ddl_from_string(schema_cur)
+            if schema_query is not None:
+                is_new = False
+                cur_types = parser.parse_ddl_from_string(schema_query[0])                
+                
+
             new_types = parser.parse_ddl(xml_new)
-            tree_string = db.escape_string(parser.serialize_tree(xml_new))
-            #DBG
-#            print tree_string
+            #tree_string = db.escape_string(parser.serialize_tree(xml_new))
+            tree_string = parser.serialize_tree(xml_new)
 
             code = self._generate_mysql(cur_types,new_types)
             for i in code:
@@ -109,7 +120,7 @@ class JsonAccessParser:
             if is_new:
                 c.execute("INSERT INTO `ddl_schema_types`(`schema`) VALUES (%s)",[tree_string])
             else:
-                c.execute("UPDATE `ddl_schema_types` SET `schema` = %s)",[tree_string])
+                c.execute("UPDATE `ddl_schema_types` SET `schema` = %s",[tree_string])
 
             c.close()
             db.commit()
@@ -142,6 +153,7 @@ class JsonAccessParser:
                     code.append(text)
             else:
                 # perform type upgrade operations
+                print "skipping "+t.name
                 pass
             
         return code
