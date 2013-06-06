@@ -254,7 +254,8 @@ class DdlOdbGenerator(DdlVisitor):
 
 
     self._src_header.append('#include "tpl/Database.hpp"')
-    self._src_header.append('#include "ddl_'+associated.atype+'-odb.hxx"')
+#TODO: multi-database support    self._src_header.append('#include "dbms/common/ddl_'+associated.atype+'-odb.hxx"')
+    self._src_header.append('#include "dbms/mysql/ddl_'+associated.atype+'-odb.hxx"')
     self._src_header.append('#include "exceptions.hpp"')
     self._assoc_touples.append((associated.name,pub_type,priv_type,associated.atype))
  
@@ -322,13 +323,13 @@ class DdlOdbGenerator(DdlVisitor):
 #    shutil.copyfile("../cpp/ddl_column.hpp", _os.path.join(self._src_dir, "ddl_column.hpp"))   
 
 def _def_getter(attribute_name, attribute_type, class_name):
-  method_definition = ["const " + attribute_type + "&"]
+  method_definition = ["inline const " + attribute_type + "&"]
   method_definition.extend([class_name+"::"+attribute_name + " () const","{"])
   method_definition.extend(["  return " + attribute_name + "_;","}"])
   return method_definition
   
 def _def_setter(attribute_name, attribute_type, class_name):
-  method_definition = ["void"]
+  method_definition = ["inline void"]
   method_definition.extend([class_name+"::"+attribute_name + " (const "+attribute_type+" &"+attribute_name+")", "{"])
   method_definition.extend(["  "+attribute_name+"_ = "+attribute_name+";","  is_dirty_ = true;","}"])
   return method_definition
@@ -406,12 +407,12 @@ def _def_update_assoc(attribute_name, priv_type, assoc_class):
 '''
 
 def _dec_getter(attribute_name, attribute_type):
-  method_declaration = ["inline const " + attribute_type + "&"]
+  method_declaration = ["const " + attribute_type + "&"]
   method_declaration.extend([attribute_name + " () const;"])
   return method_declaration
   
 def _dec_setter(attribute_name, attribute_type):
-  method_declaration = ["inline void"]
+  method_declaration = ["void"]
   method_declaration.extend([attribute_name + " (const "+attribute_type+" &"+attribute_name+");"])
   return method_declaration
 

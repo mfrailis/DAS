@@ -1,16 +1,20 @@
 #ifndef DAS_COLUMN_HPP
 #define DAS_COLUMN_HPP
+#include <odb/core.hxx>
+#include <vector>
+#include <string>
 
 #pragma db value
 class Column
 {
 
  public:
-  Column(long long size, std::string type)
+  Column(const long long& size,
+	 const std::string &type)
     :size_(size), type_(type)
   {}
 
-  Column(std::string type)
+  Column(const std::string &type)
     :size_(0), type_(type)
   {}
 
@@ -21,7 +25,7 @@ class Column
   }
 
   void
-  size(long long size)
+  size(const long long &size)
   {
     size_ = size;
   }
@@ -33,7 +37,7 @@ class Column
   }
 
   void
-  type(std::string type)
+  type(const std::string &type)
   {
     type_ = type;
   }
@@ -51,10 +55,12 @@ class Column
 class ColumnFile: public Column
 {
 public:
-  ColumnFile(long long size, std::string type, std::string fname)
+  ColumnFile(const long long &size,
+	     const std::string &type,
+	     const std::string &fname)
     : Column(size, type),  fname_(fname)
   {}
-  ColumnFile(std::string type)
+  ColumnFile(const std::string &type)
     : Column(type)
   {}
   const std::string&
@@ -64,7 +70,7 @@ public:
   }
 
   void
-  fname(std::string fname)
+  fname(const std::string &fname)
   {
     fname_ = fname;
   }
@@ -80,11 +86,12 @@ public:
 class ColumnBlob: public Column
 {
 public:
-  ColumnBlob(long long size, std::string type)
+  ColumnBlob(const long long &size,
+	     const std::string &type)
     : Column(size, type)
   {}
 
-  ColumnBlob(std::string type)
+  ColumnBlob(const std::string &type)
     : Column(type)
   {}
 

@@ -1,16 +1,19 @@
 #ifndef DAS_IMAGE_HPP
 #define DAS_IMAGE_HPP
+#include <odb/core.hxx>
+#include <vector>
+#include <string>
 
 #pragma db value
 class Image
 {
 
  public:
-  Image(unsigned int size1, unsigned int size2, std::string pixel_type)
+  Image(const unsigned int &size1,const unsigned int &size2,const std::string &pixel_type)
     : size1_(size1), size2_(size2), pixel_type_(pixel_type)
   {}
 
-  Image(std::string pixel_type)
+  Image(const std::string &pixel_type)
     : size1_(0), size2_(0), pixel_type_(pixel_type)
   {}
 
@@ -21,7 +24,7 @@ class Image
   }
 
   void
-  pixel_type(std::string type)
+  pixel_type(const std::string &type)
   {
     pixel_type_ = type;
   }
@@ -33,7 +36,7 @@ class Image
   }
 
   void
-  size1(unsigned int size)
+  size1(const unsigned int &size)
   {
     size1_ = size;
   }
@@ -45,7 +48,7 @@ class Image
   }
 
   void
-  size2(unsigned int size)
+  size2(const unsigned int& size)
   {
     size2_ = size;
   }
@@ -63,10 +66,13 @@ class Image
 class ImageFile: public Image
 {
 public:
-  ImageFile(unsigned int size1, unsigned int size2, std::string pixel_type, std::string fname)
+  ImageFile(const unsigned int &size1,
+	    const unsigned int &size2,
+	    const std::string &pixel_type,
+	    const std::string &fname)
     : Image(size1, size2, pixel_type), fname_(fname)
   {}
-  ImageFile(std::string type)
+  ImageFile(const std::string &type)
     : Image(type)
   {}
   const std::string&
@@ -76,7 +82,7 @@ public:
   }
 
   void
-  fname(std::string fname)
+  fname(const std::string &fname)
   {
     fname_ = fname;
   }
@@ -92,7 +98,10 @@ public:
 class ImageBlob: public Image
 {
 public:
-  ImageBlob(unsigned int size1, unsigned int size2, std::string pixel_type, std::string fname)
+  ImageBlob(const unsigned int &size1,
+	    const unsigned int &size2,
+	    const std::string &pixel_type,
+	    const std::string &fname)
     : Image(size1, size2, pixel_type)
   {}
   ImageBlob(std::string type)
