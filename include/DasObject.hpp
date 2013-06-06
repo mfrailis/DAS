@@ -81,7 +81,7 @@ protected:
   std::string type_name_;
 
 #pragma db transient
-  shared_ptr<das::tpl::DbBundle> bundle_;
+  das::tpl::WeakDbBundle bundle_;
 
 #pragma db transient
   bool is_dirty_;                                   // does it need an update?

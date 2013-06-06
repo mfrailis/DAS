@@ -98,7 +98,7 @@ void  QLVisitor::visitConstInt(ConstInt *p)
     stack.top().type_=t_long;
 
 #ifdef VDBG
-  std::cout << "long long coerced to " << type_to_string(stack.top().type_) << std::endl;
+  std::cout << "long long ("<< x <<") coerced to " << type_to_string(stack.top().type_) << std::endl;
 #endif
 
   std::stringstream ss;
@@ -114,6 +114,10 @@ void  QLVisitor::visitConstFloat(ConstFloat *p)
     stack.top().type_=t_float;
   else
     stack.top().type_=t_double;
+
+#ifdef VDBG
+  std::cout << "double ("<< x <<") coerced to " << type_to_string(stack.top().type_) << std::endl;
+#endif
 
   std::stringstream ss;
   ss << x;
@@ -153,6 +157,7 @@ void QLVisitor::visitKeyword(Keyword *p)
   try
     {
       stack.top().type_ = string_to_type(info_->get_keyword_info( stack.top().current_type_, p->ident_).type);
+      //      stack.top().type_strict_ = true;
     }
   catch(std::out_of_range &e)
     {
@@ -160,17 +165,17 @@ void QLVisitor::visitKeyword(Keyword *p)
     }
   
   if(stack.top().join_code_ != "")
-  {
+    {
       stack.top().nested_code_.append(stack.top().current_type_);
       stack.top().nested_code_.append(".");
       stack.top().nested_code_.append(p->ident_);
-  }
+    }
   else
-  {
+    {
       stack.top().direct_code_.append(stack.top().current_type_);
       stack.top().direct_code_.append(".");
       stack.top().direct_code_.append(p->ident_);     
-  }
+    }
 }
 
 void QLVisitor::visitBinExp(Exp *exp_1, Exp *exp_2,const std::string &op)
@@ -204,19 +209,19 @@ void QLVisitor::visitBinExp(Exp *exp_1, Exp *exp_2,const std::string &op)
   stack.top().assoc_tables_.insert(e2.assoc_tables_.begin(),e2.assoc_tables_.end());
    
   if(e1.join_code_ != "" || e2.join_code_ != "")
-  {
+    {
       if(e1.join_code_ != "")
-          stack.top().nested_code_.append("("+e1.nested_code_+op);
+	stack.top().nested_code_.append("("+e1.nested_code_+op);
       else
-          stack.top().nested_code_.append("("+e1.direct_code_+op);
+	stack.top().nested_code_.append("("+e1.direct_code_+op);
       
       if(e2.join_code_ != "")
-          stack.top().nested_code_.append(e2.nested_code_+")");
+	stack.top().nested_code_.append(e2.nested_code_+")");
       else
-          stack.top().nested_code_.append(e2.direct_code_+")");
-  }
+	stack.top().nested_code_.append(e2.direct_code_+")");
+    }
   else
-      stack.top().direct_code_.append("("+e1.direct_code_+op+e2.direct_code_+")");
+    stack.top().direct_code_.append("("+e1.direct_code_+op+e2.direct_code_+")");
 }
 
 
@@ -242,8 +247,14 @@ void QLVisitor::visitCompExpAA(CompExpAA *p)
 
   if(p->compop_ != "==" && p->compop_ != "!=" && t == t_bool)
     throw das::bad_type();
+  /*
+  if(e1.type_strict_ && e1.type_ < t)
+    throw das::bad_type();
 
-    stack.top().join_code_ = e1.join_code_;
+  if(e2.type_strict_ && e2.type_ < t)
+    throw das::bad_type();    
+  */
+  stack.top().join_code_ = e1.join_code_;
   
   if(e1.join_code_ != "" && e2.join_code_ != "")
     stack.top().join_code_.append(" AND ");
@@ -254,25 +265,25 @@ void QLVisitor::visitCompExpAA(CompExpAA *p)
   
   
   if(e1.join_code_ != "" || e2.join_code_ != "")
-  {
+    {
       if(e1.join_code_ != "")
-          stack.top().nested_code_.append("("+e1.nested_code_);
+	stack.top().nested_code_.append("("+e1.nested_code_);
       else
-          stack.top().nested_code_.append("("+e1.direct_code_);
+	stack.top().nested_code_.append("("+e1.direct_code_);
       
       stack.top().nested_code_.append(compop_to_sql(p->compop_));
       
       if(e2.join_code_ != "")
-          stack.top().nested_code_.append(e2.nested_code_+")");
+	stack.top().nested_code_.append(e2.nested_code_+")");
       else
-          stack.top().nested_code_.append(e2.direct_code_+")");      
-  }
+	stack.top().nested_code_.append(e2.direct_code_+")");      
+    }
   else
-  {
-    stack.top().direct_code_.append("("+e1.direct_code_);
-    stack.top().direct_code_.append(compop_to_sql(p->compop_));
-    stack.top().direct_code_.append(e2.direct_code_+")");
-  }
+    {
+      stack.top().direct_code_.append("("+e1.direct_code_);
+      stack.top().direct_code_.append(compop_to_sql(p->compop_));
+      stack.top().direct_code_.append(e2.direct_code_+")");
+    }
 }
 
 void QLVisitor::visitCompExpSC(CompExpSC *p)
@@ -293,17 +304,17 @@ void QLVisitor::visitCompExpSC(CompExpSC *p)
   stack.top().assoc_tables_.insert(e.assoc_tables_.begin(),e.assoc_tables_.end());
   
   if(e.join_code_ != "")
-  {
-    stack.top().nested_code_.append("("+p->str_);
-    stack.top().nested_code_.append(compop_to_sql(p->compop_));
-    stack.top().nested_code_.append(e.nested_code_+ ")");      
-  }
+    {
+      stack.top().nested_code_.append("("+p->str_);
+      stack.top().nested_code_.append(compop_to_sql(p->compop_));
+      stack.top().nested_code_.append(e.nested_code_+ ")");      
+    }
   else
-  {
-    stack.top().direct_code_.append("("+p->str_);
-    stack.top().direct_code_.append(compop_to_sql(p->compop_));
-    stack.top().direct_code_.append(e.direct_code_+ ")");
-  }
+    {
+      stack.top().direct_code_.append("("+p->str_);
+      stack.top().direct_code_.append(compop_to_sql(p->compop_));
+      stack.top().direct_code_.append(e.direct_code_+ ")");
+    }
 }
 
 void QLVisitor::visitCompExpCS(CompExpCS *p)
@@ -324,17 +335,17 @@ void QLVisitor::visitCompExpCS(CompExpCS *p)
     throw das::bad_type();
   
   if(e.join_code_ != "")
-  {
+    {
       stack.top().nested_code_.append("(" + e.nested_code_);
       stack.top().nested_code_.append(compop_to_sql(p->compop_));
       stack.top().nested_code_.append(p->str_ +")");     
-  }
+    }
   else
-  {
+    {
       stack.top().direct_code_.append("(" + e.direct_code_);
       stack.top().direct_code_.append(compop_to_sql(p->compop_));
       stack.top().direct_code_.append(p->str_ +")");     
-  }
+    }
 
 
 }
@@ -360,17 +371,17 @@ void QLVisitor::visitCompExpBA(CompExpBA *p)
   stack.top().assoc_tables_.insert(e.assoc_tables_.begin(),e.assoc_tables_.end());
   
   if(e.join_code_ != "")
-  {
+    {
       stack.top().nested_code_.append(e.nested_code_);
       stack.top().nested_code_.append(compop_to_sql(p->compop_));       
       stack.top().nested_code_.append(p->boolconst_);
-  }
+    }
   else
-  {
+    {
       stack.top().direct_code_.append(e.direct_code_);
       stack.top().direct_code_.append(compop_to_sql(p->compop_));       
       stack.top().direct_code_.append(p->boolconst_);
-  }
+    }
 }
 
 void QLVisitor::visitCompExpAB(CompExpAB *p)
@@ -394,17 +405,17 @@ void QLVisitor::visitCompExpAB(CompExpAB *p)
   stack.top().assoc_tables_.insert(e.assoc_tables_.begin(),e.assoc_tables_.end());
   
   if(e.join_code_ != "")
-  {
+    {
       stack.top().nested_code_.append(e.nested_code_);
       stack.top().nested_code_.append(compop_to_sql(p->compop_));       
       stack.top().nested_code_.append(p->boolconst_);
-  }
+    }
   else
-  {
+    {
       stack.top().direct_code_.append(e.direct_code_);
       stack.top().direct_code_.append(compop_to_sql(p->compop_));       
       stack.top().direct_code_.append(p->boolconst_);
-  }
+    }
 }
 
 
@@ -427,17 +438,17 @@ void QLVisitor::visitStartsWith(StartsWith *p)
   
   std::string::iterator end = p->str_.end();
   if(e.join_code_ != "")
-  {
+    {
       stack.top().nested_code_.append(e.nested_code_ +" LIKE ");
       stack.top().nested_code_.append(p->str_.begin(),--end);
       stack.top().nested_code_.append("%' ");
-  }
+    }
   else
-  {
+    {
       stack.top().direct_code_.append(e.direct_code_ +" LIKE ");
       stack.top().direct_code_.append(p->str_.begin(),--end);
       stack.top().direct_code_.append("%' ");
-  }
+    }
 }
 
 void QLVisitor::visitEndsWith(EndsWith *p)
@@ -459,17 +470,17 @@ void QLVisitor::visitEndsWith(EndsWith *p)
   
   std::string::iterator start = p->str_.begin();
   if(e.join_code_ != "")
-  {
+    {
       stack.top().nested_code_.append(e.nested_code_ +" LIKE '%");
       stack.top().nested_code_.append(++start,p->str_.end());
       stack.top().nested_code_.append(" ");  
-  }
+    }
   else
-  {
+    {
       stack.top().direct_code_.append(e.direct_code_ +" LIKE '%");
       stack.top().direct_code_.append(++start,p->str_.end());
       stack.top().direct_code_.append(" ");
-  }
+    }
 }
 
 void QLVisitor::visitBoolExpAnd(BoolExpAnd *p)
@@ -487,37 +498,37 @@ void QLVisitor::visitBoolExpAnd(BoolExpAnd *p)
   stack.pop();
   
   if(e1.join_code_ != "" || e2.join_code_ != "")
-  {
+    {
       if(e1.join_code_ != "" && e2.join_code_ != "")
-      {
+	{
           stack.top().join_code_ = e1.join_code_;
           
           if(e1.join_code_ != "" && e2.join_code_ != "")
-              stack.top().join_code_.append(" AND ");
+	    stack.top().join_code_.append(" AND ");
           
           stack.top().join_code_.append(e2.join_code_);
           stack.top().assoc_tables_.insert(e1.assoc_tables_.begin(),e1.assoc_tables_.end());
           stack.top().assoc_tables_.insert(e2.assoc_tables_.begin(),e2.assoc_tables_.end());
  
           stack.top().nested_code_.append("("+e1.nested_code_+" AND "+e2.nested_code_+")");
-      }
+	}
       else if(e1.join_code_ != "")
-      {
+	{
           stack.top().direct_code_.append("( ");
           gen_nested(e1);
           stack.top().direct_code_.append(" AND ");
           stack.top().direct_code_.append(e2.direct_code_+")");
-      }
+	}
       else
-      {
-         stack.top().direct_code_.append("("+e1.direct_code_+" AND ");
-         gen_nested(e2);
-         stack.top().direct_code_.append(")"); 
+	{
+	  stack.top().direct_code_.append("("+e1.direct_code_+" AND ");
+	  gen_nested(e2);
+	  stack.top().direct_code_.append(")"); 
          
-      }
-  }
+	}
+    }
   else
-      stack.top().direct_code_.append("("+e1.direct_code_+" AND "+e2.direct_code_+")");
+    stack.top().direct_code_.append("("+e1.direct_code_+" AND "+e2.direct_code_+")");
 }
 
 void QLVisitor::visitBoolExpOr(BoolExpOr *p)
@@ -535,37 +546,37 @@ void QLVisitor::visitBoolExpOr(BoolExpOr *p)
   stack.pop();
 
   if(e1.join_code_ != "" || e2.join_code_ != "")
-  {
+    {
       if(e1.join_code_ != "" && e2.join_code_ != "")
-      {
+	{
           stack.top().join_code_ = e1.join_code_;
           
           if(e1.join_code_ != "" && e2.join_code_ != "")
-              stack.top().join_code_.append(" AND ");
+	    stack.top().join_code_.append(" AND ");
           
           stack.top().join_code_.append(e2.join_code_);
           stack.top().assoc_tables_.insert(e1.assoc_tables_.begin(),e1.assoc_tables_.end());
           stack.top().assoc_tables_.insert(e2.assoc_tables_.begin(),e2.assoc_tables_.end());
  
           stack.top().nested_code_.append("("+e1.nested_code_+" OR "+e2.nested_code_+")");
-      }
+	}
       else if(e1.join_code_ != "")
-      {
+	{
           stack.top().direct_code_.append("( ");
           gen_nested(e1);
           stack.top().direct_code_.append(" OR ");
           stack.top().direct_code_.append(e2.direct_code_+")");
-      }
+	}
       else
-      {
-         stack.top().direct_code_.append("("+e1.direct_code_+" OR ");
-         gen_nested(e2);
-         stack.top().direct_code_.append(")"); 
+	{
+	  stack.top().direct_code_.append("("+e1.direct_code_+" OR ");
+	  gen_nested(e2);
+	  stack.top().direct_code_.append(")"); 
          
-      }
-  }
+	}
+    }
   else
-      stack.top().direct_code_.append("("+e1.direct_code_+" OR "+e2.direct_code_+")");
+    stack.top().direct_code_.append("("+e1.direct_code_+" OR "+e2.direct_code_+")");
 }
 
 void QLVisitor::visitBoolExpNot(BoolExpNot *p)
@@ -580,9 +591,9 @@ void QLVisitor::visitBoolExpNot(BoolExpNot *p)
   stack.top().assoc_tables_.insert(e.assoc_tables_.begin(),e.assoc_tables_.end());
   
   if(e.join_code_ != "")
-      stack.top().nested_code_.append("NOT ("+e.nested_code_+")");
+    stack.top().nested_code_.append("NOT ("+e.nested_code_+")");
   else
-      stack.top().direct_code_.append("NOT ("+e.direct_code_+")");
+    stack.top().direct_code_.append("NOT ("+e.direct_code_+")");
 }
 
 inline
@@ -705,63 +716,63 @@ QLVisitor::gen_join_code(const AssociationInfo &info)
     top.join_code_.append(" AND ");
 
   if(info.association_key != "" && info.object_key != "") // table of associations
-  {
-    top.join_code_.append(top.current_type_);
-    top.join_code_.append(".das_id = ");
-    top.join_code_.append(info.association_table);
-    top.join_code_.append(".");
-    top.join_code_.append(info.object_key);
-    top.join_code_.append(" AND ");
-    top.join_code_.append(info.association_type);
-    top.join_code_.append(".das_id = ");
-    top.join_code_.append(info.association_table);
-    top.join_code_.append(".");
-    top.join_code_.append(info.association_key);
-  }
-  else
-  {
-    if(info.association_key == "") // foreign key on associated type
     {
       top.join_code_.append(top.current_type_);
       top.join_code_.append(".das_id = ");
       top.join_code_.append(info.association_table);
       top.join_code_.append(".");
-      top.join_code_.append(info.object_key);	  
-    }
-    else  // foreign key on base type
-    {
+      top.join_code_.append(info.object_key);
+      top.join_code_.append(" AND ");
       top.join_code_.append(info.association_type);
       top.join_code_.append(".das_id = ");
       top.join_code_.append(info.association_table);
       top.join_code_.append(".");
-      top.join_code_.append(info.association_key);	  
+      top.join_code_.append(info.association_key);
     }
-  }
+  else
+    {
+      if(info.association_key == "") // foreign key on associated type
+	{
+	  top.join_code_.append(top.current_type_);
+	  top.join_code_.append(".das_id = ");
+	  top.join_code_.append(info.association_table);
+	  top.join_code_.append(".");
+	  top.join_code_.append(info.object_key);	  
+	}
+      else  // foreign key on base type
+	{
+	  top.join_code_.append(info.association_type);
+	  top.join_code_.append(".das_id = ");
+	  top.join_code_.append(info.association_table);
+	  top.join_code_.append(".");
+	  top.join_code_.append(info.association_key);	  
+	}
+    }
 }
 
 inline
 void
 QLVisitor::gen_nested(Env& e)
 {
-    if(e.join_code_ == "")
-        return;
+  if(e.join_code_ == "")
+    return;
     
-    Env &top = stack.top();
-    e.assoc_tables_.insert(top.current_type_);
-    top.direct_code_.append(top.current_type_+".das_id IN (\n");
-    top.direct_code_.append("SELECT "+top.current_type_+".das_id\n");
-    top.direct_code_.append("FROM ");
-    for (
-      std::set<std::string>::iterator i = e.assoc_tables_.begin();
-      i != e.assoc_tables_.end();
-      ++i)
+  Env &top = stack.top();
+  e.assoc_tables_.insert(top.current_type_);
+  top.direct_code_.append(top.current_type_+".das_id IN (\n");
+  top.direct_code_.append("SELECT "+top.current_type_+".das_id\n");
+  top.direct_code_.append("FROM ");
+  for (
+       std::set<std::string>::iterator i = e.assoc_tables_.begin();
+       i != e.assoc_tables_.end();
+       ++i)
     {
       top.direct_code_.append(" "+*i+",");  
     }
-    top.direct_code_[top.direct_code_.size()-1]='\n';
-    top.direct_code_.append("WHERE ");
-    top.direct_code_.append(e.join_code_);
-    top.direct_code_.append(" AND\n(");
-    top.direct_code_.append(e.nested_code_);
-    top.direct_code_.append(")\n)\n");
+  top.direct_code_[top.direct_code_.size()-1]='\n';
+  top.direct_code_.append("WHERE ");
+  top.direct_code_.append(e.join_code_);
+  top.direct_code_.append(" AND\n(");
+  top.direct_code_.append(e.nested_code_);
+  top.direct_code_.append(")\n)\n");
 }

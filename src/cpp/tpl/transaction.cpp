@@ -4,10 +4,10 @@
 
 using namespace das::tpl;
 
-Transaction::Transaction(odb::transaction_impl *impl, shared_ptr<DbBundle> bundle)
-  : bundle_(bundle)
+Transaction::Transaction(const DbBundle &bundle)
+  : w_bundle_(bundle)
 {
-  transaction_.reset(new odb::transaction(impl)); 
+  transaction_.reset(new odb::transaction(bundle.db()->begin())); 
 }
 
 void
@@ -17,9 +17,15 @@ Transaction::commit()
     typedef odb::session::type_map type_map;
     typedef odb::session::object_map<DasObject> object_map;
     
-  database_map::iterator db_it (bundle_->session_->map().find (bundle_->db_.get()));
+    if(w_bundle_.expired())
+        throw not_in_managed_context();
+    
+    shared_ptr<odb::session> session_ = w_bundle_.session();
+    shared_ptr<odb::database> db_ = w_bundle_.db(); 
+    
+  database_map::iterator db_it (session_->map().find (db_.get()));
          
-  if (db_it == bundle_->session_->map().end ())
+  if (db_it == session_->map().end ())
     {
 #ifdef VDBG
       std::cout << "DAS debug INFO: session empty" << std::endl;

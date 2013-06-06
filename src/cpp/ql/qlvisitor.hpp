@@ -44,6 +44,7 @@ public:
 class Env{
 public:
   type_e type_;
+  //  bool type_strict_;
   std::string direct_code_;
   std::string nested_code_;
   std::string join_code_;
@@ -53,6 +54,7 @@ public:
   Env& operator= (Env& rhs)
   {
     type_ = rhs.type_;
+    //    type_strict_ = rhs.type_strict_;
     swap(direct_code_,rhs.direct_code_);
     swap(nested_code_,rhs.nested_code_);
     swap(join_code_,rhs.join_code_);
@@ -64,9 +66,13 @@ public:
   Env(const Env& rhs)
   {
     current_type_ = rhs.current_type_;
+    //    type_strict_ = false;
     //is_assoc_chain_ = rhs.assoc_chain_;
   }
-  Env(){}
+  Env()
+  {
+    //    type_strict_ = false;
+  }
 };
 
 class QLVisitor: public Visitor

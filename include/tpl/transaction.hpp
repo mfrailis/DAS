@@ -23,10 +23,10 @@ class Database;
 class Transaction
 {
 public:
-    Transaction(odb::transaction_impl *impl, shared_ptr<DbBundle> bundle);
+    Transaction(const DbBundle &bundle);
     void commit();
 private:
-     shared_ptr<DbBundle> bundle_;
+     WeakDbBundle w_bundle_;
      shared_ptr<odb::transaction> transaction_;
 };
     

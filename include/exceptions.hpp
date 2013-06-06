@@ -91,6 +91,48 @@ namespace das
     }
     
   }; //TODO
+  
+  class not_in_managed_context : public std::exception
+  {
+  public :
+    virtual const char*
+    what() const throw()
+    {
+      return "bad ordering clause";
+    }
+    
+  }; //TODO
+  
+  class new_object : public std::exception
+  {
+  public :
+    virtual const char*
+    what() const throw()
+    {
+      return "bad ordering clause";
+    }
+    
+  }; //TODO  
+  class object_is_corrupt : public std::exception
+  {
+  public :
+    virtual const char*
+    what() const throw()
+    {
+      return "bad ordering clause";
+    }
+    
+  }; //TODO  
+  class object_not_unique : public std::exception
+  {
+  public :
+    virtual const char*
+    what() const throw()
+    {
+      return "bad ordering clause";
+    }
+    
+  }; //TODO
 }
 
 #endif
