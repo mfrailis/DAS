@@ -143,16 +143,22 @@ public:
     template<typename T>
     void update(typename odb::object_traits<T>::pointer_type& obj,bool recursive = true)
     {
+        update<T>(*obj,recursive);
+    }
+
+    template<typename T>
+    void update(T& obj,bool recursive = true)
+    {
         shared_ptr<Database> self = self_.lock(); //always succesful
 
-        if (!obj->is_dirty() && !recursive)
+        if (!obj.is_dirty() && !recursive)
         {
 #ifdef VDBG
             std::cout << "DAS debug INFO UPD: no ditry and no recursive: return" << std::endl;
 #endif
             return;
         }
-        if (obj->db_ptr_ != self)
+        if (obj.db_ptr_ != self)
         {
             throw wrong_database();
         }
@@ -163,28 +169,29 @@ public:
         {
             if(recursive)
             {
-                obj->update_associated();
+                obj.update_associated();
             }
-            obj->save_data(); //FIXME chek if is dirty?
-            if(obj->is_dirty_)
+            obj.save_data(); //FIXME chek if is dirty?
+            if(obj.is_dirty_)
             {
 #ifdef VDBG
-                std::cout << "DAS debug INFO UPD: updating   " <<obj->das_id_ <<" "<< obj->name_ << std::endl;
+                std::cout << "DAS debug INFO UPD: updating   " <<obj.das_id_ <<" "<< obj.name_ << std::endl;
 #endif
                 db_->update<T>(obj);
             }
 #ifdef VDBG
-            if(!obj->is_dirty_)
+            if(!obj.is_dirty_)
             {
-                std::cout << "DAS debug INFO UPD: up to date " <<obj->das_id_ <<" "<< obj->name_ << std::endl;
+                std::cout << "DAS debug INFO UPD: up to date " <<obj.das_id_ <<" "<< obj.name_ << std::endl;
             }
 #endif
+	    obj.is_dirty_ = false;
         }
         catch(const std::exception &e){auto_catch(local_trans,transaction);}
 
         auto_commit(local_trans,transaction);
-    }
-
+    }    
+    
     template<typename T>
     typename odb::object_traits<T>::id_type
     persist(typename odb::object_traits<T>::pointer_type& obj, std::string path = "")
@@ -232,6 +239,7 @@ public:
 #endif
             id = db_->persist<T>(obj);
             obj->persist_associated_post(this);
+	    obj->is_dirty_=false;
         }
         catch(const std::exception &e){auto_catch(local_trans,transaction);}
 

@@ -93,44 +93,52 @@ int main()
     TypeMain::many_ex_vector exass = tm->many_ex();
     TypeMain::many_sh_vector shass = tm->many_sh();
     
-    for(int i=0; i< 10; i++)
+    for(int i=0; i< 5; i++)
     {
-        std::stringstream ss;
-        ss << "ass_prima" << i;
-        shared_ptr<manyEx> exp = manyEx::create(ss.str());
+        std::stringstream se,ss;
+        se << "ass_EX_prima" << i;
+        shared_ptr<manyEx> exp = manyEx::create(se.str());
         exass.push_back(exp);
         
+        ss << "ass_SH_prima" << i;
         shared_ptr<manySh> shp = manySh::create(ss.str());
         shass.push_back(shp);        
     }
     tm->many_ex(exass);
     tm->many_sh(shass);
+    
+//    TypeMain::many_sh_vector shass_temp = tm->many_sh();
+    TypeMain::many_ex_vector exass_temp = tm->many_ex();
+    
     db->persist<TypeMain>(tm);
  
     TypeMain::many_ex_vector exass2;
     TypeMain::many_sh_vector shass2;   
     for(int i=0; i< 5; i++)
     {
-        std::stringstream ss;
-        ss << "ass_seconda" << i;
-        shared_ptr<manyEx> exp = manyEx::create(ss.str());
+        std::stringstream ss,se;
+        se << "ass_EX_seconda" << i;
+        shared_ptr<manyEx> exp = manyEx::create(se.str());
         exass2.push_back(exp);
         db->persist<manyEx>(exp);
-                
+        
+        ss << "ass_SH_seconda" << i;               
         shared_ptr<manySh> shp = manySh::create(ss.str());
         shass2.push_back(shp);
         db->persist<manySh>(shp);      
     }   
     tm->many_ex(exass2);
     tm->many_sh(shass2);
-    db->update<TypeMain>(tm,true);
+    
+    /*db->update<TypeMain>(*tm,false);
     
     for(TypeMain::many_ex_vector::iterator i = exass2.begin(); i != exass2.end(); ++i)
       db->update<manyEx>(*i,true);       
   
     for(TypeMain::many_ex_vector::iterator i = exass.begin(); i != exass.end(); ++i)
         db->update<manyEx>(*i,true);
-      
+    */  
+    
     return 0;
 }
 
