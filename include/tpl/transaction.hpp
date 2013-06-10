@@ -25,6 +25,7 @@ class Transaction
 public:
     Transaction(const DbBundle &bundle);
     void commit();
+    void rollback();
 private:
      WeakDbBundle w_bundle_;
      shared_ptr<odb::transaction> transaction_;

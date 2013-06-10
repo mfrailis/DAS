@@ -52,27 +52,4 @@ namespace das {
         database_config.ready = true;
     }
     
-/*
-    void
-    DatabaseConfig::parse_config(const std::string& config) {
-        using boost::property_tree::ptree;
-        ptree pt;
-
-        boost::property_tree::read_json(config, pt);
-
-        BOOST_FOREACH(ptree::value_type &v, pt.get_child("")) {
-            unsigned int port;
-            std::istringstream(v.second.get<std::string>("port", "0")) >> port;
-
-            DatabaseInfo &info = db_map_[v.second.get<std::string>("alias")];
-            info.host = v.second.get<std::string>("host");
-            info.port = port;
-            info.db_name = v.second.get<std::string>("db_name");
-            info.db_type = v.second.get<std::string>("db_type");
-            info.data_root_dir = v.second.get<std::string>("data_root_dir");
-            info.time_interval = v.second.get<std::string>("time_interval");
-        }
-
-    }
-*/
 }

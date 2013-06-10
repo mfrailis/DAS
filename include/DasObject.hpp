@@ -113,6 +113,7 @@ protected:
 #pragma db type("VARCHAR(256)")
 #pragma db index
   std::string name_;
+  
 };
 
 template<class T>
