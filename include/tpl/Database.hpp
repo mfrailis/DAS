@@ -21,28 +21,17 @@
 #include "transaction.hpp"
 #include "internal/db_bundle.ipp"
 #include "internal/database_config.hpp"
+#include "internal/result.hpp"
 
 #include <odb/mysql/database.hxx>
 using std::tr1::shared_ptr;
 using std::tr1::weak_ptr;
-/*
-  template<class T>
-  struct object_traits
-  {
-  static const std::string table_name;
-  };
- */
 
 namespace das {
     namespace tpl {
 
-        namespace mysql {
-            class Database;
-        }
-
         class Database {
         public:
-
             static
             shared_ptr<Database>
             create(const std::string& alias);
@@ -51,33 +40,40 @@ namespace das {
             begin();
 
             template<typename T>
-            typename odb::object_traits<T>::pointer_type
-            load(const typename odb::object_traits<const T>::id_type& id);
+            shared_ptr<T>
+            load(const long long &id);
 
             template<typename T>
-            typename odb::object_traits<T>::pointer_type
+            shared_ptr<T>
             load(const std::string& name, int version = -1);
 
             template<typename T>
-            typename odb::object_traits<T>::id_type
-            persist(typename odb::object_traits<T>::pointer_type& obj, std::string path = "");
+            long long
+            persist(const shared_ptr<T> &obj, std::string path = "");
 
             template<typename T>
             void
-            erase(T obj); //TODO
+            erase(const shared_ptr<T> &obj); //TODO
 
             template<typename T>
-            odb::result<T>
+            Result<T>
             query(const std::string& expression, const std::string& ordering = "");
+
+            template<typename T>
+            std::vector<long long>
+            query_id(const std::string& expression, const std::string& ordering = "");
+
+            template<typename T>
+            std::vector< std::pair<std::string, short> >
+            query_name(const std::string& expression, const std::string& ordering);
 
             template<typename T>
             bool
             find(const std::string& name, int version = -1);
 
-
             template<typename T>
             void
-            attach(typename odb::object_traits<T>::pointer_type& obj);
+            attach(const shared_ptr<T> &obj);
 
             void
             flush();
@@ -104,10 +100,8 @@ namespace das {
             DbBundle bundle_;
             DdlInfo *info_;
         };
-
-#include "database.ipp"
     }//namespace tpl
 }//namespace das
 
-
+#include "database.ipp"
 #endif

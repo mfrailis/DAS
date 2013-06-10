@@ -11,7 +11,7 @@ namespace das {
         template<typename T>
         inline
         void
-        DbBundle::attach(typename odb::object_traits<T>::pointer_type& obj) {
+        DbBundle::attach(const shared_ptr<T> &obj) {
             if (!valid()) {
 #ifdef VDBG
                 std::cout << "DAS info: pointers to db or session not valid" << std::endl;
@@ -56,8 +56,8 @@ namespace das {
         }
 
         template<typename T>
-        typename odb::object_traits<T>::id_type
-        DbBundle::persist(typename odb::object_traits<T>::pointer_type& obj, std::string path) {
+        long long
+        DbBundle::persist(const shared_ptr<T> &obj, std::string path) {
             odb::session::current(*session_);
             //shared_ptr<Database> self = self_.lock(); //always succesful
             if (!obj->is_new()) {
@@ -93,7 +93,7 @@ namespace das {
 #ifdef VDBG
             std::cout << "DAS debug INFO: PRS " << obj->name_ << "... "; //DBG
 #endif
-            typename odb::object_traits<T>::id_type id = db_->persist<T>(obj);
+            long long id = db_->persist(obj);
 #ifdef VDBG
             std::cout << "done: id= " << id << std::endl;
 #endif

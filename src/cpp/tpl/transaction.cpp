@@ -28,18 +28,25 @@ Transaction::commit() {
 #ifdef VDBG
         std::cout << "DAS debug INFO: session empty" << std::endl;
 #endif     
-        return;
     }
-    for (type_map::iterator type_it = db_it->second.begin();
-            type_it != db_it->second.end();
-            type_it++) {
-        object_map & obj_map(static_cast<object_map&> (*type_it->second));
-        for (typename object_map::iterator obj_it = obj_map.begin();
-                obj_it != obj_map.end();
-                obj_it++) {
-            obj_it->second->update();
+    else {
+        for (type_map::iterator type_it = db_it->second.begin();
+                type_it != db_it->second.end();
+                type_it++) {
+            object_map & obj_map(static_cast<object_map&> (*type_it->second));
+            for (typename object_map::iterator obj_it = obj_map.begin();
+                    obj_it != obj_map.end();
+                    obj_it++) {
+                obj_it->second->update();
+            }
         }
     }
     transaction_->commit();
+}
+
+void
+inline
+Transaction::rollback(){
+    transaction_->rollback();
 }
 

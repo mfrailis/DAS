@@ -65,11 +65,11 @@ namespace das {
 
             template<typename T>
             void
-            attach(typename odb::object_traits<T>::pointer_type& obj);
+            attach(const shared_ptr<T>& obj);
 
             template<typename T>
-            typename odb::object_traits<T>::id_type
-            persist(typename odb::object_traits<T>::pointer_type& obj, std::string path = "");
+            long long
+            persist(const shared_ptr<T> &obj, std::string path = "");
 
         private:
             friend class WeakDbBundle;
