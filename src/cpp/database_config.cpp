@@ -16,9 +16,15 @@ namespace das {
         boost::property_tree::read_json(access, pt);
 
         BOOST_FOREACH(ptree::value_type &v, pt.get_child("")) {
-            DatabaseInfo &info = db_map_.at(v.second.get<std::string>("alias"));
-            info.user = v.second.get<std::string>("user");
-            info.password = v.second.get<std::string>("password", "");
+            try{
+                DatabaseInfo &info = db_map_.at(v.second.get<std::string>("alias"));
+                info.user = v.second.get<std::string>("user");
+                info.password = v.second.get<std::string>("password", "");
+            }catch(std::out_of_range &e){
+#ifdef VDBG
+      std::cout << "DAS warning: database '"<<  v.second.get<std::string>("alias") <<"' is not present in confi.json file" << std::endl;       
+#endif
+            }
         }
 
     }

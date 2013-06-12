@@ -1,8 +1,8 @@
 #ifndef DB_BUNDLE_IPP
 #define	DB_BUNDLE_IPP
 #include "db_bundle.hpp"
-#include "../../src/cpp/aux_query.hpp"
-#include "../../build/dbms/mysql/aux_query-odb.hxx"
+#include "aux_query.hpp"
+#include "../ddl/types/mysql/aux_query-odb.hxx"
 
 namespace das {
 

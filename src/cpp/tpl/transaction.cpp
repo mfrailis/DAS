@@ -1,6 +1,6 @@
 #include "tpl/transaction.hpp"
-#include "tpl/Database.hpp"
-#include "../../../build/dbms/mysql/DasObject-odb.hxx"
+#include "tpl/database.hpp"
+#include "ddl/types/mysql/das_object-odb.hxx"
 
 using namespace das::tpl;
 

@@ -8,8 +8,8 @@
 #include <odb/database.hxx>
 #include <odb/session.hxx>
 
-#include "exceptions.hpp"
-#include "internal/db_bundle.hpp"
+#include "../exceptions.hpp"
+#include "../internal/db_bundle.hpp"
 using std::tr1::shared_ptr;
 using std::tr1::weak_ptr;
 

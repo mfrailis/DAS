@@ -47,31 +47,14 @@ class DdlOdbGenerator(DdlVisitor):
                'int64':'long long', 'float32':'float', 'float64':'double', 
                'boolean':'bool', 'string':'std::string', 'text' : 'CBLOB'}
 
-  def __init__(self, source_dir, instance):
-    if not _os.path.exists(source_dir):
-      _os.makedirs(source_dir)
+  def __init__(self, header_dir, source_dir, instance):
       
-    self._src_dir = source_dir  
+    self._src_dir = source_dir
+    self._hdr_dir = header_dir
     self._sources = []
     self._instance = instance
  
-    self._header = []
-    self._src_header = []
-    self._inherit = ""
-    self._class_name = ""
-    self._forward_section = []
-    self._public_section = []
-    self._type_defs = []
-    self._protected_section = []
-    self._private_section = []
-    self._init_list = []
-    self._default_init = []
-    self._init = []
-    self._friends = ["friend class odb::access;","friend class das::tpl::Transaction;","friend class das::tpl::DbBundle;"]
-    self._has_associations = False
-    self._store_as = None
-    self._keyword_touples = []
-    self._assoc_touples = []
+    self.clean_env()
 
   def clean_env(self):
     self._header = []
@@ -103,7 +86,7 @@ class DdlOdbGenerator(DdlVisitor):
     for k in self._sources:
       lines.append('#include "ddl_' + k +'.hpp"')
       #TODO change mysql in common for multi-database support
-      lines.append('#include "dbms/mysql/ddl_' + k +'-odb.hxx"')
+      lines.append('#include "mysql/ddl_' + k +'-odb.hxx"')
      
     if len(lines):
       lines.insert(0,
@@ -113,7 +96,7 @@ class DdlOdbGenerator(DdlVisitor):
 
 ''')
       lines.append('#endif')
-      f = open(_os.path.join(self._src_dir, "ddl_types.hpp"), 'w')
+      f = open(_os.path.join(self._hdr_dir, "ddl_types.hpp"), 'w')
       f.writelines(l + "\n" for l in lines)
       f.close()
       
@@ -133,24 +116,24 @@ class DdlOdbGenerator(DdlVisitor):
     lines.append("#include <odb/core.hxx>")
     lines.append("#include <vector>")
     lines.append("#include <map>")
-    lines.append('#include "ddl/info.hpp"')
+    lines.append('#include "../info.hpp"')
     if datatype.ancestor != "essentialMetadata":
       self._header.append('#include "ddl_' + datatype.ancestor + '.hpp"')
       self._inherit = datatype.ancestor
     else:
-      self._header.append('#include "DasObject.hpp"')
+      self._header.append('#include "../../das_object.hpp"')
       self._inherit = "DasObject"
 
       
     if datatype.data is not None:
-      self._header.append('#include "ddl/column.hpp"')
+      self._header.append('#include "../column.hpp"')
     
     intro.append("#pragma db object\nclass " + datatype.name)
     if self._inherit != "":
       intro[-1] += ": public "+self._inherit
     else:
       intro[-1] += ": public DasObject"
-      lines.append('#include "DasObject.hpp"')
+      lines.append('#include "../../das_object.hpp"')
 
     intro.append("{")
     
@@ -174,7 +157,7 @@ class DdlOdbGenerator(DdlVisitor):
     for ass_type in all_assoc:
       self._friends.append('friend class '+ass_type+';')
 
-    h = open(_os.path.join(self._src_dir, hdr_name), 'w') 
+    h = open(_os.path.join(self._hdr_dir, hdr_name), 'w') 
     h.writelines(l + "\n" for l in lines)
     h.writelines(l + "\n" for l in self._header)
     h.writelines(['#include <memory>\n'])
@@ -222,7 +205,7 @@ class DdlOdbGenerator(DdlVisitor):
     h.writelines(["#endif"])
     h.close()
 
-    i = open(_os.path.join(self._src_dir, idr_name), 'w')
+    i = open(_os.path.join(self._hdr_dir, idr_name), 'w')
     i.writelines([_def_factory_method(self._class_name)])
     for j in self._keyword_touples:
       i.writelines(l+'\n' for l in _def_getter(j[0],j[1],self._class_name))
@@ -249,13 +232,13 @@ inline const shared_ptr<'''+self._class_name+'''>&
 '''])
     i.close()
 
-    self._src_header.append('#include "tpl/Database.hpp"')
-    self._src_header.append('#include "dbms/mysql/ddl_'+self._class_name+'-odb.hxx"')
+    self._src_header.append('#include "tpl/database.hpp"')
+    self._src_header.append('#include "ddl/types/mysql/ddl_'+self._class_name+'-odb.hxx"')
     self._src_header.append('#include "exceptions.hpp"')
     self._src_header.append('#include "internal/db_bundle.ipp"')
 
     s = open(_os.path.join(self._src_dir, src_name), 'w') 
-    s.writelines(['#include "'+hdr_name+'"\n'])
+    s.writelines(['#include "ddl/types/'+hdr_name+'"\n'])
     s.writelines(l + "\n" for l in self._src_header)
     # type traits static inizialization
     s.writelines(['const std::string das_traits<'+self._class_name+'>::name = "'+self._class_name+'";\n'])
@@ -365,9 +348,9 @@ void
     
     self._public_section.extend(_dec_getter_assoc(associated.name, pub_type))
     self._public_section.extend(_dec_setter_assoc(associated.name, pub_type))
-    self._src_header.append('#include "tpl/Database.hpp"')
+    self._src_header.append('#include "tpl/database.hpp"')
 #TODO: multi-database support    self._src_header.append('#include "dbms/common/ddl_'+associated.atype+'-odb.hxx"')
-    self._src_header.append('#include "dbms/mysql/ddl_'+associated.atype+'-odb.hxx"')
+    self._src_header.append('#include "ddl/types/mysql/ddl_'+associated.atype+'-odb.hxx"')
     self._src_header.append('#include "exceptions.hpp"')
 #    self._assoc_touples.append((associated.name,pub_type,priv_type,associated.atype))
     self._assoc_touples.append((associated,pub_type,priv_type))
@@ -411,7 +394,7 @@ void
 
   def visit_image(self,_):
     self._protected_section.append("Image"+self._store_as+" image_;")
-    self._header.append('#include "ddl/image.hpp"')
+    self._header.append('#include "../image.hpp"')
     if self._init_list: # if is not empty
       self._init_list.append(', image_("")')
     else:

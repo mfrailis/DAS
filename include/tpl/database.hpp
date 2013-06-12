@@ -1,7 +1,7 @@
 #ifndef DAS_DATABASE_HPP
 #define DAS_DATABASE_HPP
-/* WARNING: this class is non the database-indipendent interface
- * but the mysql relate one
+/* WARNING: this class is not the database-indipendent interface
+ * but the mysql related one
  */
 #include <iostream>
 #include <memory>
@@ -11,17 +11,17 @@
 #include <odb/database.hxx>
 #include <odb/session.hxx>
 
-#include "../build/dbms/mysql/aux_query-odb.hxx"
+#include "../ddl/types/mysql/aux_query-odb.hxx"
 
-#include "ddl/info.hpp"
-#include "exceptions.hpp"
-#include "../src/cpp/aux_query.hpp"
-#include "../src/cpp/ql/qlvisitor.hpp"
-#include "DasObject.hpp"
+#include "../ddl/info.hpp"
+#include "../exceptions.hpp"
+#include "../internal/aux_query.hpp"
+#include "../internal/qlvisitor.hpp"
+#include "../das_object.hpp"
 #include "transaction.hpp"
-#include "internal/db_bundle.ipp"
-#include "internal/database_config.hpp"
-#include "internal/result.hpp"
+#include "../internal/db_bundle.ipp"
+#include "../internal/database_config.hpp"
+#include "../internal/result.hpp"
 
 #include <odb/mysql/database.hxx>
 using std::tr1::shared_ptr;
@@ -103,5 +103,5 @@ namespace das {
     }//namespace tpl
 }//namespace das
 
-#include "database.ipp"
+#include "../internal/database.ipp"
 #endif
