@@ -105,7 +105,7 @@ Maintained by Magnus Ekdahl <magnus@debian.org>
 #include <string.h>
 #include <iostream>
 #include <algorithm>
-#include "Absyn.H"
+#include "internal/Absyn.H"
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
 int yyparse(void);
 int yylex(void);

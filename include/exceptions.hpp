@@ -16,7 +16,29 @@ namespace das
     }
     
   }; //TODO
-
+  
+   class no_credentials : public std::exception
+  {
+  public :
+    virtual const char*
+    what() const throw()
+    {
+      return "wrong database";
+    }
+    
+  }; //TODO
+  
+  class no_database : public std::exception
+  {
+  public :
+    virtual const char*
+    what() const throw()
+    {
+      return "wrong database";
+    }
+    
+  }; //TODO
+  
   class keyword_not_present : public std::exception
   {
   public :

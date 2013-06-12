@@ -6,7 +6,7 @@
 #include <memory>
 #include <odb/traits.hxx>
 #include <odb/tr1/memory.hxx>
-#include "exceptions.hpp"
+#include "../exceptions.hpp"
 
 using std::tr1::shared_ptr;
 using std::tr1::weak_ptr;

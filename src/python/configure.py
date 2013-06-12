@@ -61,7 +61,7 @@ class JsonConfigParser:
             typelist=self.ddl_map.get_type_list(_assemble_ddl(db['ddl']))
             _generate_sub_cmake(dir_name,db_str,db['db_type'], t_pre,db,typelist)
     
-    def generate(self,db_dir_,cmake_dir,types,prefix):
+    def generate(self,db_dir_,cmake_dir,ddl_src_dir,types,prefix):
         db_vendors = {};
         for db in self._config:
             db_dir =  _os.path.join(db_dir_,db['db_type'])
@@ -78,9 +78,9 @@ class JsonConfigParser:
                 f.write(' '+i)
         f.write(')')
         f.write('''
-set(TYPES_CPP ${TYPE_PREFIX}info.cpp database_config.cpp)
+set(TYPES_CPP ${DDL_SOURCE_DIR}/${TYPE_PREFIX}info.cpp ${DDL_SOURCE_DIR}/database_config.cpp)
 foreach(type_name ${TYPE_NAMES_ALL})
-  list(APPEND TYPES_CPP ${TYPE_PREFIX}${type_name}.cpp)
+  list(APPEND TYPES_CPP '''+ddl_src_dir+'''/${TYPE_PREFIX}${type_name}.cpp)
 endforeach()
 ''')
 
@@ -88,8 +88,9 @@ endforeach()
             db_dir = "${ODB_OUTPUT_DIR}/"+db_type
             f.write('''
 file(MAKE_DIRECTORY '''+db_dir+''')
+file(MAKE_DIRECTORY ${DDL_HEADERS_DIR}/'''+db_type+''')
 list(APPEND ODB_CXX '''+db_dir+'''/aux_query-odb.cxx)
-list(APPEND ODB_CXX '''+db_dir+'''/DasObject-odb.cxx)
+list(APPEND ODB_CXX '''+db_dir+'''/das_object-odb.cxx)
 list(APPEND ODB_CXX '''+db_dir+'''/column-odb.cxx)
 list(APPEND ODB_CXX '''+db_dir+'''/image-odb.cxx)
 
@@ -101,39 +102,51 @@ foreach(type_name ${TYPE_NAMES_ALL})
             --database '''+db_type+'''
             --generate-query
             --generate-session
-            --include-regex "%(column.hpp)|(image.hpp)%ddl/$1$2%"
-            --include-regex "%aux_query.hpp%../src/cpp/aux_query.hpp%"
+            --include-regex "%${TYPE_PREFIX}${type_name}-odb.hxx%ddl/types/'''+db_type+'''/${TYPE_PREFIX}${type_name}-odb.hxx%"
+            --include-regex "%(column.hpp)|(image.hpp)%../../../ddl/$1$2%"
+            --include-regex "%(.*)(column-odb.hxx)|(.*)(image-odb.hxx)%$2$4%"
+            --include-regex "%aux_query.hpp%../../../internal/aux_query.hpp%"
+            --include-regex "%(.*)das_object-odb.hxx%das_object-odb.hxx%"
+            --include-regex "%(.*)ddl_(.+).hxx%ddl_$2.hxx%"
             --include-regex "%ddl/(.+).hxx%$1.hxx%"
-    --include-regex "%ddl_(.+).hpp%../../ddl_$1.hpp%"
+            --include-regex "%ddl_(.+).hpp%../ddl_$1.hpp%"
 
 
             --default-pointer std::tr1::shared_ptr
 	    -I${ODB_SOURCE_DIR}
             -I${CPP_INCLUDE_DIR}
 	    ${ODB_SOURCE_DIR}/${TYPE_PREFIX}${type_name}.hpp
+    
+
+    COMMAND mv "'''+db_dir+'''/${TYPE_PREFIX}${type_name}-odb.hxx" "${DDL_HEADERS_DIR}/'''+db_type+'''/${TYPE_PREFIX}${type_name}-odb.hxx"
+    COMMAND mv "'''+db_dir+'''/${TYPE_PREFIX}${type_name}-odb.ixx" "${DDL_HEADERS_DIR}/'''+db_type+'''/${TYPE_PREFIX}${type_name}-odb.ixx"
     DEPENDS ${DDL_LOCAL_SIGNATURE}
     COMMENT "Generating odb class for type ${type_name} for '''+db_type+''' DBMS"
-    VERBATIM
+    VERBATIM 
     )
   list(APPEND ODB_CXX '''+db_dir+'''/${TYPE_PREFIX}${type_name}-odb.cxx)
 endforeach()
         
 add_custom_command(
-OUTPUT '''+db_dir+'''/DasObject-odb.cxx
+OUTPUT '''+db_dir+'''/das_object-odb.cxx
 COMMAND odb
     --output-dir '''+db_dir+'''
     --database '''+db_type+'''
     --generate-query
     --generate-session
-    --include-regex "%(column.hpp)|(image.hpp)%ddl/$1$2%"
-    --include-regex "%aux_query.hpp%../src/cpp/aux_query.hpp%"
-    --include-regex "%ddl_(.+).hpp%../../ddl_$1.hpp%"
-
+    --include-regex "%(column.hpp)|(image.hpp)%../../../ddl/$1$2%"
+    --include-regex "%aux_query.hpp%../../../internal/aux_query.hpp%"
+    --include-regex "%ddl_(.+).hpp%../ddl_$1.hpp%"
+    --include-regex "%das_object-odb.hxx%ddl/types/'''+db_type+'''/das_object-odb.hxx%"
+    --include-regex "%das_object.hpp%../../../das_object.hpp%"
 
     --default-pointer std::tr1::shared_ptr
     -I${ODB_SOURCE_DIR}
     -I${CPP_INCLUDE_DIR}
-    ${CPP_INCLUDE_DIR}/DasObject.hpp
+    ${CPP_INCLUDE_DIR}/das_object.hpp
+
+COMMAND mv "'''+db_dir+'''/das_object-odb.hxx" "${DDL_HEADERS_DIR}/'''+db_type+'''/das_object-odb.hxx"
+COMMAND mv "'''+db_dir+'''/das_object-odb.ixx" "${DDL_HEADERS_DIR}/'''+db_type+'''/das_object-odb.ixx"
 COMMENT "Generating odb DasObject class for '''+db_type+''' DBMS"
 VERBATIM
 )
@@ -145,15 +158,18 @@ COMMAND odb
     --database '''+db_type+'''
     --generate-query
     --generate-session
-    --include-regex "%(column.hpp)|(image.hpp)%ddl/$1$2%"
-    --include-regex "%aux_query.hpp%../src/cpp/aux_query.hpp%"
-    --include-regex "%ddl_(.+).hpp%../../ddl_$1.hpp%"
+    --include-regex "%(column.hpp)|(image.hpp)%../../../ddl/$1$2%"
+    --include-regex "%aux_query.hpp%../../../internal/aux_query.hpp%"
+    --include-regex "%ddl_(.+).hpp%ddl/types/ddl_$1.hpp%"
+    --include-regex "%aux_query-odb.hxx%ddl/types/'''+db_type+'''/aux_query-odb.hxx%"
 
 
     --default-pointer std::tr1::shared_ptr 
     -I${ODB_SOURCE_DIR}
     -I${CPP_INCLUDE_DIR}
     ${CPP_INCLUDE_INTERNAL_DIR}/aux_query.hpp
+COMMAND mv "'''+db_dir+'''/aux_query-odb.hxx" "${DDL_HEADERS_DIR}/'''+db_type+'''/aux_query-odb.hxx"
+COMMAND mv "'''+db_dir+'''/aux_query-odb.ixx" "${DDL_HEADERS_DIR}/'''+db_type+'''/aux_query-odb.ixx"
 COMMENT "Generating odb auxiliary query on for '''+db_type+''' DBMS"
 VERBATIM
 )
@@ -165,11 +181,15 @@ COMMAND odb
     --database '''+db_type+'''
     --generate-query
     --generate-session
-    --include-regex "%(column.hpp)|(image.hpp)%ddl/$1$2%"
+    --include-regex "%(column.hpp)|(image.hpp)%../../../ddl/$1$2%"
+    --include-regex "%column-odb.hxx%ddl/types/'''+db_type+'''/column-odb.hxx%"
+
     --default-pointer std::tr1::shared_ptr
     -I${ODB_SOURCE_DIR}
     -I${CPP_INCLUDE_DIR}
     ${CPP_INCLUDE_DIR}/ddl/column.hpp
+COMMAND mv "'''+db_dir+'''/column-odb.hxx" "${DDL_HEADERS_DIR}/'''+db_type+'''/column-odb.hxx"
+COMMAND mv "'''+db_dir+'''/column-odb.ixx" "${DDL_HEADERS_DIR}/'''+db_type+'''/column-odb.ixx"
 COMMENT "Generating odb column data support for '''+db_type+''' DBMS"
 VERBATIM
 )
@@ -181,11 +201,15 @@ COMMAND odb
     --database '''+db_type+'''
     --generate-query
     --generate-session
-    --include-regex "%(column.hpp)|(image.hpp)%ddl/$1$2%"
+    --include-regex "%(column.hpp)|(image.hpp)%../../../ddl/$1$2%"
+    --include-regex "%image-odb.hxx%ddl/types/'''+db_type+'''/image-odb.hxx%"
+
     --default-pointer std::tr1::shared_ptr 
     -I${ODB_SOURCE_DIR}
     -I${CPP_INCLUDE_DIR}
     ${CPP_INCLUDE_DIR}/ddl/image.hpp
+COMMAND mv "'''+db_dir+'''/image-odb.hxx" "${DDL_HEADERS_DIR}/'''+db_type+'''/image-odb.hxx"
+COMMAND mv "'''+db_dir+'''/image-odb.ixx" "${DDL_HEADERS_DIR}/'''+db_type+'''/image-odb.ixx"
 COMMENT "Generating odb image data support for '''+db_type+''' DBMS"
 VERBATIM
 )
@@ -366,13 +390,15 @@ namespace das{
     
 if __name__ == '__main__':
     import sys
-    db_dir        = sys.argv[1]
-    cmake_dir     = sys.argv[2]
-    conf_schema   = sys.argv[3]
-    conf          = sys.argv[4]
-    ddl_schema    = sys.argv[5]
-    ddl_dir       = sys.argv[6]
-    target_prefix = sys.argv[7]
+    db_dir          = sys.argv[1]
+    cmake_dir       = sys.argv[2]
+    ddl_headers_dir = sys.argv[3]
+    ddl_source_dir  = sys.argv[4]
+    conf_schema     = sys.argv[5]
+    conf            = sys.argv[6]
+    ddl_schema      = sys.argv[7]
+    ddl_dir         = sys.argv[8]
+    target_prefix   = sys.argv[9]
 
     parser = _ddl.DdlParser(ddl_schema)
     c = JsonConfigParser(conf_schema)
@@ -404,20 +430,20 @@ if __name__ == '__main__':
                     exit(1)
 
     #generate odb classes
-    odb_generator = _odb.DdlOdbGenerator(cmake_dir,type_list)
+    odb_generator = _odb.DdlOdbGenerator(ddl_headers_dir,ddl_source_dir,type_list)
     odb_generator.generate()
 
     #generate info classes
-    info_generator = _info.DdlInfoGenerator(type_list,c.ddl_map,c.db_map,cmake_dir)
+    info_generator = _info.DdlInfoGenerator(type_list,c.ddl_map,c.db_map,ddl_source_dir)
     type_list.accept(info_generator)
 
     #generate database config method
-    generate_database_config(c._config,cmake_dir+"/database_config.cpp")
+    generate_database_config(c._config,ddl_source_dir+"/database_config.cpp")
 
     #generate per database header
-    c.generate_db_headers(cmake_dir)
+    #c.generate_db_headers(ddl_source_dir)
 
     #subdirectories and CmakeLists.txt
     c.generate_sub(db_dir,target_prefix)
-    c.generate(db_dir,cmake_dir,type_set,target_prefix)
+    c.generate(db_dir,cmake_dir,ddl_source_dir,type_set,target_prefix)
 

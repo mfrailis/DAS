@@ -1,4 +1,4 @@
-#include "qlvisitor.hpp"
+#include "internal/qlvisitor.hpp"
 #include "exceptions.hpp"
 #include "bnfc/Parser.H"
 

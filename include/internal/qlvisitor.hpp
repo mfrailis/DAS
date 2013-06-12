@@ -1,7 +1,7 @@
 #ifndef QLVISITOR_HPP
 #define QLISITOR_HPP
-#include "bnfc/Absyn.H"
-#include "ddl/info.hpp"
+#include "Absyn.H"
+#include "../ddl/info.hpp"
 #include <stack>
 #include <set>
 #include <sstream>
@@ -18,29 +18,7 @@ enum type_e {
   t_string =64,
   t_text   =64
 };
-/*
-class Env{// TODO: implement operator= as a swap
-public:
-  //  bool is_assoc_chain_;
-  type_e type_;
-  std::string code_;
-  std::string current_type_;
-  Env& operator= (Env& rhs)
-  {
-    //    is_assoc_chain_ = rhs.is_assoc_chain_;
-    type_ = rhs.type_;
-    current_type_ = rhs.current_type_;
-    swap(code_,rhs.code_);
-    return *this;
-  }
-  Env(const Env& rhs)
-  {
-    current_type_ = rhs.current_type_;
-    //is_assoc_chain_ = rhs.assoc_chain_;
-  }
-  Env(){}
-};
-*/
+
 class Env{
 public:
   type_e type_;

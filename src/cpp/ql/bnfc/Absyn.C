@@ -3,7 +3,7 @@
 #include <string>
 #include <iostream>
 #include <vector>
-#include "Absyn.H"
+#include "internal/Absyn.H"
 
 /********************   BoolExpAnd    ********************/
 BoolExpAnd::BoolExpAnd(BoolExp *p1, BoolExp *p2)
