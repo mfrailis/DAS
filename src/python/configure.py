@@ -87,6 +87,8 @@ endforeach()
         for (db_type,db_dir_) in db_vendors.items():
             db_dir = "${ODB_OUTPUT_DIR}/"+db_type
             f.write('''
+find_package(ODB_'''+db_type.upper()+''' REQUIRED)
+
 file(MAKE_DIRECTORY '''+db_dir+''')
 file(MAKE_DIRECTORY ${DDL_HEADERS_DIR}/'''+db_type+''')
 list(APPEND ODB_CXX '''+db_dir+'''/aux_query-odb.cxx)
@@ -97,7 +99,7 @@ list(APPEND ODB_CXX '''+db_dir+'''/image-odb.cxx)
 foreach(type_name ${TYPE_NAMES_ALL})
   add_custom_command(
     OUTPUT '''+db_dir+'''/${TYPE_PREFIX}${type_name}-odb.cxx
-    COMMAND odb
+    COMMAND ${ODB_COMPILER}
             --output-dir '''+db_dir+'''
             --database '''+db_type+'''
             --generate-query
@@ -129,7 +131,7 @@ endforeach()
         
 add_custom_command(
 OUTPUT '''+db_dir+'''/das_object-odb.cxx
-COMMAND odb
+COMMAND ${ODB_COMPILER}
     --output-dir '''+db_dir+'''
     --database '''+db_type+'''
     --generate-query
@@ -153,7 +155,7 @@ VERBATIM
 
 add_custom_command(
 OUTPUT '''+db_dir+'''/aux_query-odb.cxx
-COMMAND odb
+COMMAND ${ODB_COMPILER}
     --output-dir '''+db_dir+'''
     --database '''+db_type+'''
     --generate-query
@@ -176,7 +178,7 @@ VERBATIM
 
 add_custom_command(
 OUTPUT '''+db_dir+'''/column-odb.cxx
-COMMAND odb
+COMMAND ${ODB_COMPILER}
     --output-dir '''+db_dir+'''
     --database '''+db_type+'''
     --generate-query
@@ -196,7 +198,7 @@ VERBATIM
 
 add_custom_command(
 OUTPUT '''+db_dir+'''/image-odb.cxx
-COMMAND odb
+COMMAND ${ODB_COMPILER}
     --output-dir '''+db_dir+'''
     --database '''+db_type+'''
     --generate-query
@@ -272,8 +274,8 @@ add_library(das SHARED ${DAS_QL_SRC} ${DAS_SRC} ${TYPES_CPP} ${ODB_CXX})
 
 add_executable(test ${TEST_SOURCE_DIR}/main.cpp)
 target_link_libraries(test das)
-target_link_libraries(test odb)
-target_link_libraries(test odb-mysql)
+target_link_libraries(test ${ODB_LIBRARIES})
+target_link_libraries(test ${ODB_MYSQL_LIBRARIES})
 '''
 )
         f.close()
@@ -304,7 +306,7 @@ set(SQL_FILES)
 foreach(type_name ${TYPE_NAMES})
   add_custom_command(
     OUTPUT ${TYPE_PREFIX}${type_name}.sql
-    COMMAND odb
+    COMMAND ${ODB_COMPILER}
             --database '''+db_type+'''
 	    --generate-schema-only
             --omit-drop
@@ -416,6 +418,8 @@ if __name__ == '__main__':
         if validator.check_redefined_columns():
             exit(1)
         if validator.check_ancestor_loop():
+            exit(1)
+        if validator.check_association_loop():
             exit(1)
         #check redefined types consistency
         for (name,ddl_type) in temp_type_list.type_map.items():
