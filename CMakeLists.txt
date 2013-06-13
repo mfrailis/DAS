@@ -9,7 +9,9 @@ set(ODB_INCLUDE_DIR_HINT  CACHE PATH "hint to where to find odb include director
 set(ODB_CORE_LIBRARY_DIR_HINT  CACHE PATH "hint to where to find libodb.so library")
 
 find_package(ODB REQUIRED)
-
+find_package(Python REQUIRED)
+find_python_module(lxml REQUIRED)
+find_python_module(MySQLdb REQUIRED)
 
 set(CMAKE_BUILD_TYPE debug)
 set(CMAKE_CXX_FLAGS_DEBUG "-g -DVDBG")
@@ -85,7 +87,12 @@ execute_process(
           ${DDL_INSTANCE_DIR}
           ${TARGET_DB_PREFIX}
   WORKING_DIRECTORY ${PYTHON_SOURCE_DIR}
+  OUTPUT_VARIABLE CONFIG_MSG
+  RESULT_VARIABLE CONFIG_STATUS
 )
+if(CONFIG_STATUS)
+  message(FATAL_ERROR ${CONFIG_MSG})
+endif()
 
 add_subdirectory(${DAS_BUILD_DIR})
 

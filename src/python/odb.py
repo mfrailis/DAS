@@ -1,4 +1,3 @@
-import ddl as _d
 import os as _os
 
 import association_many_shared as _a_ms
@@ -606,6 +605,30 @@ class DdlInheritanceValidator:
       type_set.append(type_.name)
       return self._ancestor_loop(self._instance.type_map[type_.ancestor],type_set)
 
+  def check_association_loop(self):
+    for type_ in self._instance.type_map.values():
+      for assoc_ in type_.associated.values():
+        stack=[(type_.name,assoc_.name)]
+        if self._association_loop(type_,assoc_,stack):
+          return True
+    return False
+
+  def _association_loop(self,type_,assoc_,stack):
+#    print type_.name,assoc_.atype
+    if type_.name == assoc_.atype:
+      print "Error: found associations loop:"
+      for i in stack:
+        print "  "+i[0]+"."+i[1]
+      return True
+    else:
+      errors = False
+      for assoc_n_ in self._instance.type_map[assoc_.atype].associated.values():
+        stack.append((assoc_.atype,assoc_n_.name))
+        errors = errors or self._association_loop(type_,assoc_n_,stack)
+        if not errors:
+          stack.pop()
+      return errors
+
   def check_image_table_mismatch(self):
     self._data_type_violation = False  
     for (name,dtype) in self._instance.type_map.items():   
@@ -648,28 +671,6 @@ class DdlInheritanceValidator:
     else:
       if dtype.ancestor != dtype.name:
         self._check_image(dtype.ancestor)
-
-
-if __name__ == "__main__":  
-  import sys
-  schema_file_name = sys.argv[1]
-  das_instance_file = sys.argv[2]
-  output_dir = sys.argv[3]
-
-  parser = _d.DdlParser(schema_file_name)
-  instance = parser.parse_ddl(das_instance_file)
-  
-  validator = DdlInheritanceValidator(instance)
-  if validator.check_redefined_keywords():
-    exit(1)
-  if validator.check_image_table_mismatch():
-    exit(1)
-  if validator.check_redefined_columns():
-    exit(1)
-  g = DdlOdbGenerator(output_dir, instance)
-  g.generate()
-
-
 
 
 

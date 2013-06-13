@@ -419,6 +419,8 @@ if __name__ == '__main__':
             exit(1)
         if validator.check_ancestor_loop():
             exit(1)
+        if validator.check_association_loop():
+            exit(1)
         #check redefined types consistency
         for (name,ddl_type) in temp_type_list.type_map.items():
             c.ddl_map.add_type(_assemble_ddl(ddl),ddl_type.name)
