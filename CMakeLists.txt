@@ -2,11 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 project(libdas)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/resources/")
-set(ODB_MYSQL_LIBRARY_DIR_HINT  CACHE PATH "hint to where to find libodb-mysql.so library")
-set(ODB_PGSQL_LIBRARY_DIR_HINT  CACHE PATH "hint to where to find libodb-pgsql.so library")
-set(ODB_COMPILER_DIR_HINT  CACHE PATH "hint to where to find odb compiler executable")
-set(ODB_INCLUDE_DIR_HINT  CACHE PATH "hint to where to find odb include directory")
-set(ODB_CORE_LIBRARY_DIR_HINT  CACHE PATH "hint to where to find libodb.so library")
+set(ODB_COMPILER_DIR  CACHE PATH "hint to where to find odb compiler executable")
 
 find_package(ODB REQUIRED)
 find_package(Python REQUIRED)

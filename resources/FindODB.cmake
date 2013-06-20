@@ -5,11 +5,20 @@
 #  ODB_LIBRARIES, libraries to link against to use ODB client C++.
 #  ODB_FOUND, If false, do not try to use ODB client C++.
 
-FIND_PROGRAM(ODB_COMPILER odb HINT ${ODB_COMPILER_DIR_HINT})
 
-FIND_PATH(ODB_INCLUDE_DIR odb/core.hxx HINT ${ODB_INCLUDE_DIR_HINT})
+if (NOT $ENV{CPLUS_INCLUDE_PATH}  STREQUAL "")
+   string (REPLACE ":" ";" INCL_PATHS $ENV{CPLUS_INCLUDE_PATH})
+endif ()
 
-FIND_LIBRARY(ODB_CORE_LIBRARY odb HINT ${ODB_CORE_LIBRARY_DIR_HINT})
+if (NOT $ENV{LIBRARY_PATH}  STREQUAL "")
+   string (REPLACE ":" ";" LIB_PATHS $ENV{LIBRARY_PATH})
+endif ()
+
+FIND_PROGRAM(ODB_COMPILER odb HINT ${ODB_COMPILER_DIR})
+
+FIND_PATH(ODB_INCLUDE_DIR odb/core.hxx HINTS ${INCL_PATHS})
+
+FIND_LIBRARY(ODB_CORE_LIBRARY odb HINTS ${LIB_PATHS})
 
 # handle the QUIETLY and REQUIRED arguments and set ODB_FOUND to TRUE if
 # all listed variables are TRUE
