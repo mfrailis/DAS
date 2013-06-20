@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ddl xmlns="http://oats.inaf.it/das"
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
- xsi:schemaLocation="http://oats.inaf.it/das ddl.xsd">
+ xsi:schemaLocation="http://oats.inaf.it/das ../resources/ddl.xsd">
  
     <!-- 
         Data type providing essential metadata. It shell be inherited (directly or indirecty)
