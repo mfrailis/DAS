@@ -49,6 +49,29 @@ namespace das
     }
     
   }; //TODO
+  
+    class column_not_present : public std::exception
+  {
+  public :
+    virtual const char*
+    what() const throw()
+    {
+      return "the column requested is not present";
+    }
+    
+  }; //TODO
+  
+  class no_data_column : public std::exception
+  {
+  public :
+    virtual const char*
+    what() const throw()
+    {
+      return "the column requested is not present";
+    }
+    
+  }; //TODO
+  
   class association_not_present : public std::exception
   {
   public :
@@ -165,6 +188,33 @@ namespace das
     }
     
   }; //TODO
+   class bad_param : public std::exception
+  {
+  public :
+    virtual const char*
+    what() const throw()
+    {
+      return "wrong parameter";
+    }
+    
+  }; //TODO
+  
+//IO exceptions
+  class das_io_exception : public std::exception
+  {
+  public :
+      das_io_exception(char *str):errstr_(str){}
+    virtual const char*
+    what() const throw()
+    {
+      return errstr_;
+    }
+  private:
+      char * errstr_;
+    
+  }; //TODO 
+  
+  
 }
 
 #endif

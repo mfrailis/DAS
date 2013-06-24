@@ -4,8 +4,8 @@
 	"port"          : 3306,
 	"db_type"  	: "mysql",
 	"alias"         : "test_level1",
-	"db_name"  	: "odb_test",
-	"ddl"	     	: "dasInstance.xml",
+	"db_name"  	: "test_level1",
+	"ddl"	     	: "ddl_level1_types.xml",
 	"data_root_dir" : "/db/test_l1",
 	"time_interval" : "day"
     },
@@ -15,7 +15,7 @@
 	"db_type"  	: "mysql",
 	"alias"         : "test_level2",
 	"db_name"  	: "odb_test",
-	"ddl"	     	: "dasInstance.xml",
+	"ddl"	     	: "ddl_level1_types.xml",
 	"data_root_dir" : "/db/testl3",
 	"time_interval" : "day"
     }

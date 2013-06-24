@@ -6,7 +6,9 @@ import association_one_shared as _a_os
 import association_one_exclusive as _a_oe
 
 class DdlVisitor:
- 
+  def name(self,name):
+    pass
+
   def clean_env(self):
     pass
     
@@ -73,7 +75,10 @@ class DdlOdbGenerator(DdlVisitor):
     self._store_as = None
     self._keyword_touples = []
     self._assoc_touples = []
+    self._column_type = []
 
+  def name(self,name):
+    self._class_name=name
 
   def generate(self):
     self.clean_env()
@@ -163,6 +168,7 @@ class DdlOdbGenerator(DdlVisitor):
     h.writelines(['using std::tr1::shared_ptr;\n'])
     h.writelines(['using std::tr1::weak_ptr;\n'])
     h.writelines(l + "\n" for l in self._forward_section)
+    h.writelines(l + "\n" for l in self._column_type)
     h.writelines(l + "\n" for l in intro)
 # public section
     h.writelines([" public:\n"])
@@ -173,7 +179,13 @@ class DdlOdbGenerator(DdlVisitor):
     h.writelines("  "+l + "\n" for l in self._type_defs)
     h.writelines("  "+l + "\n" for l in self._public_section)
 
-#    h.writelines(["  virtual ~"+self._class_name+"();\n"])
+    if datatype.data and datatype.data.store_as == 'file' and datatype.data.isTable():
+      h.writelines(['''
+  template<typename T>
+  blitz::Array<T,1>
+  get_column(const std::string &column, long long start = 0LL, long long length = -1LL);
+'''])
+
 # preotected section
     h.writelines([" protected:\n"])
     h.writelines("  "+l + "\n" for l in self._friends)
@@ -200,6 +212,7 @@ class DdlOdbGenerator(DdlVisitor):
 #    h.writelines(['  #pragma db transient\n'])
     h.writelines(['  static shared_ptr<'+self._class_name+'> null_ptr_;\n'])
     h.writelines(["};\n"])
+    
     h.writelines(['#include "'+idr_name+'"\n'])
     h.writelines(["#endif"])
     h.close()
@@ -217,6 +230,31 @@ struct das_traits<'''+self._class_name+'''>
     static const std::string name;
 };
 ''')
+    if datatype.data and datatype.data.store_as == 'file' and datatype.data.isTable():
+      i.writelines(['''
+template<typename T>
+blitz::Array<T,1>
+'''+self._class_name+'''::get_column(const std::string &column, long long start, long long length)
+{
+  const ColumnInfo &info = get_column_info(column);
+  shared_ptr<'''+self._class_name+'''_column> &cl = this->*columns_.at(column);
+
+  if(!cl)
+  {
+    throw das::no_data_column();
+  }
+
+  if(start < 0 || start > cl->size())
+  {
+    throw das::bad_param();
+  }
+  long long len = length == -1 ? cl->size()-start : length;
+
+  DasDataIn<T> io(cl);
+  return io.get(info,start,len);
+
+}
+'''])
     #null pointer getter
     i.writelines(['''
 inline const shared_ptr<'''+self._class_name+'''>&
@@ -235,6 +273,7 @@ inline const shared_ptr<'''+self._class_name+'''>&
     self._src_header.append('#include "ddl/types/mysql/ddl_'+self._class_name+'-odb.hxx"')
     self._src_header.append('#include "exceptions.hpp"')
     self._src_header.append('#include "internal/db_bundle.ipp"')
+    self._src_header.append('#include <boost/variant/apply_visitor.hpp>')
 
     s = open(_os.path.join(self._src_dir, src_name), 'w') 
     s.writelines(['#include "ddl/types/'+hdr_name+'"\n'])
@@ -313,6 +352,8 @@ void
    bundle_.db()->update(*this);
 }
 '''])
+
+
     s.writelines(['shared_ptr<'+self._class_name+'> '+self._class_name+'::null_ptr_;\n'])
     s.close()
 
@@ -377,13 +418,46 @@ void
   def visit_binary_table(self,_):
     if self._inherit != "":
       if not self.has_inherit_column(self._inherit):
-        self._protected_section.append("std::map<std::string, Column"+self._store_as+"> columns_;")
+        self._header.append("#include <boost/unordered_map.hpp>")
+        self._header.append('#include "../../internal/das_io.hpp"')
+        self._header.append('#include <blitz/array.h>')
+        self._protected_section.append("#pragma db transient")
+        self._protected_section.append("boost::unordered_map<std::string, shared_ptr<Column"+self._store_as+"> "+self._class_name+"::* > columns_;")
     else:
-      self._protected_section.append("std::map<std::string, Column"+self._store_as+"> columns_;")
+      self._header.append("#include <boost/unordered_map.hpp>")
+      self._header.append('#include "../../internal/das_io.hpp"')
+      self._header.append('#include <blitz/array.h>')
+      self._protected_section.append("#pragma db transient")
+      if self._store_as == 'File':
+        self._protected_section.append("boost::unordered_map<std::string, shared_ptr<"+self._class_name+"_column> "+self._class_name+"::* > columns_;")
+        self._column_type = ['''
+#pragma db object
+class '''+self._class_name+'''_column : public ColumnFile
+{
+public:
+  '''+self._class_name+'''_column(const long long &size,
+	     const std::string &type,
+	     const std::string &fname)
+  : ColumnFile(size,type,fname) {}
+
+  '''+self._class_name+'''_column(const std::string &type)
+  : ColumnFile(type) {}
+private:
+  '''+self._class_name+'''_column(){}
+  friend class odb::access;
+};
+''']
+
+
+      else:
+        self._protected_section.append("boost::unordered_map<std::string, shared_ptr<Column"+self._store_as+"> "+self._class_name+"::* > columns_;")
     
   def visit_column(self,column):
-#    self._default_init.append('columns_["'+column.name+'"] = Column'+self._store_as+'("'+column.ctype+'");')
-    self._default_init.append('columns_.insert(std::pair<std::string,Column'+self._store_as+'>("'+column.name+'",Column'+self._store_as+'("'+column.ctype+'")));')
+    self._default_init.append('columns_["'+column.name+'"] = &'+self._class_name+'::column_'+column.name+'_;')
+    if self._store_as == 'File':
+      self._protected_section.append('shared_ptr<'+self._class_name+'_column> column_'+column.name+'_;')
+    else:
+      self._protected_section.append('shared_ptr<Column'+self._store_as+'> column_'+column.name+'_;')
 
   def visit_data(self,data):
     if data.store_as == 'blob':
@@ -671,12 +745,5 @@ class DdlInheritanceValidator:
     else:
       if dtype.ancestor != dtype.name:
         self._check_image(dtype.ancestor)
-
-
-
-
-
-
-
 
 

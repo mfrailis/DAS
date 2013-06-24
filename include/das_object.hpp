@@ -15,6 +15,7 @@ using std::tr1::shared_ptr;
 
 class QLVisitor;
 namespace das{namespace tpl{class Database; class Transaction;}}
+
 #pragma db object abstract
 class DasObject
 {

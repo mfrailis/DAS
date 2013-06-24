@@ -50,7 +50,7 @@ namespace das {
         template<typename T>
         shared_ptr<T>
         Database::load(const std::string& name, int version) {
-            odb::session(*(bundle_.session()));
+            odb::session::current(*(bundle_.session()));
             typedef odb::query<T> query;
             typedef odb::result<T> result;
 

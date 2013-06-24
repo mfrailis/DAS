@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ddl xmlns="http://oats.inaf.it/das"
+ xmlns:xi="http://www.w3.org/2001/XInclude"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://oats.inaf.it/das ../resources/ddl.xsd">
+
+    
+    <!-- 
+        DAS System types  
+    -->    
+    
+    <!-- 
+        Data type providing essential metadata. It shell be inherited (directly or indirecty)
+        by all the other DAS data types
+    -->
+    
+    <type name="essentialMetadata" description="Provides common essential metadata information">
+        <metadata>
+            <keyword name="name" description="object name" type="string" index="yes"/>
+            <keyword name="version" description="object version" type="int16" default="0"/>
+            <keyword name="dbUserId" description="object creator" type="string"/>
+            <keyword name="creationDate" type="int64" unit="s"/>
+        </metadata>
+    </type>
+    
+    
+    <!-- 
+        User types
+    -->   
+
+
+    <type name="campaign">
+        <associated name="campaign_site" type="site" multiplicity="one" relation="shared"/>
+        <associated name="campaign_test" type="testlevel" multiplicity="one" relation="shared" />  
+    </type>
+
+
+    <type name="site">
+        <metadata>
+            <keyword name="desc" type="string" />
+        </metadata>
+    </type>
+
+
+    <type name="testlevel">
+        <metadata>
+            <keyword name="desc" type="string" />
+        </metadata>
+    </type>
+
+    
+    <type name="session">
+        <associated name="session_campaign" type="campaign" multiplicity="one" relation="shared" />
+        <metadata>
+           <keyword name="startdate" type="int64"/>
+           <keyword name="enddate" type="int64" />
+           <keyword name="session_log" type="text"/>
+        </metadata>
+    </type>
+
+
+    <type name="measure" >
+        <associated name="measure_session" type="session" multiplicity="one" relation="shared"/>
+        <associated name="log" type="measurelogs" multiplicity="many" relation="exclusive"/>
+        <metadata>
+            <keyword name="run_id" type="int32"/>
+            <keyword name="obs_id" type="string"/>
+            <keyword name="startdate" type="int64"/>
+            <keyword name="enddate" type="int64"/>           
+        </metadata>               
+    </type>
+
+
+    <type name="measurelogs">
+        <associated name="images" type="measurelogimages" multiplicity="many" relation="exclusive"/>        
+        <metadata>
+            <keyword name="text" type="text"/>
+            <keyword name="last_update_date" type="int64"/>            
+        </metadata>
+    </type>
+
+
+    <type name="measurelogimages">
+        <data storeAs="blob">
+            <image pixType="byte"/>
+        </data>
+    </type>   
+        
+                
+    <!-- 
+        An example of a data type storing housekeeping timelines    
+    -->
+    <type name="lfiHkDaeSlowVoltage" description="DAE voltages - slow telemetry">
+        <metadata>
+            <keyword name="run_id" type="string" description="test run ID (e.g. FUNC_0001)"/>
+            <keyword name="startTime" description="start time of the timeline in UCT" type="int64" unit="ms"/>
+            <keyword name="endTime" description="end time of the timeline in UCT" type="int64" unit="ms"/>
+            <keyword name="apid" type="int16" description="application process ID of the source packet" default="1538"/>
+            <keyword name="type" type="byte" description="type of the source packet" default="3"/>
+            <keyword name="subtype" type="byte" description="subtype of the source packet" default="25"/>
+            <keyword name="pi1_val" type="int16" description="source packet identifier from MIB - first" default="1"/>
+            <keyword name="pi2_val" type="int16" description="source packet identifier from MIB - second" default="0"/>
+        </metadata>
+        <data>
+            <binaryTable>
+                <column name="sampleSCET" type="int64" unit="ms" description="sample time in UTC"/>
+                <column name="LM151322Raw" type="uint16" unit="ADU" description="I1 LFI27 M1 - Raw value"/>
+                <column name="LM151322Eng" type="float64" unit="V" description="I1 LFI27 M1 - Eng. value"/>
+                <column name="LM151322Flag" type="int32" description="I1 LFI27 M1 - Flags"/>
+                <column name="LM152322Raw" type="uint16" unit="ADU" description="I1 LFI27 M2 - Raw value"/>
+                <column name="LM152322Eng" type="float64" unit="V" description="I1 LFI27 M2 - Eng. value"/>
+                <column name="LM152322Flag" type="int32" description="I1 LFI27 M2 - Flags"/>                
+            </binaryTable>
+        </data>
+    </type>
+ 
+    
+</ddl>

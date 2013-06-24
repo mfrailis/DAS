@@ -139,6 +139,7 @@ COMMAND ${ODB_COMPILER}
     --include-regex "%(column.hpp)|(image.hpp)%../../../ddl/$1$2%"
     --include-regex "%aux_query.hpp%../../../internal/aux_query.hpp%"
     --include-regex "%ddl_(.+).hpp%../ddl_$1.hpp%"
+    --include-regex "%(.*)column-odb.hxx%ddl/types/'''+db_type+'''/column-odb.hxx%"
     --include-regex "%das_object-odb.hxx%ddl/types/'''+db_type+'''/das_object-odb.hxx%"
     --include-regex "%das_object.hpp%../../../das_object.hpp%"
 
@@ -365,6 +366,8 @@ def generate_database_config(db_list,filename):
     f.writelines(['''
 #include "internal/database_config.hpp"
 namespace das{
+  std::string DatabaseConfig::temp_;
+
   void 
   DatabaseConfig::prepare_config()
   {
@@ -383,6 +386,13 @@ namespace das{
 '''])
 
     f.writelines(['''
+  }
+
+  const
+  std::string&
+  DatabaseConfig::temp_dir()
+  {
+    
   }
 }
 '''])

@@ -41,7 +41,8 @@ namespace das {
         const_iterator
         cend() const {return db_map_.cend();}  
         
-        static const DatabaseInfo&  database(const std::string &alias);       
+        static const DatabaseInfo&  database(const std::string &alias);
+        static const std::string&  temp_dir(); 
     private:
         DatabaseConfig() : ready(false){}
         bool ready;
@@ -53,6 +54,7 @@ namespace das {
         boost::unordered_map<std::string, DatabaseInfo> db_map_;
         
         static DatabaseConfig database_config;
+        static std::string temp_;
     };
 }
 #endif	/* DATABASE_CONFIG_HPP */

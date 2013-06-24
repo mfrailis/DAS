@@ -46,6 +46,7 @@ class DdlInfoGenerator(_odb.DdlVisitor):
         self._get_columns(data_type.name)
         self._get_associations(data_type.name)
 
+        self._init_keywords.append('all_keywords_["essentialMetadata"]["das_id"] = KeywordInfo("name","int64","none","object id");')
         for k in self._keywords:
             if k.description is None:
                 d = ""

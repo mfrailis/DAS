@@ -1,88 +1,78 @@
 #include <iostream>
-#include <sstream>
+#include <vector>
+
 #include "tpl/database.hpp"
 #include "tpl/transaction.hpp"
 #include "ddl/types.hpp"
 
+
+
 using namespace std;
 namespace D = das::tpl;
 
+
 void print(const shared_ptr<lfiHkDaeSlowVoltage>& hk) {
-    cout << "Run ID: " << hk->runId() << endl
+    cout << "Run ID: " << hk->run_id() << endl
             << "  Start Time: " << hk->startTime() << endl
             << "  End Time  : " << hk->endTime() << endl
-            << "  APID      : " << hk->APID() << endl;
-}
-
-void print(const testLog& log) {
-    cout << "Run ID: " << log.runId() << endl
-            << "  Start Time: " << log.startTime() << endl
-            << "  End Time  : " << log.endTime() << endl
-            << "  log       : " << log.log() << endl;
-}
-
-void print(const shared_ptr<testLogImage> &img) {
-    cout << "Image name: " << img->name() << endl
-            << "  naxis1 : " << img->naxis1() << endl
-            << "  naxis2 : " << img->naxis2() << endl
-            << "  format : " << img->format() << endl;
+            << "  APID      : " << hk->apid() << endl;
 }
 
 int main(int argc, char * argv[]) {
-    shared_ptr<D::Database> db = D::Database::create("test_level1");
-
-    shared_ptr<lfiHkDaeSlowVoltage> hk = lfiHkDaeSlowVoltage::create("LfiDaeSlowVoltage_TOI_0001");
-
-    hk->runId("FUNC_0001");
-    hk->startTime(107361255356137);
-    hk->endTime(107367005705966);
-    hk->APID(1538);
-    hk->type(3);
-    hk->subtype(25);
-    hk->PI1_val(1);
-    hk->PI2_val(0);
-
-
-
-    shared_ptr<testLog> log = testLog::create("TestLog_FUNC_0001");
-    log->runId("FUNC_0001");
-    log->startTime(107361255356137);
-    log->endTime(107367005705966);
-    log->log("A first example of ddl mapping into the DAS");
-
-    shared_ptr<testLogImage> logImage = testLogImage::create("IMG_001_FUNC_0001");
-    logImage->naxis1(25);
-    logImage->naxis2(50);
-    logImage->format("png");
-
-    testLog::images_vector v = log->images();
-    v.push_back(logImage);
-
-    log->images(v);
-    
-    D::Transaction t (db->begin());
-    db->persist<lfiHkDaeSlowVoltage>(hk);
-    db->persist<testLog>(log);    
-    t.commit();
-
+    long long int ss_id;
     {
-      typedef D::Result<testLog> result;
+        shared_ptr<D::Database> db = D::Database::create("test_level1");
 
+        shared_ptr<site> s = site::create("site_name");
+        shared_ptr<testlevel> tl = testlevel::create("test_level_name");
+        shared_ptr<campaign> camp = campaign::create("campaign_name");
+        shared_ptr<session> ss = session::create("session_name");
 
-      D::Transaction t (db->begin ());
+        camp->campaign_site(s);
+        camp->campaign_test(tl);
 
-      result r (db->query<testLog> ("runId == 'FUNC_0001'","version descending"));
-
-      for (result::iterator i (r.begin ()); i != r.end (); ++i)
-      {
-        testLog::images_vector images = i->images();
-        for (testLog::images_vector::iterator j(images.begin());j != images.end(); ++j)
-            print(*j);
-        print (*i);
-      }
-
-      t.commit ();
+        ss->session_campaign(camp);
+        
+        D::Transaction t(db->begin());
+        ss_id = db->persist(ss); // save id for later use
+        db->persist(camp);       // unnecessary: camp is already made persistent by the association with session
+        db->persist(tl);         // unnecessary: as above 
+        db->persist(s);          // unnecessary: as above
+        t.commit();
+        
     }
+
+
+    std::vector<shared_ptr<measure> > ms;
+
+    ms.push_back(measure::create("measure_1"));
+    ms.push_back(measure::create("measure_2")); 
+    ms.push_back(measure::create("measure_3")); 
+    for(std::vector<shared_ptr<measure> >::iterator i = ms.begin(); i < ms.end(); i++)
+    {
+        std::string log_name("log for measure ");
+        log_name += (*i)->name();
+        measure::log_vector logs;
+        logs.push_back(measurelogs::create(log_name));
+        (*i)->log(logs);
+    }
+
+
+    
+    {
+        shared_ptr<D::Database> db = D::Database::create("test_level1");
+        shared_ptr<session> ss = db->load<session>(ss_id);
+        
+        D::Transaction t(db->begin());
+        for(std::vector<shared_ptr<measure> >::iterator i = ms.begin(); i < ms.end(); i++)
+        {
+            (*i)->measure_session(ss);
+            db->persist(*i);
+        }
+        t.commit();
+        
+    }
+
 
     return 0;
 

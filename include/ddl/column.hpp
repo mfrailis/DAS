@@ -3,8 +3,10 @@
 #include <odb/core.hxx>
 #include <vector>
 #include <string>
+#include <odb/tr1/memory.hxx>
+#include <odb/tr1/lazy-ptr.hxx>
 
-#pragma db value
+#pragma db object abstract
 class Column
 {
 
@@ -51,17 +53,20 @@ class Column
 
 };
 
-#pragma db value
+template<typename T> class DasDataIn;
+template<typename T> class DasDataOut;
+
+#pragma db object abstract
 class ColumnFile: public Column
 {
 public:
   ColumnFile(const long long &size,
 	     const std::string &type,
 	     const std::string &fname)
-    : Column(size, type),  fname_(fname)
+    : Column(size, type),  fname_(fname), mvcc_(0)
   {}
   ColumnFile(const std::string &type)
-    : Column(type)
+    : Column(type), mvcc_(0)
   {}
   const std::string&
   fname()
@@ -75,14 +80,26 @@ public:
     fname_ = fname;
   }
 
+protected: 
+  ColumnFile()  {}    
  private:
+  template<typename T>
+  friend class DasDataIn;
+  
+  template<typename T>
+  friend class DasDataOut;     
+     
+#pragma db id auto
+  long long mvcc_;
+#pragma db transient
+  std::string temp_path_;
   friend class odb::access;
+    
   void save();
-  ColumnFile()  {}
   std::string fname_;
 };
 
-#pragma db value
+#pragma db object no_id
 class ColumnBlob: public Column
 {
 public:

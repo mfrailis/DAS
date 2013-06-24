@@ -32,6 +32,7 @@ class DataType:
     self.data = None
     
   def accept(self, visitor):
+    visitor.name(self.name)
     for node in self.associated.values():
       node.accept(visitor)
     if self.metadata is not None:
