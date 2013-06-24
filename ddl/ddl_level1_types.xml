@@ -75,12 +75,16 @@
         <associated name="images" type="measurelogimages" multiplicity="many" relation="exclusive"/>        
         <metadata>
             <keyword name="text" type="text"/>
+            <keyword name="creation_date" type="int64"/>
             <keyword name="last_update_date" type="int64"/>            
         </metadata>
     </type>
 
 
     <type name="measurelogimages">
+        <metadata>
+            <keyword name="creation_date" type="int64"/>
+        </metadata>
         <data storeAs="blob">
             <image pixType="byte"/>
         </data>

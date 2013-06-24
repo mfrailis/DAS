@@ -1,4 +1,11 @@
-FIND_LIBRARY(ODB_PGSQL_LIBRARY odb-mysql HINT ${ODB_PGSQL_LIBRARY_DIR_HINT})
+
+if (NOT $ENV{LIBRARY_PATH}  STREQUAL "")
+   string (REPLACE ":" ";" LIB_PATHS $ENV{LIBRARY_PATH})
+endif ()
+
+
+
+FIND_LIBRARY(ODB_PGSQL_LIBRARY odb-mysql HINTS ${LIB_PATHS})
 
 # handle the QUIETLY and REQUIRED arguments and set ODB_FOUND to TRUE if
 # all listed variables are TRUE
