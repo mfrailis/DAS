@@ -16,7 +16,7 @@
 	"alias"         : "test_level2",
 	"db_name"  	: "odb_test",
 	"ddl"	     	: "ddl_level1_types.xml",
-	"data_root_dir" : "/db/testl3",
+	"data_root_dir" : "/db/test_l2",
 	"time_interval" : "day"
     }
 ]

@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ddl xmlns="http://oats.inaf.it/das"
- xmlns:xi="http://www.w3.org/2001/XInclude"
- xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
- xsi:schemaLocation="http://oats.inaf.it/das ../resources/ddl.xsd">
 
+<ddl xmlns="http://oats.inaf.it/das"
+    xmlns:xi="http://www.w3.org/2001/XInclude"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://oats.inaf.it/das ../resources/ddl.xsd">
     
     <!-- 
-        DAS System types  
+       DAS System types  
     -->    
     
     <!-- 
-        Data type providing essential metadata. It shell be inherited (directly or indirecty)
-        by all the other DAS data types
+       Data type providing essential metadata. It shell be inherited (directly or indirecty)
+       by all the other DAS data types
     -->
     
     <type name="essentialMetadata" description="Provides common essential metadata information">
@@ -25,40 +25,40 @@
     
     
     <!-- 
-        User types
+        User defined types
     -->   
-
-
+    
+    
     <type name="campaign">
         <associated name="campaign_site" type="site" multiplicity="one" relation="shared"/>
         <associated name="campaign_test" type="testlevel" multiplicity="one" relation="shared" />  
     </type>
-
-
+    
+    
     <type name="site">
         <metadata>
             <keyword name="desc" type="string" />
         </metadata>
     </type>
-
-
+    
+    
     <type name="testlevel">
         <metadata>
             <keyword name="desc" type="string" />
         </metadata>
     </type>
-
+    
     
     <type name="session">
         <associated name="session_campaign" type="campaign" multiplicity="one" relation="shared" />
         <metadata>
-           <keyword name="startdate" type="int64"/>
-           <keyword name="enddate" type="int64" />
-           <keyword name="session_log" type="text"/>
+            <keyword name="startdate" type="int64"/>
+            <keyword name="enddate" type="int64" />
+            <keyword name="session_log" type="text"/>
         </metadata>
     </type>
-
-
+    
+    
     <type name="measure" >
         <associated name="measure_session" type="session" multiplicity="one" relation="shared"/>
         <associated name="log" type="measurelogs" multiplicity="many" relation="exclusive"/>
@@ -69,8 +69,8 @@
             <keyword name="enddate" type="int64"/>           
         </metadata>               
     </type>
-
-
+    
+    
     <type name="measurelogs">
         <associated name="images" type="measurelogimages" multiplicity="many" relation="exclusive"/>        
         <metadata>
@@ -79,8 +79,8 @@
             <keyword name="last_update_date" type="int64"/>            
         </metadata>
     </type>
-
-
+    
+    
     <type name="measurelogimages">
         <metadata>
             <keyword name="creation_date" type="int64"/>
@@ -89,8 +89,8 @@
             <image pixType="byte"/>
         </data>
     </type>   
-        
-                
+    
+    
     <!-- 
         An example of a data type storing housekeeping timelines    
     -->
@@ -117,6 +117,6 @@
             </binaryTable>
         </data>
     </type>
- 
+    
     
 </ddl>
