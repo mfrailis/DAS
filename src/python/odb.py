@@ -179,12 +179,12 @@ class DdlOdbGenerator(DdlVisitor):
     h.writelines("  "+l + "\n" for l in self._type_defs)
     h.writelines("  "+l + "\n" for l in self._public_section)
 
-    if datatype.data and datatype.data.store_as == 'file' and datatype.data.isTable():
-      h.writelines(['''
-  template<typename T>
-  blitz::Array<T,1>
-  get_column(const std::string &column, long long start = 0LL, long long length = -1LL);
-'''])
+#    if datatype.data and datatype.data.store_as == 'file' and datatype.data.isTable():
+#      h.writelines(['''
+#  template<typename T>
+#  blitz::Array<T,1>
+#  get_column(const std::string &column, long long start = 0LL, long long length = -1LL);
+#'''])
 
 # preotected section
     h.writelines([" protected:\n"])
@@ -230,31 +230,31 @@ struct das_traits<'''+self._class_name+'''>
     static const std::string name;
 };
 ''')
-    if datatype.data and datatype.data.store_as == 'file' and datatype.data.isTable():
-      i.writelines(['''
-template<typename T>
-blitz::Array<T,1>
-'''+self._class_name+'''::get_column(const std::string &column, long long start, long long length)
-{
-  const ColumnInfo &info = get_column_info(column);
-  shared_ptr<'''+self._class_name+'''_column> &cl = this->*columns_.at(column);
-
-  if(!cl)
-  {
-    throw das::no_data_column();
-  }
-
-  if(start < 0 || start > cl->size())
-  {
-    throw das::bad_param();
-  }
-  long long len = length == -1 ? cl->size()-start : length;
-
-  DasDataIn<T> io(cl);
-  return io.get(info,start,len);
-
-}
-'''])
+#    if datatype.data and datatype.data.store_as == 'file' and datatype.data.isTable():
+#      i.writelines(['''
+#template<typename T>
+#blitz::Array<T,1>
+#'''+self._class_name+'''::get_column(const std::string &column, long long start, long long length)
+#{
+#  const ColumnInfo &info = get_column_info(column);
+#  shared_ptr<'''+self._class_name+'''_column> &cl = this->*columns_.at(column);
+#
+#  if(!cl)
+#  {
+#    throw das::no_data_column();
+#  }
+#
+#  if(start < 0 || start > cl->size())
+#  {
+#    throw das::bad_param();
+#  }
+#  long long len = length == -1 ? cl->size()-start : length;
+#
+#  DasDataIn<T> io(cl);
+#  return io.get(info,start,len);
+#
+#}
+#'''])
     #null pointer getter
     i.writelines(['''
 inline const shared_ptr<'''+self._class_name+'''>&
@@ -420,13 +420,13 @@ void
       if not self.has_inherit_column(self._inherit):
         self._header.append("#include <boost/unordered_map.hpp>")
         self._header.append('#include "../../internal/das_io.hpp"')
-        self._header.append('#include <blitz/array.h>')
+#        self._header.append('#include <blitz/array.h>')
         self._protected_section.append("#pragma db transient")
         self._protected_section.append("boost::unordered_map<std::string, shared_ptr<Column"+self._store_as+"> "+self._class_name+"::* > columns_;")
     else:
       self._header.append("#include <boost/unordered_map.hpp>")
       self._header.append('#include "../../internal/das_io.hpp"')
-      self._header.append('#include <blitz/array.h>')
+#      self._header.append('#include <blitz/array.h>')
       self._protected_section.append("#pragma db transient")
       if self._store_as == 'File':
         self._protected_section.append("boost::unordered_map<std::string, shared_ptr<"+self._class_name+"_column> "+self._class_name+"::* > columns_;")
