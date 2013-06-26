@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+    <!-- 
+       DAS System types  
+    -->    
+    
+    <!-- 
+       Data type providing essential metadata. It shell be inherited (directly or indirecty)
+       by all the other DAS data types
+    -->
+    
+    <type xmlns="http://oats.inaf.it/das" name="essentialMetadata" description="Provides common essential metadata information">
+        <metadata>
+            <keyword name="name" description="object name" type="string" index="yes"/>
+            <keyword name="version" description="object version" type="int16" default="0"/>
+            <keyword name="dbUserId" description="object creator" type="string"/>
+            <keyword name="creationDate" type="int64" unit="s"/>
+        </metadata>
+    </type>
