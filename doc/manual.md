@@ -1,4 +1,4 @@
-DAS user manual
+DAS user manual  
 ===============
 
 
@@ -48,23 +48,27 @@ A ddl-object can be in one of the following states:
 A ddl-object newly created is in the new state. You can be freely modify and delete without involve
 any database operation.
 
-     shared_ptr<measure> m = measure::create("measure_name");
-     m->run_id(12345);
-	 m.reset();
+~~~{.cpp} 
+    shared_ptr<measure> m = measure::create("measure_name");
+    m->run_id(12345);
+    m.reset();
+~~~
 
 Once you want to make a ddl-object persistent, you first have to create a pm-object, then create a
 transaction and finally you can call the method persist passing the ddl-object as argoment.
 When you have finished persisting the objects, just call the commit method from the transaction.
 
+~~~{.cpp} 
     shared_ptr<measure> m1 = measure::create("measure1");
     shared_ptr<measure> m2 = measure::create("measure2");
 	
     shared_ptr<Database> db = Database::create("test_level1");
 	
-	Transaction t(db->begin());
-	db->persist(m1);
-	db->persist(m2);
-	t.commit();
+    Transaction t(db->begin());
+    db->persist(m1);
+    db->persist(m2);
+    t.commit();
+~~~
 	
 At this point the ddl-objects (m1, m2) have become persistent and they are attached on a 
 pm-object (db). From now on, each modification on the attached objects will be made persistent on next
@@ -72,12 +76,14 @@ transaction commit created by the corresponding pm-object (db). As your convenie
 the method flush when you want to persist the modifications of each object attached to a specific
 pm-object.
 
+~~~{.cpp} 
     ...
-	
+
     m1->run_id(2344443);
     m2->run_id(2344443);
-	
-	db->flush();
+
+    db->flush();
+~~~
 
 If your application spend most of the time elaborating data with no interaction with pm-objects until
 the the very end of the programm, you may find convenient load from a pm-object the needed 
@@ -86,20 +92,20 @@ computation, and finally update the persistent objects attaching the modified dd
 pm-object which refers the same pu-instance as the first one.
 
 
+~~~{.cpp}
     shared_ptr<Database> db = Database::create("test_level1");
-	
-	shared_ptr<measure> m1 = db->load<measure>(34);
-	shared_ptr<measure> m2 = db->load<measure>(35);
-	
-	db.reset();
-	
-	
-	... // very long computation
-	
-	db =  Database::create("test_level1");
-	
-	db->attach(m1);
-	db->attach(m2);
-	
-	db->flush();
 
+    shared_ptr<measure> m1 = db->load<measure>(34);
+    shared_ptr<measure> m2 = db->load<measure>(35);
+
+    db.reset();	
+
+    ... // very long computation
+
+    db =  Database::create("test_level1");
+
+    db->attach(m1);
+    db->attach(m2);
+
+    db->flush();
+~~~

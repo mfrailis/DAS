@@ -1,14 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE doc [
-<!ENTITY das_essential SYSTEM "../resources/das_essential.xml">
-]>
 
 <ddl xmlns="http://oats.inaf.it/das"
  xmlns:xi="http://www.w3.org/2001/XInclude"
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
  xsi:schemaLocation="http://oats.inaf.it/das ../resources/ddl.xsd">
     
-    &das_essential;
+    <xi:include href="../resources/das_essential_include.xml" parse="xml"
+    xpointer="xmlns(das=http://oats.inaf.it/das)xpointer(//das:ddl/*)"/>    
 
     <xi:include href="ddl_level1_types.xml" parse="xml"
 	xpointer="xmlns(das=http://oats.inaf.it/das)xpointer(//das:type[@name='lfiHkDaeSlowVoltage'])"/>
