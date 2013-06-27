@@ -11,44 +11,37 @@ counterpart.
 
 Preliminary definitions:
 
-  + _ddl-object_ : object, that is, instance of a c++ class, that maps a specifid DDL data type. 
+  * _ddl-object_ : object, that is, instance of a c++ class, that maps a specifid DDL data type.
   
-  + _managed context_: block of code (scope) where at least one _pu-object_ is reachable.
-
-  + _persistent counterpart_: data stored in a database and shared filesystem representing
-	  a _ddl-object_ data structure(s).
-  
-  + _pu-instance_: (Persistent Unit instance) couple of database and and shared directory fully managed
+  * _pu-instance_: (Persistence Unit instance) couple of database and and shared directory fully managed
 	  by the system. Each pu-istance is uniquely identified by a string set in the "db-alias" option
 	  of the das configuration file.
-  
-  + _pu-instance-bound_: a _ddl-object_ has this property when is bound to a specific _pu-instance_.
-	  As say that the _persistent counterpart_ of this object will eventually be stored on
-	  the specific _pu-instance_.
-  
-  + _pu-object_: object, instance of the class Database, that handles connections, transactions, io
-	  and other operations on a specific _pu-instance_.
-	  Multiple pu-objects referring the same _pu-instance_ can be active (in the same scope) at
-	  the same time.
-  
-  + _pu-object-bound_: _ddl-object_ bound to a specific _db-object_.
-  
-A _ddl-object_ can be in one of the following state:
-
-  + _new_: a transient _ddl-object_ without _persistent counterpart_.
-	  A fresh created object is in the _new_ state and it can pass to _attached_ state trought
-	  the _pu-object_.persist() method.
 	  
-  + _attached_: a _ddl-object_ with a _persistent counterpart_ managed by a _pu-object_ in a 
-	  _persistent context_. Objects in this state are also _pu-instance-bound_ and _pu-object-bound_.
-	  Objects in _detached_ state can pass in _attached_ state througth
-	  the _pu-object_.attach() method.
-	  
-  + _detached_: an object with a persistent counterpart stored in a _pu-instance_ but not managed
-	  by any _pu-object_. Objects in this state are also _pu-instance-bound_.
-	  An _attached_ objects automatically becomes _detached_ when the _managed context_ ends; as say 
-	  the related _pu-object_ is destroyed.
+  * _pm-object_: (Persistance Manager object) instance of the class Database, that handles connections,
+	 transactions, io and other operations on a specific pu-instance.
+	 Multiple pm-objects referring the same pu-instance can be active (in the same scope) at
+	 the same time.
+	 
+  * _managed context_: block of code (scope) where at least one pm-object is alive.
 
+  * _persistent counterpart_: data stored in a database and shared filesystem representing
+	  a ddl-object data structure(s).
+    
+A ddl-object can be in one of the following states:
+
+  - _new_: a transient ddl-object without persistent counterpart.
+	  A fresh created object is in the new state and it can pass to attached state trought
+	  the Database::persist() method.
+	  
+  - _attached_: a ddl-object with a persistent counterpart managed by a database instance 
+      (pm-object) in a managed context.
+	  
+  - _detached_: an object with a persistent counterpart stored in a pu-instance but not managed
+	  by any pm-object.  An attached objects automatically becomes detached when the managed context
+	  ends; as say the related database instance goes out of scope or is manually destroyed.
+	  A detachted ddl-object can be later attached to the owner pu-instance througth the
+	  Database::attach() method. This means that the new and the old database instace must referr the
+	  same pu-instance.
 
 ### DDL objects life-cycle ###
 
@@ -59,7 +52,7 @@ any database operation.
 	 m->run_id(12345);
 	 m.reset();
 
-Once you want to make a ddl-object persistent, you first have to create a pu-object, then create a
+Once you want to make a ddl-object persistent, you first have to create a pm-object, then create a
 transaction and finally you can call the method persist passing the ddl-object as argoment.
 When you have finished persisting the objects, just call the commit method from the transaction.
 
@@ -74,23 +67,24 @@ When you have finished persisting the objects, just call the commit method from 
 	t.commit();
 	
 At this point the ddl-objects (m1, m2) have become persistent and they are attached on a 
-pu-object (db). From now on, each modification on the attached objects will be made persistent on next
-transaction commit created by the realitive pu-object (db). As your convenience, you can use
+pm-object (db). From now on, each modification on the attached objects will be made persistent on next
+transaction commit created by the corresponding pm-object (db). As your convenience, you can use
 the method flush when you want to persist the modifications of each object attached to a specific
-pu-object.
-    
+pm-object.
+
     ...
 	
     m1->run_id(2344443);
     m2->run_id(2344443);
 	
 	db->flush();
-	
-If your application spend most of the time elaborating data with no interaction with pu-objects until
-the the very end of the programm, you may find convenient load from a pu-object the needed 
-ddl-objects, then delete the pu-object allowing the system to release resources, do your 
+
+If your application spend most of the time elaborating data with no interaction with pm-objects until
+the the very end of the programm, you may find convenient load from a pm-object the needed 
+ddl-objects, then delete the pm-object allowing the system to release resources, do your 
 computation, and finally update the persistent objects attaching the modified ddl-objects to a new
-pu-object which refers the same pu-instance as the first one.
+pm-object which refers the same pu-instance as the first one.
+
 
     shared_ptr<Database> db = Database::create("test_level1");
 	
@@ -108,6 +102,3 @@ pu-object which refers the same pu-instance as the first one.
 	db->attach(m2);
 	
 	db->flush();
-	
-	
-

@@ -47,7 +47,7 @@ int main(int argc, char * argv[]) {
 
     ms.push_back(measure::create("measure_1"));
     ms.push_back(measure::create("measure_2")); 
-    ms.push_back(measure::create("measure_3")); 
+    ms.push_back(measure::create("measure_3"));
     for(std::vector<shared_ptr<measure> >::iterator i = ms.begin(); i < ms.end(); i++)
     {
         std::string log_name("log for measure ");

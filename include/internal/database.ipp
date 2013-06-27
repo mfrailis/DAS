@@ -23,8 +23,7 @@ namespace das {
         inline
         Transaction
         Database::begin() {
-            Transaction t(bundle_);
-            return t;
+            return Transaction(bundle_);
         }
 
         template<typename T>
