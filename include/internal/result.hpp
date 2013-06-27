@@ -8,7 +8,7 @@ namespace das {
         class Result : public odb::result<T> {
         public:
 
-            Result(const odb::result<T> r) : odb::result<T>(r) {
+            Result(const odb::result<T> &r) : odb::result<T>(r) {
             }
         };
     }

@@ -49,15 +49,15 @@ A ddl-object newly created is in the new state. You can be freely modify and del
 any database operation.
 
      shared_ptr<measure> m = measure::create("measure_name");
-	 m->run_id(12345);
+     m->run_id(12345);
 	 m.reset();
 
 Once you want to make a ddl-object persistent, you first have to create a pm-object, then create a
 transaction and finally you can call the method persist passing the ddl-object as argoment.
 When you have finished persisting the objects, just call the commit method from the transaction.
 
-	shared_ptr<measure> m1 = measure::create("measure1");
-	shared_ptr<measure> m2 = measure::create("measure2");
+    shared_ptr<measure> m1 = measure::create("measure1");
+    shared_ptr<measure> m2 = measure::create("measure2");
 	
     shared_ptr<Database> db = Database::create("test_level1");
 	
@@ -85,7 +85,7 @@ ddl-objects, then delete the pm-object allowing the system to release resources,
 computation, and finally update the persistent objects attaching the modified ddl-objects to a new
 pm-object which refers the same pu-instance as the first one.
 
-~~~~~~~~~~~~~~~~~~~~~
+
     shared_ptr<Database> db = Database::create("test_level1");
 	
 	shared_ptr<measure> m1 = db->load<measure>(34);
@@ -102,4 +102,4 @@ pm-object which refers the same pu-instance as the first one.
 	db->attach(m2);
 	
 	db->flush();
-~~~~~~~~~~~~~~~~~~~
+

@@ -276,14 +276,20 @@ add_library(das SHARED ${DAS_QL_SRC} ${DAS_SRC} ${TYPES_CPP} ${ODB_CXX})
 add_executable(test ${TEST_SOURCE_DIR}/main.cpp)
 target_link_libraries(test das ${ODB_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
 
-add_executable(persistent_objects EXCLUDE_FROM_ALL ${EXAMPLES_SOURCE_DIR}/persitent_objects.cpp)
-target_link_libraries(persistent_objects das ${ODB_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+add_executable(persistence_example EXCLUDE_FROM_ALL ${EXAMPLES_SOURCE_DIR}/persistence_example.cpp)
+target_link_libraries(persistence_example das ${ODB_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
 
-add_executable(objects_query EXCLUDE_FROM_ALL ${EXAMPLES_SOURCE_DIR}/objects_query.cpp)
-target_link_libraries(persistent_objects das ${ODB_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+add_executable(query_example EXCLUDE_FROM_ALL ${EXAMPLES_SOURCE_DIR}/query_example.cpp)
+target_link_libraries(query_example das ${ODB_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+
+add_executable(associations_example EXCLUDE_FROM_ALL ${EXAMPLES_SOURCE_DIR}/associations_example.cpp)
+target_link_libraries(associations_example das ${ODB_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
 
 add_custom_target(examples 
-  DEPENDS persistent_objects
+  DEPENDS 
+    persistence_example
+    query_example
+    associations_example
 )
 '''
 )
