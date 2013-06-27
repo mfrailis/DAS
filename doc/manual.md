@@ -1,4 +1,4 @@
-DAS user manual                  {#mainpage}
+DAS user manual  
 ===============
 
 
