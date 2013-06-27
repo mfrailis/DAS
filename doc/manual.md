@@ -85,7 +85,7 @@ ddl-objects, then delete the pm-object allowing the system to release resources,
 computation, and finally update the persistent objects attaching the modified ddl-objects to a new
 pm-object which refers the same pu-instance as the first one.
 
-
+~~~~~~~~~~~~~~~~~~~~~
     shared_ptr<Database> db = Database::create("test_level1");
 	
 	shared_ptr<measure> m1 = db->load<measure>(34);
@@ -102,3 +102,4 @@ pm-object which refers the same pu-instance as the first one.
 	db->attach(m2);
 	
 	db->flush();
+~~~~~~~~~~~~~~~~~~~
