@@ -44,7 +44,7 @@ namespace das {
                     throw das::object_not_unique();
                 } else {
 #ifdef VDBG
-                    std::cout << "DAS info: object found in the cache but not bound to the database" << std::endl;
+                    std::cout << "DAS info: obj found cache but not attached to db: if you are loading from a query result please ignore this message" << std::endl;
 #endif              
                     cache_hit->bundle_ = *this;
                 }

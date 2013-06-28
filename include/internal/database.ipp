@@ -114,7 +114,7 @@ namespace das {
             odb::result<T> odb_r(bundle_.db()->query<T>(clause + order));
             //result<T> r = static_cast<result<T> > (bundle_.db()->query<T>(clause + order));
             //return static_cast<Result<T> > (odb_r);
-            return Result<T>(odb_r);
+            return Result<T>(odb_r,bundle_);
         }
 
         template<typename T>

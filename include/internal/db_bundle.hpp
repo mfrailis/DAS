@@ -131,10 +131,13 @@ namespace das {
             }
 
             DbBundle
-            lock() {
+            lock(bool throw_on_expired = false) const{
 
                 shared_ptr<odb::database> db = db_.lock();
                 shared_ptr<odb::session> session = session_.lock();
+                if(throw_on_expired && expired())
+                    throw das::not_in_managed_context();
+                
                 return DbBundle(db_alias_, db, session);
             }
 

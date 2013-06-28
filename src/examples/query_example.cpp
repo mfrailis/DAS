@@ -21,22 +21,8 @@ int main(int argc, char** argv) {
     
     for(D::Result<measure>::iterator i = r.begin(); i!=r.end(); i++)
     {
-        //cout << "name: " << i->name()  << endl;
-        
-        cout << "result it type: "<< typeid(*i).name() << endl;
-        cout << "result it type: "<< typeid(i.load()).name() << endl; 
-        shared_ptr<measure> p1 = i.load();
-        shared_ptr<measure> p2 = i.load();
-        
-        bool eq = p1 == p2;
-        cout << "same pointer? " << eq << endl;
-        
+        cout << "name: " << i->name()  << endl;
     }
-    
-    
-    shared_ptr<measure> sp;
-    cout << "shared_ptr type: " << typeid(sp).name() << endl;
-    
     
     t.commit();
     
