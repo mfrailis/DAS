@@ -42,7 +42,7 @@ namespace das {
             auto_commit(local_trans, transaction);
 
             // bind loaded object with this database
-            pobj->bundle_ = bundle_;
+            pobj->bundle_ = bundle_;            
             return pobj;
         }
 

@@ -14,7 +14,12 @@
 using std::tr1::shared_ptr;
 
 class QLVisitor;
-namespace das{namespace tpl{class Database; class Transaction;}}
+namespace das{namespace tpl{
+    class Database;
+    class Transaction;
+    template<typename T>
+    class result_iterator;
+}}
 
 #pragma db object abstract
 class DasObject
@@ -99,6 +104,7 @@ private:
   friend class das::tpl::Database;
   friend class das::tpl::Transaction;
   friend class das::tpl::DbBundle;
+  template <typename T> friend class das::tpl::result_iterator;
   friend class QLVisitor;
 //  template <typename T> friend class DasVector;
 //  template <typename T> friend void ::swap(DasVector<T> &x, DasVector<T> &y);

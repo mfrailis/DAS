@@ -73,20 +73,12 @@ int main(int argc, char * argv[]) {
         D::Result<measure> r = db->query<measure>(
                 "measure_session.session_campaign.name == 'campaign_1'",
                 "startdate asc");
-       
         
-        for (D::Result<measure>::iterator i = r.begin(); i != r.end(); ++i) {
-            cout << "name: " << i->name() << endl;
-            shared_ptr<measure> ptr = i.load();
-            
-            measure m = *i;
+        for (D::Result<measure>::const_iterator i = r.cbegin(); i != r.cend(); ++i) {
+            cout << i->name() << " " << i->version() << endl;
         }
-
+        
         t2.commit();
-
     }
-
-
     return 0;
-
 }

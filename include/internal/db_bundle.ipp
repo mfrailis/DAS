@@ -58,8 +58,7 @@ namespace das {
         template<typename T>
         long long
         DbBundle::persist(const shared_ptr<T> &obj, std::string path) {
-            odb::session::current(*session_);
-            //shared_ptr<Database> self = self_.lock(); //always succesful
+
             if (!obj->is_new()) {
                 if (operator !=(obj->bundle_)) // another db intance owns this obj
                 {
@@ -68,7 +67,7 @@ namespace das {
                 return obj->das_id_;
             } //FIXME should we do an update insted?
 
-            if (!obj->bundle_.blank()) // shold never happen
+            if (!obj->bundle_.blank()) // should never happen
             {
 #ifdef VDBG
                 std::cout << "DAS debug INFO: ERROR: obj '" << obj->name_ << "' is new and his bundle isn't blank" << std::endl;
@@ -79,6 +78,7 @@ namespace das {
             if (obj->version_ != 0)std::cout << "DAS debug INFO: WARNING: changing version number while persisting obj " << obj->name_ << std::endl; //DBG
 #endif
             typedef odb::result<max_version> result;
+            odb::session::reset_current();
             result r(db_->query<max_version> ("SELECT MAX(version) FROM " + obj->type_name_ + " WHERE name = '" + obj->name_ + "'"));
             result::iterator i(r.begin());
 
@@ -89,6 +89,7 @@ namespace das {
             }
 
             obj->save_data(path);
+            odb::session::current(*session_);
             obj->persist_associated_pre(*this);
 #ifdef VDBG
             std::cout << "DAS debug INFO: PRS " << obj->name_ << "... "; //DBG

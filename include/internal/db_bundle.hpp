@@ -87,8 +87,8 @@ namespace das {
             WeakDbBundle(const DbBundle &rhs) :
             db_alias_(rhs.db_alias_),
             db_(rhs.db_),
-            session_(rhs.session_) {
-            }
+            session_(rhs.session_)
+            {}
 
             WeakDbBundle& operator=(const DbBundle &rhs) {
                 db_alias_ = rhs.db_alias_;
@@ -147,7 +147,7 @@ namespace das {
                 db_.reset();
                 session_.reset();
             }
-
+            
         private:
             std::string db_alias_;
             weak_ptr<odb::database> db_;
@@ -158,8 +158,6 @@ namespace das {
         DbBundle::operator==(const WeakDbBundle &rhs) const {
             return db_ == rhs.db() && session_ == rhs.session();
         }
-
-
 
     }
 }
