@@ -3,8 +3,6 @@ def getter(association, pub_type, priv_type, class_name):
 '''+class_name+'::'+pub_type+'''
 '''+class_name+"::"+association.name +''' ()
 {
-  odb::transaction *transaction;
-
   '''+pub_type+''' associated;
   if(is_new())
   {
@@ -16,56 +14,19 @@ def getter(association, pub_type, priv_type, class_name):
   }
   else
   {
-    das::tpl::DbBundle bundle = bundle_.lock();
-    const shared_ptr<odb::database> &db = bundle.db();
-    const shared_ptr<odb::session> &session = bundle.session();
-    if(bundle.valid())
+    shared_ptr<odb::session> s = bundle_.lock_session(false);
+    if(s)
+      odb::session::current(*s);
+    try
     {
-      odb::session::current(*session);
-      bool local_trans = !odb::transaction::has_current();
-      if(local_trans)
-      {
-        transaction = new odb::transaction(db->begin());
-      }
-      else
-      {
-        transaction = &odb::transaction::current();
-      }
-      try
-      {
-        for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
-          associated.push_back(i->load());
-      }
-      catch(std::exception &e)
-      {
-        if(local_trans)
-        {
-          transaction->rollback();
-          delete transaction;
-        }
-        throw;
-      }
-      if(local_trans)
-      {
-        transaction->commit();
-        delete transaction;
-      }
+      for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
+        associated.push_back(i->load());
     }
-    else
+    catch(odb::not_in_transaction &e)
     {
-      try
-      {
-        for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
-        {
-          associated.push_back(i->load());
-        }
-      }
-      catch(odb::not_in_transaction &e)
-      {
-        throw das::not_in_managed_context();
-      }
-    }// if bundle.valid()
-  }// if ix_new()   
+      throw das::not_in_managed_context();
+    }
+  }// if is_new()   
   return associated;
 }''']
 ###############################################################################################################################################
@@ -86,10 +47,9 @@ void
   else //if is_new()
   {
     current_vec = '''+association.name+'''();
-    das::tpl::DbBundle bundle = bundle_.lock();
-    const shared_ptr<odb::database> &db = bundle.db();
-    const shared_ptr<odb::session> &session = bundle.session();
-    if(bundle.valid())
+    das::tpl::DbBundle b = bundle_.lock();
+    shared_ptr<odb::session> s = b.lock_session(false);
+    if(b.valid())
     {
       //check new association compatibility
       for ('''+pub_type+'''::iterator i = '''+association.name+'''_new.begin(); i != '''+association.name+'''_new.end(); ++i)
@@ -99,8 +59,8 @@ void
           if(!(*i)->is_new())
           {
             das::tpl::DbBundle new_bundle = (*i)->bundle_.lock();
-            if((new_bundle.valid() && new_bundle != bundle) ||
-               (new_bundle.alias() != bundle.alias()))
+            if((new_bundle.valid() && new_bundle != b) ||
+               (new_bundle.alias() != b.alias()))
             {
               throw das::wrong_database();
             }
@@ -113,12 +73,12 @@ void
       {
         if(!(*i)->is_new())
         {
-          bundle.attach<'''+association.atype+'''>(*i);
+          b.attach<'''+association.atype+'''>(*i);
         }
       }
 
     }
-    else //(if bundle.valid())
+    else //(if b.valid())
     {
       for('''+pub_type+'''::iterator i= current_vec.begin(); i!=current_vec.end();i++)
       {
@@ -165,7 +125,6 @@ void
 ###############################################################################################################################################
 def update(association, priv_type):
     return '''
-  //das::tpl::DbBundle bundle = bundle_.lock();
   for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
   {
     shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = (*i).get_eager();

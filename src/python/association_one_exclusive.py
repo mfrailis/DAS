@@ -3,8 +3,6 @@ def getter(association, pub_type, priv_type, class_name):
 '''+pub_type+'''  
 '''+class_name+"::"+association.name +''' ()
 {
-  odb::transaction *transaction;
-
   '''+pub_type+''' associated;
   if(is_new())
   {
@@ -13,51 +11,17 @@ def getter(association, pub_type, priv_type, class_name):
   }
   else
   {
-    das::tpl::DbBundle bundle = bundle_.lock();
-    const shared_ptr<odb::database> &db = bundle.db();
-    const shared_ptr<odb::session> &session = bundle.session();
-    if(bundle.valid())
+    shared_ptr<odb::session> s = bundle_.lock_session(false);
+    if(s)
+      odb::session::current(*s);
+    try
     {
-      odb::session::current(*session);
-      bool local_trans = !odb::transaction::has_current();
-      if(local_trans)
-      {
-        transaction = new odb::transaction(db->begin());
-      }
-      else
-      {
-        transaction = &odb::transaction::current();
-      }
-      try
-      {
-        associated = '''+association.name+'''_.load();
-      }
-      catch(std::exception &e)
-      {
-        if(local_trans)
-        {
-          transaction->rollback();
-          delete transaction;
-        }
-        throw;
-      }
-      if(local_trans)
-      {
-        transaction->commit();
-        delete transaction;
-      }
+      associated = '''+association.name+'''_.load();
     }
-    else
+    catch(odb::not_in_transaction &e)
     {
-      try
-      {
-        associated = '''+association.name+'''_.load();
-      }
-      catch(odb::not_in_transaction &e)
-      {
-        throw das::not_in_managed_context();
-      }
-    }// if bundle.expired()
+      throw das::not_in_managed_context();
+    }
   }// if if_new()
   return associated;
 }''']
@@ -79,18 +43,18 @@ void
   else //if is_new()
   {
     shared_ptr<'''+association.atype+'''> current = '''+association.name +'''();
-    das::tpl::DbBundle bundle = bundle_.lock();
-    const shared_ptr<odb::database> &db = bundle.db();
-    const shared_ptr<odb::session> &session = bundle.session();
-    if(bundle.valid())
+    das::tpl::DbBundle b = bundle_.lock();
+    const shared_ptr<odb::database> &db = b.db();
+    shared_ptr<odb::session> s = b.lock_session(false);
+    if(b.valid())
     {
 
       //check new association compatibility
       if(!'''+association.name+'''_new->is_new())
       {
         das::tpl::DbBundle new_bundle = '''+association.name+'''_new->bundle_.lock();
-        if((new_bundle.valid() && new_bundle != bundle) ||
-           (new_bundle.alias() != bundle.alias()))
+        if((new_bundle.valid() && new_bundle != b) ||
+           (new_bundle.alias() != b.alias()))
         {
           throw das::wrong_database();
         }
@@ -100,11 +64,11 @@ void
       // add old association to the cache if is not new
         if(!current->is_new())
         {
-          bundle.attach<'''+association.atype+'''>(current);
+          b.attach<'''+association.atype+'''>(current);
         }
       }
     }
-    else //(if bundle.valid())
+    else //(if b.valid())
     {
       if(current && !current->is_new())
       {

@@ -3,7 +3,7 @@
 #include "db_bundle.hpp"
 #include "aux_query.hpp"
 #include "../ddl/types/mysql/aux_query-odb.hxx"
-
+#include "../internal/log.hpp"
 namespace das {
 
     namespace tpl {
@@ -13,43 +13,33 @@ namespace das {
         void
         DbBundle::attach(const shared_ptr<T> &obj) {
             if (!valid()) {
-#ifdef VDBG
-                std::cout << "DAS info: pointers to db or session not valid" << std::endl;
-#endif               
+                DAS_LOG_DBG("DAS info: pointers to db or session not valid");
                 throw das::not_in_managed_context();
             }
             if (obj->is_new()) {
-#ifdef VDBG
-                std::cout << "DAS info: trying to attach an object without persisting firts" << std::endl;
-#endif
+                DAS_LOG_DBG("DAS info: trying to attach an object without persisting firts");
                 throw das::new_object();
             }
             if (!obj->bundle_.expired()) {
                 if (obj->bundle_ != *this) {
-#ifdef VDBG
-                    std::cout << "DAS info: ERROR: trying to attach an object managed by other database" << std::endl;
-#endif
+                    DAS_LOG_DBG("DAS info: ERROR: trying to attach an object managed by other database");
                     throw das::wrong_database();
                 } else
                     return;
             }
-
-            odb::session::current(*session_);
-            shared_ptr<T> cache_hit = session_->cache_find<T>(*db_, obj->das_id_);
+            shared_ptr<odb::session> s = lock_session(true);
+            odb::session::current(*s);
+            shared_ptr<T> cache_hit = s->cache_find<T>(*db_, obj->das_id_);
             if (cache_hit) {
                 if (cache_hit != obj) {
-#ifdef VDBG
-                    std::cout << "DAS info: ERROR: another copy of this object found in cache" << std::endl;
-#endif              
+                    DAS_LOG_DBG("DAS info: ERROR: another copy of this object found in cache");
                     throw das::object_not_unique();
                 } else {
-#ifdef VDBG
-                    std::cout << "DAS info: obj found cache but not attached to db: if you are loading from a query result please ignore this message" << std::endl;
-#endif              
+                    DAS_LOG_DBG("DAS info: obj found cache but not attached to db: if you are loading from a query result ignore this message");
                     cache_hit->bundle_ = *this;
                 }
             } else {
-                session_->cache_insert<T>(*db_, obj->das_id_, obj);
+                s->cache_insert<T>(*db_, obj->das_id_, obj);
                 obj->bundle_ = *this;
             }
 
@@ -69,14 +59,16 @@ namespace das {
 
             if (!obj->bundle_.blank()) // should never happen
             {
-#ifdef VDBG
-                std::cout << "DAS debug INFO: ERROR: obj '" << obj->name_ << "' is new and his bundle isn't blank" << std::endl;
-#endif            
+                DAS_LOG_DBG("DAS debug INFO: ERROR: obj '" << obj->name_ << "' is new and his bundle isn't blank");
                 throw wrong_database();
             }
-#ifdef VDBG
-            if (obj->version_ != 0)std::cout << "DAS debug INFO: WARNING: changing version number while persisting obj " << obj->name_ << std::endl; //DBG
-#endif
+
+            DAS_DBG
+            (
+                    if (obj->version_ != 0)
+                        DAS_LOG_DBG("DAS debug INFO: WARNING: changing version number while persisting obj " << obj->name_);
+            );
+
             typedef odb::result<max_version> result;
             odb::session::reset_current();
             result r(db_->query<max_version> ("SELECT MAX(version) FROM " + obj->type_name_ + " WHERE name = '" + obj->name_ + "'"));
@@ -87,17 +79,15 @@ namespace das {
             } else {
                 obj->version_ = 1;
             }
-
+            shared_ptr<odb::session> s = lock_session(true);
+            
             obj->save_data(path);
-            odb::session::current(*session_);
-            obj->persist_associated_pre(*this);
-#ifdef VDBG
-            std::cout << "DAS debug INFO: PRS " << obj->name_ << "... "; //DBG
-#endif
+            odb::session::current(*s);
+
+            DAS_LOG_DBG("DAS debug INFO: PRS " << obj->name_ << "... ");
             long long id = db_->persist(obj);
-#ifdef VDBG
-            std::cout << "done: id= " << id << std::endl;
-#endif
+            DAS_LOG_DBG("done: id= " << id);
+
             obj->persist_associated_post(*this);
             obj->is_dirty_ = false;
 
@@ -105,7 +95,12 @@ namespace das {
             obj->bundle_ = *this;
             return id;
         }
-
+        
+        inline
+        void
+        DbBundle::reset_session(const shared_ptr<odb::session> &ptr){
+            session_ = ptr;
+        }
     }
 }
 #endif	/* DB_BUNDLE_IPP */

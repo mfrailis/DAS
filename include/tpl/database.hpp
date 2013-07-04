@@ -78,28 +78,27 @@ namespace das {
             void
             flush();
 
+            void
+            begin_session();
+
+            void
+            end_session();
+
         protected:
 
             Database(const std::string &db_alias,
-                    const shared_ptr<odb::database> &db,
-                    const shared_ptr<odb::session> &session)
-            : bundle_(db_alias, db, session) {
+                    const shared_ptr<odb::database> &db)
+            : bundle_(db_alias, db) {
             }
         private:
             friend class Transaction;
-
-            odb::transaction*
-            auto_begin(bool &is_auto);
-
-            void
-            auto_catch(bool is_auto, odb::transaction *t);
-
-            void
-            auto_commit(bool is_auto, odb::transaction *t);
-
+            
+            shared_ptr<odb::session> extended_;
             DbBundle bundle_;
             DdlInfo *info_;
         };
+
+
     }//namespace tpl
 }//namespace das
 

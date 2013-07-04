@@ -33,7 +33,8 @@ namespace das {
             load() {
                 if (! *loaded_) {
                     DbBundle db = bundle_.lock(true);
-                    odb::session::current(*db.session());
+                    shared_ptr<odb::session> s = db.lock_session(true);
+                    odb::session::current(*s);
                     *entry_ = super::load();
                     db.attach(*entry_);
                     *loaded_ = true;

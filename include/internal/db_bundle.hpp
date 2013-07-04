@@ -22,6 +22,12 @@ namespace das {
             }
 
             DbBundle(const std::string &alias,
+                    const shared_ptr<odb::database> &db) :
+            db_alias_(alias),
+            db_(db) {
+            }
+
+            DbBundle(const std::string &alias,
                     const shared_ptr<odb::database> &db,
                     const shared_ptr<odb::session> &session) :
             db_alias_(alias),
@@ -30,7 +36,7 @@ namespace das {
             }
 
             bool operator ==(const DbBundle&rhs) const {
-                return db_ == rhs.db_ && session_ == rhs.session_;
+                return db_ == rhs.db_ && session_.lock() == rhs.session_.lock();
             }
 
             bool operator !=(const DbBundle&rhs) const {
@@ -53,16 +59,25 @@ namespace das {
                 return db_;
             }
 
-            const shared_ptr<odb::session>&
-            session() const {
-                return session_;
+            shared_ptr<odb::session>
+            lock_session(bool throw_on_expired = true) const {
+                shared_ptr<odb::session> session = session_.lock(); //may be null
+                if (throw_on_expired && !session)
+                    throw das::not_in_session();
+                return session;
             }
 
             bool
             valid() const {
-                return db_ && session_;
+                return db_ && !session_.expired();
             }
 
+            void
+            reset_session(const shared_ptr<odb::session> &ptr);
+
+            void
+            reset_session();
+            
             template<typename T>
             void
             attach(const shared_ptr<T>& obj);
@@ -75,7 +90,7 @@ namespace das {
             friend class WeakDbBundle;
             std::string db_alias_;
             shared_ptr<odb::database> db_;
-            shared_ptr<odb::session> session_;
+            weak_ptr<odb::session> session_;
         };
 
         class WeakDbBundle {
@@ -87,8 +102,8 @@ namespace das {
             WeakDbBundle(const DbBundle &rhs) :
             db_alias_(rhs.db_alias_),
             db_(rhs.db_),
-            session_(rhs.session_)
-            {}
+            session_(rhs.session_) {
+            }
 
             WeakDbBundle& operator=(const DbBundle &rhs) {
                 db_alias_ = rhs.db_alias_;
@@ -98,7 +113,7 @@ namespace das {
             }
 
             bool operator ==(const DbBundle &rhs) const {
-                return db() == rhs.db() && session() == rhs.session();
+                return lock_db(false) == rhs.db() && lock_session(false) == rhs.lock_session(false);
             }
 
             bool operator !=(const DbBundle &rhs) const {
@@ -110,14 +125,20 @@ namespace das {
                 return db_alias_;
             }
 
-            const shared_ptr<odb::database>
-            db() const {
-                return db_.lock();
+            shared_ptr<odb::database>
+            lock_db(bool throw_on_expired = true) const {
+                shared_ptr<odb::database> database = db_.lock();
+                if (throw_on_expired && !database)
+                    throw das::no_database();
+                return database;
             }
 
-            const shared_ptr<odb::session>
-            session() const {
-                return session_.lock();
+            shared_ptr<odb::session>
+            lock_session(bool throw_on_expired = true) const {
+                shared_ptr<odb::session> session = session_.lock(); //may be null
+                if (throw_on_expired && !session)
+                    throw das::not_in_session();
+                return session;
             }
 
             bool
@@ -131,13 +152,13 @@ namespace das {
             }
 
             DbBundle
-            lock(bool throw_on_expired = false) const{
+            lock(bool throw_on_expired = true) const {
 
                 shared_ptr<odb::database> db = db_.lock();
-                shared_ptr<odb::session> session = session_.lock();
-                if(throw_on_expired && expired())
+                shared_ptr<odb::session> session = session_.lock(); //may be null
+                if (throw_on_expired && expired())
                     throw das::not_in_managed_context();
-                
+
                 return DbBundle(db_alias_, db, session);
             }
 
@@ -147,7 +168,7 @@ namespace das {
                 db_.reset();
                 session_.reset();
             }
-            
+
         private:
             std::string db_alias_;
             weak_ptr<odb::database> db_;
@@ -156,7 +177,7 @@ namespace das {
 
         inline bool
         DbBundle::operator==(const WeakDbBundle &rhs) const {
-            return db_ == rhs.db() && session_ == rhs.session();
+            return db_ == rhs.lock_db(false) && session_.lock() == rhs.lock_session(false);
         }
 
     }

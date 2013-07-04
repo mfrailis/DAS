@@ -49,7 +49,7 @@
     
     
     <type name="measure" >
-        <associated name="measure_session" type="session" multiplicity="one" relation="shared"/>
+        <associated name="measure_session" type="session" multiplicity="one" relation="exclusive"/>
         <associated name="log" type="measurelogs" multiplicity="many" relation="exclusive"/>
         <metadata>
             <keyword name="run_id" type="int32"/>
@@ -61,7 +61,7 @@
     
     
     <type name="measurelogs">
-        <associated name="images" type="measurelogimages" multiplicity="many" relation="exclusive"/>        
+        <associated name="images" type="measurelogimages" multiplicity="many" relation="shared"/>        
         <metadata>
             <keyword name="text" type="text"/>
             <keyword name="creation_date" type="int64"/>

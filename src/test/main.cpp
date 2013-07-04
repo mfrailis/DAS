@@ -59,9 +59,9 @@ int main(int argc, char * argv[]) {
 
     {
         shared_ptr<D::Database> db = D::Database::create("test_level1");
-        shared_ptr<session> ss = db->load<session>(ss_id);
 
         D::Transaction t(db->begin());
+        shared_ptr<session> ss = db->load<session>(ss_id);
         for (std::vector<shared_ptr<measure> >::iterator i = ms.begin(); i < ms.end(); i++) {
             (*i)->measure_session(ss);
             db->persist(*i);

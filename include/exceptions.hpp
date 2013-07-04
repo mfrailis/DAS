@@ -214,6 +214,30 @@ namespace das
     
   }; //TODO 
   
+  class already_in_session : public std::exception
+  {
+  public :
+    virtual const char*
+    what() const throw()
+    {
+      return "another session is active onto this database";
+    }
+  private:
+      char * errstr_;
+    
+  }; //TODO 
+    class not_in_session : public std::exception
+  {
+  public :
+    virtual const char*
+    what() const throw()
+    {
+      return "no session or transaction active onto this database";
+    }
+  private:
+      char * errstr_;
+    
+  }; //TODO 
   
 }
 

@@ -59,7 +59,7 @@ class DdlOdbGenerator(DdlVisitor):
 
   def clean_env(self):
     self._header = []
-    self._src_header = []
+    self._src_header = ['#include "internal/log.hpp"']
     self._inherit = ""
     self._class_name = ""
     self._forward_section = []
@@ -326,14 +326,10 @@ inline const shared_ptr<'''+self._class_name+'''>&
       s.writelines(['void\n',self._class_name+'::update()\n{\n'])
       s.writelines(['''  if(is_dirty_ && !is_new())
   {
-#ifdef VDBG
-    std::cout << "DAS debug INFO: UPD name:'" << name() << "' version:" << version() <<"...";
-#endif   
-    bundle_.db()->update(*this);
+    DAS_LOG_DBG("DAS debug INFO: UPD name:'" << name() << "' version:" << version() <<"...");
+    bundle_.lock_db(true)->update(*this);
     is_dirty_ = false;
-#ifdef VDBG
-    std::cout << "done." << std::endl;
-#endif 
+    DAS_LOG_DBG("done.");
   }
 '''])      
       if self._inherit != 'DasObject':
@@ -349,7 +345,7 @@ void
 '''+self._class_name+'''::update()
 {
   if(is_dirty_)
-   bundle_.db()->update(*this);
+    bundle_.lock_db(true)->update(*this);
 }
 '''])
 

@@ -10,6 +10,8 @@
 
 #include "../exceptions.hpp"
 #include "../internal/db_bundle.hpp"
+#include "../internal/log.hpp"
+
 using std::tr1::shared_ptr;
 using std::tr1::weak_ptr;
 
@@ -23,12 +25,13 @@ class Database;
 class Transaction
 {
 public:
-    Transaction(const DbBundle &bundle);
+    Transaction(const shared_ptr<odb::database> &db,const shared_ptr<odb::session> &s);
     void commit();
     void rollback();
 private:
-     WeakDbBundle w_bundle_;
      shared_ptr<odb::transaction> transaction_;
+     shared_ptr<odb::session> session_;
+     shared_ptr<odb::database> db_;
 };
     
 }//namespace tpl

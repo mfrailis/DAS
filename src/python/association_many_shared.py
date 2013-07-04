@@ -3,8 +3,6 @@ def getter(association, pub_type, priv_type, class_name):
 '''+class_name+'::'+pub_type+'''
 '''+class_name+"::"+association.name +''' ()
 {
-  odb::transaction *transaction;
-
   '''+pub_type+''' associated;
   if(is_new())
   {
@@ -14,57 +12,22 @@ def getter(association, pub_type, priv_type, class_name):
   }
   else
   {
-    das::tpl::DbBundle bundle = bundle_.lock();
-
-    const shared_ptr<odb::database> &db = bundle.db();
-    const shared_ptr<odb::session> &session = bundle.session();
-
-    if(bundle.valid())
+    shared_ptr<odb::session> s = bundle_.lock_session(false);
+    if(s)
     {
-      odb::session::current(*session);
-      bool local_trans = !odb::transaction::has_current();
-      if(local_trans)
+      odb::session::current(*s);
+    }
+    try
+    {
+      for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
       {
-        transaction = new odb::transaction(db->begin());
-      }
-      else
-      {
-        transaction = &odb::transaction::current();
-      }
-      try
-      {
-        for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
-          associated.push_back(i->load()); // load only if not already in cache
-      }
-      catch(std::exception &e)
-      {
-        if(local_trans)
-        {
-          transaction->rollback();
-          delete transaction;
-        }
-        throw;
-      }
-      if(local_trans)
-      {
-        transaction->commit();
-        delete transaction;
+        associated.push_back(i->load());
       }
     }
-    else //if(bundle.valid())
+    catch(odb::not_in_transaction &e)
     {
-      try
-      {
-        for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
-        {
-          associated.push_back(i->load());
-        }
-      }
-      catch(odb::not_in_transaction &e)
-      {
-        throw das::not_in_managed_context();
-      }
-    }// if bundle.valid()
+      throw das::not_in_managed_context();
+    }
   }// if is_new()
   return associated;
 }''']
@@ -89,7 +52,6 @@ void
 ###############################################################################################################################################
 def update(association, priv_type):
     return '''
-  //das::tpl::DbBundle bundle = bundle_.lock();
   for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
   {
     shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = (*i).get_eager();

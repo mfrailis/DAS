@@ -13,51 +13,19 @@ def getter(association, pub_type, priv_type, class_name):
   }
   else
   {
-    das::tpl::DbBundle bundle = bundle_.lock(); 
-    const shared_ptr<odb::database> &db = bundle.db();
-    const shared_ptr<odb::session> &session = bundle.session();
-    if(bundle.valid())
+    shared_ptr<odb::session> s = bundle_.lock_session(false);
+    if(s)
     {
-      odb::session::current(*session);
-      bool local_trans = !odb::transaction::has_current();
-      if(local_trans)
-      {
-        transaction = new odb::transaction(db->begin());
-      }
-      else
-      {
-        transaction = &odb::transaction::current();
-      }
-      try
-      {
-        associated = '''+association.name+'''_.load();
-      }
-      catch(std::exception &e)
-      {
-        if(local_trans)
-        {
-          transaction->rollback();
-          delete transaction;
-        }
-        throw;
-      }
-      if(local_trans)
-      {
-        transaction->commit();
-        delete transaction;
-      }
+      odb::session::current(*s);
     }
-    else
+    try
     {
-      try
-      {
-        associated = '''+association.name+'''_.load();
-      }
-      catch(odb::not_in_transaction &e)
-      {
-        throw das::not_in_managed_context();
-      }
-    }// if bundle.valid()
+      associated = '''+association.name+'''_.load();
+    }
+    catch(odb::not_in_transaction &e)
+    {
+      throw das::not_in_managed_context();
+    }
   }// if is_new() 
   return associated;
 }''']
