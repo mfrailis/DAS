@@ -185,7 +185,11 @@ def _association_info_gen(base_name,ass_name,association):
         else:
             return 'AssociationInfo("'+association.atype+'","'+association.atype+'","","'+base_name+'_'+ass_name+'")'
     else:
-        return 'AssociationInfo("'+association.atype+'","'+base_name+'","'+ass_name+'","")'
+        if association.relation == 'shared':
+            return 'AssociationInfo("'+association.atype+'","'+base_name+'","'+ass_name+'","")'
+        else:
+            return 'AssociationInfo("'+association.atype+'","'+association.atype+'","","'+base_name+'_'+ass_name+'")'
+            
     
             
 
