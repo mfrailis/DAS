@@ -77,6 +77,9 @@ namespace das {
 
             void
             reset_session();
+                        
+            void
+            flush_session();
             
             template<typename T>
             void
@@ -85,6 +88,7 @@ namespace das {
             template<typename T>
             long long
             persist(const shared_ptr<T> &obj, std::string path = "");
+
 
         private:
             friend class WeakDbBundle;

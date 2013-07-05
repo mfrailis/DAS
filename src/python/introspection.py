@@ -46,7 +46,7 @@ class DdlInfoGenerator(_odb.DdlVisitor):
         self._get_columns(data_type.name)
         self._get_associations(data_type.name)
 
-        self._init_keywords.append('all_keywords_["essentialMetadata"]["das_id"] = KeywordInfo("name","int64","none","object id");')
+        self._init_keywords.append('all_keywords_["'+data_type.name+'"]["das_id"] = KeywordInfo("das_id","int64","none","object id");')
         for k in self._keywords:
             if k.description is None:
                 d = ""
@@ -75,6 +75,7 @@ class DdlInfoGenerator(_odb.DdlVisitor):
                 self._DdlInfo_children[ddl].append('associations_["'+data_type.name+'"] = &all_associations_["'+data_type.name+'"];')
 
     def visit_type_list(self,_):
+
         f = open(_os.path.join(self._src_dir, 'ddl_info.cpp'), 'w')
         f.writelines('#include "'+ddl+'.hpp"\n' for ddl in set(self._db_map.values()))
         f.writelines(['\nvoid\n','DdlInfo::init()\n','{\n'])

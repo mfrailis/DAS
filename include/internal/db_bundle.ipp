@@ -4,6 +4,7 @@
 #include "aux_query.hpp"
 #include "../ddl/types/mysql/aux_query-odb.hxx"
 #include "../internal/log.hpp"
+#include "../das_object.hpp"
 namespace das {
 
     namespace tpl {
@@ -12,10 +13,7 @@ namespace das {
         inline
         void
         DbBundle::attach(const shared_ptr<T> &obj) {
-            if (!valid()) {
-                DAS_LOG_DBG("DAS info: pointers to db or session not valid");
-                throw das::not_in_managed_context();
-            }
+
             if (obj->is_new()) {
                 DAS_LOG_DBG("DAS info: trying to attach an object without persisting firts");
                 throw das::new_object();
@@ -27,7 +25,8 @@ namespace das {
                 } else
                     return;
             }
-            shared_ptr<odb::session> s = lock_session(true);
+            // throws an exception if the session is expired
+            shared_ptr<odb::session> s = lock_session(true); 
             odb::session::current(*s);
             shared_ptr<T> cache_hit = s->cache_find<T>(*db_, obj->das_id_);
             if (cache_hit) {
@@ -41,6 +40,7 @@ namespace das {
             } else {
                 s->cache_insert<T>(*db_, obj->das_id_, obj);
                 obj->bundle_ = *this;
+                obj->is_dirty_ = true;
             }
 
         }
@@ -64,10 +64,10 @@ namespace das {
             }
 
             DAS_DBG
-            (
-                    if (obj->version_ != 0)
-                        DAS_LOG_DBG("DAS debug INFO: WARNING: changing version number while persisting obj " << obj->name_);
-            );
+                    (
+            if (obj->version_ != 0)
+                    DAS_LOG_DBG("DAS debug INFO: WARNING: changing version number while persisting obj " << obj->name_);
+                    );
 
             typedef odb::result<max_version> result;
             odb::session::reset_current();
@@ -80,10 +80,12 @@ namespace das {
                 obj->version_ = 1;
             }
             shared_ptr<odb::session> s = lock_session(true);
-            
-            obj->save_data(path);
-            odb::session::current(*s);
 
+            obj->save_data(path);
+                      
+            odb::session::current(*s);
+            obj->persist_associated_pre(*this); 
+            
             DAS_LOG_DBG("DAS debug INFO: PRS " << obj->name_ << "... ");
             long long id = db_->persist(obj);
             DAS_LOG_DBG("done: id= " << id);
@@ -95,12 +97,14 @@ namespace das {
             obj->bundle_ = *this;
             return id;
         }
-        
+
         inline
         void
-        DbBundle::reset_session(const shared_ptr<odb::session> &ptr){
+        DbBundle::reset_session(const shared_ptr<odb::session> &ptr) {
             session_ = ptr;
         }
+
+
     }
 }
 #endif	/* DB_BUNDLE_IPP */

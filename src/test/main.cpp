@@ -4,6 +4,7 @@
 #include "tpl/database.hpp"
 #include "tpl/transaction.hpp"
 #include "ddl/types.hpp"
+#include "ddl/types/ddl_measure.hpp"
 
 
 
@@ -24,8 +25,8 @@ int main(int argc, char * argv[]) {
 
         shared_ptr<site> s = site::create("site_name");
         shared_ptr<testlevel> tl = testlevel::create("test_level_name");
-        shared_ptr<campaign> camp = campaign::create("campaign_name");
-        shared_ptr<session> ss = session::create("session_name");
+        shared_ptr<campaign> camp = campaign::create("campaign_2");
+        shared_ptr<session> ss = session::create("session_2");
 
         camp->campaign_site(s);
         camp->campaign_test(tl);
@@ -59,7 +60,7 @@ int main(int argc, char * argv[]) {
 
     {
         shared_ptr<D::Database> db = D::Database::create("test_level1");
-
+        db->begin_session();
         D::Transaction t(db->begin());
         shared_ptr<session> ss = db->load<session>(ss_id);
         for (std::vector<shared_ptr<measure> >::iterator i = ms.begin(); i < ms.end(); i++) {
@@ -69,16 +70,17 @@ int main(int argc, char * argv[]) {
         t.commit();
 
         D::Transaction t2(db->begin());
-
         D::Result<measure> r = db->query<measure>(
                 "measure_session.session_campaign.name == 'campaign_1'",
                 "startdate asc");
         
+        cout << "QUERY RESULT" << endl;
         for (D::Result<measure>::const_iterator i = r.cbegin(); i != r.cend(); ++i) {
             cout << i->name() << " " << i->version() << endl;
         }
         
         t2.commit();
+        db->end_session();
     }
     return 0;
 }

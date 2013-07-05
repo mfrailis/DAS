@@ -62,10 +62,22 @@ def update(association, priv_type):
 
 
 ###############################################################################################################################################
+#persist_associated_pre()
 def persist(association, priv_type):
     return '''
   shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = '''+association.name+'''_.get_eager();
   if('''+association.name+'''_temp) // the association may not be setted
     db.persist<'''+association.atype+'''> ('''+association.name+'''_temp);
+
+'''
+###############################################################################################################################################
+
+
+###############################################################################################################################################
+def attach(association, priv_type):
+  return '''
+  shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = ptr->'''+association.name+'''_.get_eager();
+  if('''+association.name+'''_temp && !'''+association.name+'''_temp->is_new()) // the association may not be setted
+    '''+association.atype+'''::attach('''+association.name+'''_temp,bundle);
 
 '''

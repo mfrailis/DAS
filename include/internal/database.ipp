@@ -26,7 +26,7 @@ namespace das {
                 s.reset(new odb::session());
                 bundle_.reset_session(s);
             }
-            return Transaction(bundle_.db(),s);
+            return Transaction(bundle_,s);
         }
 
         template<typename T>
@@ -88,7 +88,9 @@ namespace das {
             QLVisitor exp_visitor(das_traits<T>::name, info_);
             std::string clause = exp_visitor.parse_exp(expression);
             std::string order = exp_visitor.parse_ord(ordering);
-
+            
+            //FIXME: update olny query types, not all the cache
+            bundle_.flush_session();
             DAS_LOG_DBG("DAS debug INFO: WHERE" << std::endl << clause + order);
 
             odb::result<T> odb_r(bundle_.db()->query<T>(clause + order));
@@ -102,8 +104,9 @@ namespace das {
         inline
         std::vector<long long>
         Database::query_id(const std::string& expression, const std::string& ordering) {
+
             std::vector<long long> ids;
-            Result<T> r = query<T>(expression, ordering);
+            Result<T> r = query<T>(expression, ordering);          
             for (typename Result<T>::iterator i(r.begin()); i != r.end(); ++i) {
                 ids.push_back(i.id());
             }
@@ -145,18 +148,21 @@ namespace das {
         inline
         void
         Database::attach(const shared_ptr<T> &obj) {
-            bundle_.attach<T>(obj);
+            //bundle_.attach<T>(obj);
+            T::attach(obj,bundle_);
         }
 
         inline
         void
         Database::flush() {
-            if (odb::transaction::has_current()) {
+/*            if (odb::transaction::has_current()) {
                 DAS_LOG_DBG("DAS info: WARNING: calling db flush() while another transaction was open.");
                 return;
             }
             Transaction t = begin();
             t.commit();
+*/
+            bundle_.flush_session();
         }
 
         template<typename T>

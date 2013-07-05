@@ -116,9 +116,26 @@ def update(association, priv_type):
 
 
 ###############################################################################################################################################
+#persist_associated_post()
 def persist(association, priv_type):
     return '''
   shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = '''+association.name+'''_.get_eager();
-  if('''+association.name+'''_temp) // the association may not be setted
-    db.persist<'''+association.atype+'''> ('''+association.name+'''_temp);
+  if('''+association.name+'''_temp){ // the association may not be setted
+    if('''+association.name+'''_temp->is_new())
+      db.persist<'''+association.atype+'''> ('''+association.name+'''_temp);
+    else
+      // the foreign key nedds to be updated with the new one from this object
+      '''+association.name+'''_temp->is_dirty_ = true;
+  }
+'''
+###############################################################################################################################################
+
+
+###############################################################################################################################################
+def attach(association, priv_type):
+  return '''
+  shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = ptr->'''+association.name+'''_.get_eager();
+  if('''+association.name+'''_temp && !'''+association.name+'''_temp->is_new()){ // the association may not be setted
+      '''+association.atype+'''::attach('''+association.name+'''_temp,bundle);
+  }
 '''

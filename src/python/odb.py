@@ -186,7 +186,7 @@ class DdlOdbGenerator(DdlVisitor):
 #  get_column(const std::string &column, long long start = 0LL, long long length = -1LL);
 #'''])
 
-# preotected section
+# protected section
     h.writelines([" protected:\n"])
     h.writelines("  "+l + "\n" for l in self._friends)
     h.writelines("  "+l + "\n" for l in self._protected_section)
@@ -196,6 +196,9 @@ class DdlOdbGenerator(DdlVisitor):
     h.writelines(["  void\n"])
     h.writelines(["  update();\n"])
 # private section
+    h.writelines(["  static\n"])
+    h.writelines(["  void\n"])
+    h.writelines(["  attach(const shared_ptr<"+self._class_name+"> &ptr, das::tpl::DbBundle &bundle);\n"])
     h.writelines(["  "+self._class_name+" (const std::string &name);\n"])
     h.writelines([" private:\n"])
     h.writelines("  "+l + "\n" for l in self._private_section)
@@ -348,6 +351,15 @@ void
     bundle_.lock_db(true)->update(*this);
 }
 '''])
+    s.writelines(['''
+void
+'''+self._class_name+'''::attach(const shared_ptr<'''+self._class_name+'''> &ptr,das::tpl::DbBundle &bundle)
+{
+  bundle.attach(ptr);
+'''])
+    for i in self._assoc_touples:
+      s.writelines([_def_attach_assoc(i[0],i[2])])
+    s.writelines(['}\n'])
 
 
     s.writelines(['shared_ptr<'+self._class_name+'> '+self._class_name+'::null_ptr_;\n'])
@@ -575,6 +587,18 @@ def _def_update_assoc(association, priv_type):
     else:
       return _a_oe.update(association, priv_type)
 
+
+def _def_attach_assoc(association, priv_type):
+  if association.multiplicity == 'many':
+    if association.relation == 'shared':
+      return _a_ms.attach(association, priv_type)
+    else:
+      return _a_me.attach(association, priv_type)
+  else:
+    if association.relation == 'shared':
+      return _a_os.attach(association, priv_type)
+    else:
+      return _a_oe.attach(association, priv_type)
 
 def _dec_getter(attribute_name, attribute_type):
   method_declaration = ["const " + attribute_type + "&"]

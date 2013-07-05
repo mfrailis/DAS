@@ -71,10 +71,24 @@ def update(association, priv_type):
 
 
 ###############################################################################################################################################
+#persist_associated_pre()
 def persist(association, priv_type):
     return '''  for('''+priv_type+'''::iterator i = '''+association.name+'''_.begin(); i != '''+association.name+'''_.end(); ++i)
   {
     shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = (*i).get_eager();
     db.persist<'''+association.atype+'''> ('''+association.name+'''_temp);
+  }
+'''
+###############################################################################################################################################
+
+
+
+###############################################################################################################################################
+def attach(association, priv_type):
+    return '''  for('''+priv_type+'''::iterator i = ptr->'''+association.name+'''_.begin(); i != ptr->'''+association.name+'''_.end(); ++i)
+  {
+    shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = (*i).get_eager();
+    if('''+association.name+'''_temp && !'''+association.name+'''_temp->is_new()) 
+      '''+association.atype+'''::attach('''+association.name+'''_temp,bundle);
   }
 '''
