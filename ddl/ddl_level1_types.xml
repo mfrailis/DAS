@@ -15,7 +15,12 @@
     
     <!-- 
         User defined types
-    -->   
+    -->  
+    
+    
+    <!-- 
+        Metadata for CIWS DPS measures
+    -->      
     
     
     <type name="campaign">
@@ -49,7 +54,7 @@
     
     
     <type name="measure" >
-        <associated name="measure_session" type="session" multiplicity="one" relation="exclusive"/>
+        <associated name="measure_session" type="session" multiplicity="one" relation="shared"/>
         <associated name="log" type="measurelogs" multiplicity="many" relation="exclusive"/>
         <metadata>
             <keyword name="run_id" type="int32"/>
@@ -61,7 +66,7 @@
     
     
     <type name="measurelogs">
-        <associated name="images" type="measurelogimages" multiplicity="many" relation="shared"/>        
+        <associated name="images" type="measurelogimages" multiplicity="many" relation="exclusive"/>        
         <metadata>
             <keyword name="text" type="text"/>
             <keyword name="creation_date" type="int64"/>
@@ -79,11 +84,11 @@
         </data>
     </type>   
     
-    
     <!-- 
         An example of a data type storing housekeeping timelines    
     -->
     <type name="lfiHkDaeSlowVoltage" description="DAE voltages - slow telemetry">
+        <associated name="reference_measure" type="measure" multiplicity="one" relation="shared"/>
         <metadata>
             <keyword name="run_id" type="string" description="test run ID (e.g. FUNC_0001)"/>
             <keyword name="startTime" description="start time of the timeline in UCT" type="int64" unit="ms"/>
@@ -96,6 +101,7 @@
         </metadata>
         <data>
             <binaryTable>
+                <column name="sampleOBT" type="int64" unit="2^-16 s" description="sample ob-board time"/>
                 <column name="sampleSCET" type="int64" unit="ms" description="sample time in UTC"/>
                 <column name="LM151322Raw" type="uint16" unit="ADU" description="I1 LFI27 M1 - Raw value"/>
                 <column name="LM151322Eng" type="float64" unit="V" description="I1 LFI27 M1 - Eng. value"/>
@@ -106,6 +112,80 @@
             </binaryTable>
         </data>
     </type>
+
+    <!-- 
+        A data type storing raw image frames of a telescope using CCD detectors    
+    -->
+    <type name="rawScienceFrame" description="single exposure of CCD detectors">
+        <associated name="reference_measure" type="measure" multiplicity="one" relation="shared"/>
+        <associated name="detectorFrames" type="rawDetectorFrame" multiplicity="many" relation="exclusive"/>
+        <metadata>
+            <keyword name="object" type="string" description="observed object id"/>
+            <keyword name="telescope" type="string" description="data acquisition telescope"/>
+            <keyword name="instrument" type="string" description="data acquisition instrument"/>
+            <keyword name="expstart" type="int64" unit="ms" description="start time of the observation"/>
+            <keyword name="expend" type="int64" unit="ms" description="end time of the observation"/>
+            <keyword name="exptime" type="float64" unit="s" description="frame exposure duration"/>
+            <keyword name="readmode" type="string" description="readout mode (FOWLER, UP_THE_RAMP)"/>
+            <keyword name="readtime" type="float64" unit="ms" description="pixel readout time" />
+            <keyword name="fpaPointingRA" type="float64" unit="deg" description="Focal Plane Assembly pointing - Right Ascension" />
+            <keyword name="fpaPointingDEC" type="float64" unit="deg" description="Focal Plane Assembly pointing - Declination" />
+            <keyword name="fpaPointingA" type="float64" unit="deg" description="Focal Plane Assembly pointing - Pointing Angle (orientation)" />
+            <keyword name="obsMode" type="string" description="observation mode (SCIENCE, CALIB)" />
+            <keyword name="obsType" type="string" description="observation type (OBJECT, FLAT, DARK, BIAS)" />
+        </metadata>
+    </type>
     
+    <!-- 
+        A data type storing raw image frames from a single detector  
+    -->   
+    <type name="rawDetectorFrame" description="frame of a single detector chip">
+        <associated name="astrom" type="astrometryParams" multiplicity="one" relation="shared" />
+        <associated name="stats" multiplicity="one" relation="exclusive" type="detectorFrameStatistics"/>
+        <metadata>
+            <keyword name="detector" type="string" description="CCD detector identifier"/>
+            <keyword name="gain" type="float64" unit="e-/ADU" />
+            <keyword name="rdnoise" type="float64" description="amplifier read noise" />
+            <keyword name="qe" type="float64" description="quantum efficiency"/>
+        </metadata>
+        <data>
+            <image pixType="float64"/>
+        </data>
+    </type>
+    
+    <!-- 
+        A data type storing the astrometry parameters for detector frames  
+    -->    
+    <type name="astrometryParams" description="defines the astrometric solution">
+        <metadata>
+            <keyword name="wcsAxes" type="byte" description="number of World Coordinate System axes"/>
+            <keyword name="crpix1" type="float64" description="x-coordinate of reference pixel"/>
+            <keyword name="crpix2" type="float64" description="y-coordinate of reference pixel"/>
+            <keyword name="crval1" type="float64" description="first axis value at reference pixel"/>
+            <keyword name="crval2" type="float64" description="second axis value at reference pixel"/>
+            <keyword name="crval2" type="float64" description="second axis value at reference pixel"/>
+            <keyword name="crtype1" type="float64" description="projection type for axis 1"/>
+            <keyword name="crtype2" type="float64" description="projection type for axis 2"/>
+            <keyword name="cd1_1" type="float64" description="rotation matrix component (1,1)"/>
+            <keyword name="cd1_2" type="float64" description="rotation matrix component (1,2)"/>
+            <keyword name="cd2_1" type="float64" description="rotation matrix component (2,1)"/>
+            <keyword name="cd2_2" type="float64" description="rotation matrix component (2,2)"/>
+        </metadata>       
+    </type>
+    
+    <!-- 
+        A data type storing detector frame statistics  
+    -->        
+    <type name="detectorFrameStatistics" description="raw detector frame statistics">
+        <metadata>
+            <keyword name="max" type="float64" description="maximum pixel value"/>
+            <keyword name="min" type="float64" description="mimimum pixel value"/>
+            <keyword name="mean" type="float64" description="mean pixel value"/>
+            <keyword name="median" type="float64" description="median pixel value"/>
+            <keyword name="stdev" type="float64" description="standard deviation of pixel values"/>
+            <keyword name="sum" type="float64" description="sum of all pixel values"/>
+            <keyword name="npix" type="int64" description="number of pixels"/>
+        </metadata>
+    </type>
     
 </ddl>
