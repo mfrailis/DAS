@@ -1,13 +1,17 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.6)
 project(libdas)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/resources/")
 set(ODB_COMPILER_DIR  CACHE PATH "hint to where to find odb compiler executable")
 
+
+find_package(Boost 1.47 REQUIRED)
 find_package(ODB REQUIRED)
 find_package(Python REQUIRED)
 find_python_module(lxml REQUIRED)
 find_python_module(MySQLdb REQUIRED)
+find_python_module(ordereddict REQUIRED)
+
 
 set(CMAKE_BUILD_TYPE debug)
 set(CMAKE_CXX_FLAGS_DEBUG "-g -DVDBG")
@@ -66,6 +70,9 @@ set(DAS_SRC
 )
 
 include_directories(${CPP_INCLUDE_DIR})
+include_directories(${CMAKE_INCLUDE_PATH})
+include_directories(${Boost_INCLUDE_DIR})
+include_directories(${ODB_INCLUDE_DIR})
 #include_directories(${ODB_SOURCE_DIR})
 
 set(ODB_COMMON_TYPES ${ODB_SOURCE_DIR}/ddl_types.hpp)

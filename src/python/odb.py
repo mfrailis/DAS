@@ -196,11 +196,9 @@ class DdlOdbGenerator(DdlVisitor):
     h.writelines(["  void\n"])
     h.writelines(["  update();\n"])
 # private section
-    h.writelines(["  static\n"])
-    h.writelines(["  void\n"])
-    h.writelines(["  attach(const shared_ptr<"+self._class_name+"> &ptr, das::tpl::DbBundle &bundle);\n"])
-    h.writelines(["  "+self._class_name+" (const std::string &name);\n"])
     h.writelines([" private:\n"])
+    h.writelines(["  static void attach(const shared_ptr<"+self._class_name+"> &ptr, das::tpl::DbBundle &bundle);\n"])
+    h.writelines(["  "+self._class_name+" (const std::string &name);\n"])
     h.writelines("  "+l + "\n" for l in self._private_section)
     for t in self._assoc_touples:
       if (t[0].multiplicity == 'many' and t[0].relation != 'shared') or (t[0].multiplicity == 'one' and t[0].relation != 'shared'):
@@ -386,8 +384,8 @@ void
     if associated.multiplicity == 'many':
       pub_type = associated.name+'_vector'
       priv_type = associated.name+'_lazy_shared_vec'
-      self._private_section.append('typedef typename std::vector<lazy_shared_ptr<'+associated.atype+'> > '+priv_type+';')
-      self._type_defs.append('typedef typename std::vector<shared_ptr<'+associated.atype+'> > '+pub_type+';' )
+      self._private_section.append('typedef std::vector<lazy_shared_ptr<'+associated.atype+'> > '+priv_type+';')
+      self._type_defs.append('typedef std::vector<shared_ptr<'+associated.atype+'> > '+pub_type+';' )
       if associated.relation != 'shared':
         self._src_header.append('#include <algorithm>')
     else:
@@ -427,13 +425,13 @@ void
     if self._inherit != "":
       if not self.has_inherit_column(self._inherit):
         self._header.append("#include <boost/unordered_map.hpp>")
-        self._header.append('#include "../../internal/das_io.hpp"')
+#        self._header.append('#include "../../internal/das_io.hpp"')
 #        self._header.append('#include <blitz/array.h>')
         self._protected_section.append("#pragma db transient")
         self._protected_section.append("boost::unordered_map<std::string, shared_ptr<Column"+self._store_as+"> "+self._class_name+"::* > columns_;")
     else:
       self._header.append("#include <boost/unordered_map.hpp>")
-      self._header.append('#include "../../internal/das_io.hpp"')
+#      self._header.append('#include "../../internal/das_io.hpp"')
 #      self._header.append('#include <blitz/array.h>')
       self._protected_section.append("#pragma db transient")
       if self._store_as == 'File':

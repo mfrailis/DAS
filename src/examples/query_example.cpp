@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
             "measure_session.session_campaign.name == 'campaign_1'",
             "startdate asc");   
     
-    for(D::Result<measure>::iterator i = r.begin(); i!=r.end(); i++)
+    for(D::Result<measure>::const_iterator i = r.cbegin(); i!=r.cend(); i++)
     {
         cout << "name: " << i->name()  << endl;
     }

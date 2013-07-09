@@ -11,49 +11,52 @@ namespace D = das::tpl;
 int main(int argc, char** argv) {
     // create a ddl-object. His state is new
     shared_ptr<measure> m(measure::create("measure_name"));
+    // set a keyword
     m->startdate(1372319348);
 
     {
-        /* create a pu-object that handles 'test_level1' pu-instance.
-         * Now it begins the persistent context handled by this object.
-         */
+        // create a pu-object that handles 'test_level1' pu-instance.
         shared_ptr<D::Database> db = D::Database::create("test_level1");
 
-        // create a transaction from the pu-object
+        /* create a transaction from the pm-object. Since we didn't create a
+         * session, the system will create one that covers the transaction
+         */
         D::Transaction t(db->begin());
-        // persist the object and attach him to db (pu-object)
+        // persist the object and attach him to the current session
         db->persist(m);
-        // commit the changes to the persistent data structures (database)
+        /* commit the changes to the persistent data structures (database).
+         * The session created by the system will end here
+         */
         t.commit();
 
-        // modify the object
-        m->run_id(12345);
+        /* m object still exists but in the detached status.
+         * We can keep modifying his data
+         */
+        m->obs_id("m_4567");
         
-        // save changes of the attached objects
-        db->flush();
-        
-        
-    /* db goes out of scope and it will be destroyed:
-     *      * system resources such as database connections will be released
-     *      * managed context of the db object will end.
-     */   
+
+    /* db goes out of scope and it will be destroyed allowing system resources
+     * such as database connections to be released
+     */
     }
     
-    /* m object still exists but in the detached status.
-     * We can keep modifying his data
+    
+    /* even now m is still valid and we can take advantage of his methods without
+     * any concern about database resources
      */
-    m->obs_id("m_4567");
-    
-    /* create a new pu-object that handles the same pu-instance as before. */    
-    shared_ptr<D::Database> db1 = D::Database::create("test_level1");
-    
-    /* attach m to the new pu-object which will eventually update the 
-     * persistent counterpart of the object.
-     */
-    db1->attach(m);
-    
-    // save changes of the attached objects
-    db1->flush();
+    m->run_id(12345);
 
+
+    {
+        // create a new that handles the 'test_level1' pu-instance.
+        shared_ptr<D::Database> db = D::Database::create("test_level1");
+        D::Transaction t2(db->begin());
+
+        // attach m to the session held by the current transaction.
+        db->attach(m);
+
+        // update and commit all the objects managed by the session, m in this case
+        t2.commit();
+    }
     return 0;
 }

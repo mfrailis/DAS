@@ -1,6 +1,7 @@
 
 from lxml import etree as _et
-from collections import OrderedDict as MapOrd
+from ordereddict import OrderedDict as MapOrd
+#from collections import OrderedDict as MapOrd
 
 class TypeUpgrade:
   def __init__(self, name):
@@ -310,7 +311,7 @@ class Image:
 
 class DdlParser:
   
-  NSMAP = {'ddl':'http://oats.inaf.it/das'}
+  NSPACE = "{http://oats.inaf.it/das}"
   
   def __init__(self, schema_file_name):
     self.schema = _et.XMLSchema(file=schema_file_name, attribute_defaults=True)
@@ -329,7 +330,7 @@ class DdlParser:
     self.schema.assertValid(tree)
 
     tlist = DdlTypeList()
-    dtypes = tree.findall('ddl:type', DdlParser.NSMAP)
+    dtypes = tree.findall(DdlParser.NSPACE + 'type')
     for dtype in dtypes:
       ptype = self._parse_datatype(dtype)
       tlist.type_map[ptype.name] = ptype
@@ -349,7 +350,7 @@ class DdlParser:
     ancestor = dtype.get('ancestor')
     dt.ancestor = ancestor
     
-    associated = dtype.findall('ddl:associated', DdlParser.NSMAP)
+    associated = dtype.findall(DdlParser.NSPACE + 'associated')
     for a in associated:
       name = a.get('name')
       atype = a.get('type')
@@ -357,11 +358,11 @@ class DdlParser:
       relat = a.get('relation')
       dt.associated[name]=Associated(name, atype, multi,relat)
       
-    meta = dtype.find('ddl:metadata', DdlParser.NSMAP)
+    meta = dtype.find(DdlParser.NSPACE + 'metadata')
     if meta is not None:
       dt.metadata = self._parse_metadata(meta)
 
-    data = dtype.find('ddl:data', DdlParser.NSMAP)
+    data = dtype.find(DdlParser.NSPACE + 'data')
     if data is not None:
       dt.data = self._parse_data(data)
       
@@ -369,7 +370,7 @@ class DdlParser:
       
   def _parse_metadata(self, meta):
     metadata = Metadata() 
-    keywords = meta.findall('ddl:keyword', DdlParser.NSMAP)
+    keywords = meta.findall(DdlParser.NSPACE + 'keyword')
     for k in keywords:
       name = k.get('name')
       dtype = k.get('type')
@@ -384,10 +385,10 @@ class DdlParser:
   def _parse_data(self, data):
     d = Data(data.get('storeAs'))
     
-    table = data.find('ddl:binaryTable', DdlParser.NSMAP)
+    table = data.find(DdlParser.NSPACE + 'binaryTable')
     if table is not None:
       bt = BinaryTable()
-      columns = table.findall('ddl:column', DdlParser.NSMAP)
+      columns = table.findall(DdlParser.NSPACE + 'column')
       for c in columns:
         name = c.get('name')
         ctype = c.get('type')
@@ -399,7 +400,7 @@ class DdlParser:
       d.data_obj = bt
         
     else:
-      image = data.find('ddl:image', DdlParser.NSMAP)
+      image = data.find(DdlParser.NSPACE + 'image')
       im = Image(image.get('pixType'))
       d.data_obj = im
       

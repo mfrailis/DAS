@@ -18,8 +18,8 @@ int main(int argc, char** argv) {
     shared_ptr<measure> m1 = measure::create("measure_1");
     shared_ptr<measure> m2 = measure::create("measure_2");
     
-    /* now we can create the following association tree the appropriate setter
-     * methods
+    /* now we can create the following association tree using the appropriate 
+     * setter methods
      *      m0  m1  m2
      *       |   |   |
      *       +---+---+

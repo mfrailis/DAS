@@ -71,7 +71,7 @@ class JsonConfigParser:
 
 
         f = open(_os.path.join(cmake_dir,'CMakeLists.txt'),'w')
-        f.write('cmake_minimum_required(VERSION 2.8)\n')
+        f.write('cmake_minimum_required(VERSION 2.6)\n')
         f.write('set(TYPE_NAMES_ALL \n')
         for i in types:
             if i != "essentialMetadata":
@@ -117,6 +117,7 @@ foreach(type_name ${TYPE_NAMES_ALL})
             --default-pointer std::tr1::shared_ptr
 	    -I${ODB_SOURCE_DIR}
             -I${CPP_INCLUDE_DIR}
+            -x -I${Boost_INCLUDE_DIR}
 	    ${ODB_SOURCE_DIR}/${TYPE_PREFIX}${type_name}.hpp
     
 
@@ -146,6 +147,7 @@ COMMAND ${ODB_COMPILER}
     --default-pointer std::tr1::shared_ptr
     -I${ODB_SOURCE_DIR}
     -I${CPP_INCLUDE_DIR}
+    -x -I${Boost_INCLUDE_DIR}
     ${CPP_INCLUDE_DIR}/das_object.hpp
 
 COMMAND mv "'''+db_dir+'''/das_object-odb.hxx" "${DDL_HEADERS_DIR}/'''+db_type+'''/das_object-odb.hxx"
@@ -170,6 +172,7 @@ COMMAND ${ODB_COMPILER}
     --default-pointer std::tr1::shared_ptr 
     -I${ODB_SOURCE_DIR}
     -I${CPP_INCLUDE_DIR}
+    -x -I${Boost_INCLUDE_DIR}
     ${CPP_INCLUDE_INTERNAL_DIR}/aux_query.hpp
 COMMAND mv "'''+db_dir+'''/aux_query-odb.hxx" "${DDL_HEADERS_DIR}/'''+db_type+'''/aux_query-odb.hxx"
 COMMAND mv "'''+db_dir+'''/aux_query-odb.ixx" "${DDL_HEADERS_DIR}/'''+db_type+'''/aux_query-odb.ixx"
@@ -190,6 +193,7 @@ COMMAND ${ODB_COMPILER}
     --default-pointer std::tr1::shared_ptr
     -I${ODB_SOURCE_DIR}
     -I${CPP_INCLUDE_DIR}
+    -x -I${Boost_INCLUDE_DIR}
     ${CPP_INCLUDE_DIR}/ddl/column.hpp
 COMMAND mv "'''+db_dir+'''/column-odb.hxx" "${DDL_HEADERS_DIR}/'''+db_type+'''/column-odb.hxx"
 COMMAND mv "'''+db_dir+'''/column-odb.ixx" "${DDL_HEADERS_DIR}/'''+db_type+'''/column-odb.ixx"
@@ -210,6 +214,7 @@ COMMAND ${ODB_COMPILER}
     --default-pointer std::tr1::shared_ptr 
     -I${ODB_SOURCE_DIR}
     -I${CPP_INCLUDE_DIR}
+    -x -I${Boost_INCLUDE_DIR}
     ${CPP_INCLUDE_DIR}/ddl/image.hpp
 COMMAND mv "'''+db_dir+'''/image-odb.hxx" "${DDL_HEADERS_DIR}/'''+db_type+'''/image-odb.hxx"
 COMMAND mv "'''+db_dir+'''/image-odb.ixx" "${DDL_HEADERS_DIR}/'''+db_type+'''/image-odb.ixx"
@@ -227,28 +232,22 @@ add_custom_target(
   DEPENDS ${ODB_CXX}
 )
 
-add_custom_target(
-  schema-all ALL
-  DEPENDS'''
+add_custom_target(schema-all ALL)
+''')
+
+        for l in self.sub_dirs:
+            f.write("add_dependencies(schema-all schema-"+l+')\n')
+
+
+        f.write(
+'''
+add_custom_target('''+prefix+'''all)
+'''
 )
         for l in self.sub_dirs:
-            f.write("\n      schema-"+l)
+            f.write("add_dependencies("+prefix+"all "+prefix+l+")\n")
         f.write(
 '''
-)
-'''
-)
-        f.write(
-'''
-add_custom_target(
-  '''+prefix+'''all
-  DEPENDS'''
-)
-        for l in self.sub_dirs:
-            f.write("\n      "+prefix+l)
-        f.write(
-'''
-)
 
 
 #foreach(odb_ ${ODB_CXX})
@@ -307,7 +306,7 @@ def _generate_sub_cmake(dir_name,db_str,db_type,prefix,db,typelist):
     f = open(_os.path.join(dir_name,'CMakeLists.txt'),'w')
     f.write(
 '''
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.6)
 set(SQL_DIR ${CMAKE_CURRENT_BINARY_DIR})
 set(DDL_LOCAL_SIGNATURE ${CMAKE_CURRENT_BINARY_DIR}/${DDL_SIGNATURE})
 
@@ -327,6 +326,7 @@ foreach(type_name ${TYPE_NAMES})
             --omit-drop
             -I${ODB_SOURCE_DIR}
             -I${CPP_INCLUDE_DIR}
+            -x -I${Boost_INCLUDE_DIR}
 	    ${ODB_SOURCE_DIR}/${TYPE_PREFIX}${type_name}.hpp
     DEPENDS ${DDL_LOCAL_SIGNATURE}
     COMMENT "Generating schema for type ${type_name} on '''+db['alias']+'''"
