@@ -17,7 +17,7 @@ Preliminary definitions:
 	 by the system. Each pu-istance is uniquely identified by a string set in the "db-alias" option
 	 of the das configuration file.
 	  
-  * pm-object: (Persistance Manager object) instance of the class Database, that handles connections,
+  * pm-object: (Persistance Manager object) instance of the class das::tpl::Database, that handles connections,
 	 transactions, io and other operations on a specific pu-instance.
 	 Multiple pm-objects referring the same pu-instance can be active (in the same scope) at
 	 the same time.

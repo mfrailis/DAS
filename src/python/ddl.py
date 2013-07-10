@@ -1,7 +1,11 @@
 
 from lxml import etree as _et
-from ordereddict import OrderedDict as MapOrd
-#from collections import OrderedDict as MapOrd
+
+try:
+  from collections import OrderedDict as MapOrd
+except:
+  from ordereddict import OrderedDict as MapOrd
+
 
 class TypeUpgrade:
   def __init__(self, name):

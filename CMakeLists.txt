@@ -10,8 +10,10 @@ find_package(ODB REQUIRED)
 find_package(Python REQUIRED)
 find_python_module(lxml REQUIRED)
 find_python_module(MySQLdb REQUIRED)
-find_python_module(ordereddict REQUIRED)
-
+find_python_module(collections)
+if(NOT PY_COLLECTIONS_FOUND) 
+  find_python_module(ordereddict)
+endif()
 
 set(CMAKE_BUILD_TYPE debug)
 set(CMAKE_CXX_FLAGS_DEBUG "-g -DVDBG")
@@ -103,5 +105,20 @@ endif()
 
 add_subdirectory(${DAS_BUILD_DIR})
 
+# add a target to generate API documentation with Doxygen
+find_package(Doxygen)
+if(DOXYGEN_FOUND)
+#configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
+add_custom_target(doc
+${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile
+WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+COMMENT "Generating API documentation with Doxygen" VERBATIM
+)
+endif(DOXYGEN_FOUND)
+
 #add_library(das ${DAS_QL_SRC} ${DAS_SRC} ${TYPES_SRC} ${ODB_SRC})
 
+#get_cmake_property(_variableNames VARIABLES)
+#foreach (_variableName ${_variableNames})
+#    message(STATUS "${_variableName}=${${_variableName}}")
+#endforeach()
