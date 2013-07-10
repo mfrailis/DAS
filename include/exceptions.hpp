@@ -12,18 +12,18 @@ namespace das
     virtual const char*
     what() const throw()
     {
-      return "wrong database";
+      return "wrong database provided";
     }
     
   }; //TODO
   
-   class no_credentials : public std::exception
+  class no_credentials : public std::exception
   {
   public :
     virtual const char*
     what() const throw()
     {
-      return "wrong database";
+      return "database access denied";
     }
     
   }; //TODO
@@ -34,7 +34,7 @@ namespace das
     virtual const char*
     what() const throw()
     {
-      return "wrong database";
+      return "no database provided";
     }
     
   }; //TODO
@@ -99,7 +99,7 @@ namespace das
     virtual const char*
     what() const throw()
     {
-      return "types non compatibles";
+      return "types non compatible";
     }
     
   }; //TODO
@@ -143,7 +143,7 @@ namespace das
     virtual const char*
     what() const throw()
     {
-      return "bad ordering clause";
+      return "operation forbidden outside a session or transaction";
     }
     
   }; //TODO
@@ -154,7 +154,7 @@ namespace das
     virtual const char*
     what() const throw()
     {
-      return "bad ordering clause";
+      return "can't perform this operation on new object";
     }
     
   }; //TODO  
@@ -164,7 +164,7 @@ namespace das
     virtual const char*
     what() const throw()
     {
-      return "bad ordering clause";
+      return "corrupt object";
     }
     
   }; //TODO  
@@ -174,7 +174,7 @@ namespace das
     virtual const char*
     what() const throw()
     {
-      return "bad ordering clause";
+      return "session holds another object whit the same key";
     }
     
   }; //TODO  

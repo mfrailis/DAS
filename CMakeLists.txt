@@ -103,5 +103,10 @@ endif()
 
 add_subdirectory(${DAS_BUILD_DIR})
 
+install(DIRECTORY include/ DESTINATION include/das)
+
+
+
+
 #add_library(das ${DAS_QL_SRC} ${DAS_SRC} ${TYPES_SRC} ${ODB_SRC})
 

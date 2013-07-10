@@ -1,0 +1,7 @@
+
+
+*  wrap ddl-objects members with boost::optional, allowing null semantics on the database
+*  automatic string excaping when loading e storing on database
+*  check das query-compiler with mysql strange float types behavior
+*  implement make clean target
+
