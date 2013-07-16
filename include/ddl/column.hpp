@@ -1,22 +1,16 @@
 #ifndef DAS_COLUMN_HPP
 #define DAS_COLUMN_HPP
-#include <odb/core.hxx>
-#include <vector>
-#include <string>
-#include <odb/tr1/memory.hxx>
-#include <odb/tr1/lazy-ptr.hxx>
 
-#pragma db object abstract
+#pragma db value
 class Column
 {
 
  public:
-  Column(const long long& size,
-	 const std::string &type)
+  Column(long long size, std::string type)
     :size_(size), type_(type)
   {}
 
-  Column(const std::string &type)
+  Column(std::string type)
     :size_(0), type_(type)
   {}
 
@@ -27,7 +21,7 @@ class Column
   }
 
   void
-  size(const long long &size)
+  size(long long size)
   {
     size_ = size;
   }
@@ -39,7 +33,7 @@ class Column
   }
 
   void
-  type(const std::string &type)
+  type(std::string type)
   {
     type_ = type;
   }
@@ -53,20 +47,15 @@ class Column
 
 };
 
-template<typename T> class DasDataIn;
-template<typename T> class DasDataOut;
-
-#pragma db object abstract
+#pragma db value
 class ColumnFile: public Column
 {
 public:
-  ColumnFile(const long long &size,
-	     const std::string &type,
-	     const std::string &fname)
-    : Column(size, type),  fname_(fname), mvcc_(0)
+  ColumnFile(long long size, std::string type, std::string fname)
+    : Column(size, type),  fname_(fname)
   {}
-  ColumnFile(const std::string &type)
-    : Column(type), mvcc_(0)
+  ColumnFile(std::string type)
+    : Column(type)
   {}
   const std::string&
   fname()
@@ -75,40 +64,27 @@ public:
   }
 
   void
-  fname(const std::string &fname)
+  fname(std::string fname)
   {
     fname_ = fname;
   }
 
-protected: 
-  ColumnFile()  {}    
  private:
-  template<typename T>
-  friend class DasDataIn;
-  
-  template<typename T>
-  friend class DasDataOut;     
-     
-#pragma db id auto
-  long long mvcc_;
-#pragma db transient
-  std::string temp_path_;
   friend class odb::access;
-    
   void save();
+  ColumnFile()  {}
   std::string fname_;
 };
 
-#pragma db object no_id
+#pragma db value
 class ColumnBlob: public Column
 {
 public:
-  ColumnBlob(const long long &size,
-	     const std::string &type)
+  ColumnBlob(long long size, std::string type)
     : Column(size, type)
   {}
 
-  ColumnBlob(const std::string &type)
+  ColumnBlob(std::string type)
     : Column(type)
   {}
 
