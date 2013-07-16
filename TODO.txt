@@ -1,7 +1,9 @@
 
-
+*  database isolation document and data storage solution explained
 *  wrap ddl-objects members with boost::optional, allowing null semantics on the database
 *  automatic string excaping when loading e storing on database
 *  check das query-compiler with mysql strange float types behavior
+*  implement load_for_update method in order lock database table rows
 *  implement make clean target
+*  data handling prototype
 
