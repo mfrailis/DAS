@@ -76,6 +76,7 @@ class DdlOdbGenerator(DdlVisitor):
     self._keyword_touples = []
     self._assoc_touples = []
     self._column_type = []
+    self._src_body = []
 
   def name(self,name):
     self._class_name=name
@@ -179,7 +180,7 @@ class DdlOdbGenerator(DdlVisitor):
     h.writelines("  "+l + "\n" for l in self._type_defs)
     h.writelines("  "+l + "\n" for l in self._public_section)
 
-#    if datatype.data and datatype.data.store_as == 'file' and datatype.data.isTable():
+#    if datatype.data and datatype.data.store_as == 'File' and datatype.data.isTable():
 #      h.writelines(['''
 #  template<typename T>
 #  blitz::Array<T,1>
@@ -231,7 +232,7 @@ struct das_traits<'''+self._class_name+'''>
     static const std::string name;
 };
 ''')
-#    if datatype.data and datatype.data.store_as == 'file' and datatype.data.isTable():
+#    if datatype.data and datatype.data.store_as == 'File' and datatype.data.isTable():
 #      i.writelines(['''
 #template<typename T>
 #blitz::Array<T,1>
@@ -328,6 +329,10 @@ inline const shared_ptr<'''+self._class_name+'''>&
       s.writelines(['''  if(is_dirty_ && !is_new())
   {
     DAS_LOG_DBG("DAS debug INFO: UPD name:'" << name() << "' version:" << version() <<"...");
+    
+    if(bundle_.transaction_expired())
+      set_dirty_columns();
+
     bundle_.lock_db(true)->update(*this);
     is_dirty_ = false;
     DAS_LOG_DBG("done.");
@@ -345,8 +350,13 @@ inline const shared_ptr<'''+self._class_name+'''>&
 void
 '''+self._class_name+'''::update()
 {
-  if(is_dirty_)
+  if(is_dirty_){
+    
+    if(bundle_.transaction_expired())
+      set_dirty_columns();
+
     bundle_.lock_db(true)->update(*this);
+  }
 }
 '''])
     s.writelines(['''
@@ -359,7 +369,9 @@ void
       s.writelines([_def_attach_assoc(i[0],i[2])])
     s.writelines(['}\n'])
 
-
+    # write other body methods
+    s.writelines(self._src_body)
+    
     s.writelines(['shared_ptr<'+self._class_name+'> '+self._class_name+'::null_ptr_;\n'])
     s.close()
 
@@ -422,48 +434,86 @@ void
 
    
   def visit_binary_table(self,_):
+    
+
+    self._protected_section.append("virtual void set_dirty_columns();")
     if self._inherit != "":
       if not self.has_inherit_column(self._inherit):
-        self._header.append("#include <boost/unordered_map.hpp>")
 #        self._header.append('#include "../../internal/das_io.hpp"')
 #        self._header.append('#include <blitz/array.h>')
         self._protected_section.append("#pragma db transient")
         self._protected_section.append("boost::unordered_map<std::string, shared_ptr<Column"+self._store_as+"> "+self._class_name+"::* > columns_;")
     else:
-      self._header.append("#include <boost/unordered_map.hpp>")
+      self._header.append('#include <odb/vector.hxx>')
 #      self._header.append('#include "../../internal/das_io.hpp"')
 #      self._header.append('#include <blitz/array.h>')
-      self._protected_section.append("#pragma db transient")
       if self._store_as == 'File':
-        self._protected_section.append("boost::unordered_map<std::string, shared_ptr<"+self._class_name+"_column> "+self._class_name+"::* > columns_;")
+        self._src_body.append('''
+void
+'''+self._class_name+'''::set_dirty_columns()
+{
+  for(odb::vector<'''+self._class_name+'''_config>::iterator i = columns_.begin(); i != columns_.end(); ++i)
+    i.modify();
+}
+''')
+        self._protected_section.append("odb::vector<"+self._class_name+"_config> columns_;")
         self._column_type = ['''
-#pragma db object
-class '''+self._class_name+'''_column : public ColumnFile
+#pragma db object session(false)
+class ColumnFile_'''+self._class_name+''' : public ColumnFile
 {
 public:
-  '''+self._class_name+'''_column(const long long &size,
+  ColumnFile_'''+self._class_name+'''(const long long &size,
 	     const std::string &type,
 	     const std::string &fname)
   : ColumnFile(size,type,fname) {}
 
-  '''+self._class_name+'''_column(const std::string &type)
+  ColumnFile_'''+self._class_name+'''(const std::string &type)
   : ColumnFile(type) {}
 private:
-  '''+self._class_name+'''_column(){}
+  ColumnFile_'''+self._class_name+'''(){}
   friend class odb::access;
 };
+
+#pragma db value
+class '''+self._class_name+'''_config
+{
+public:
+  '''+self._class_name+'''_config(const std::string &col_name)
+    : name_(col_name) {}
+
+  const
+  shared_ptr<ColumnFile_'''+self._class_name+'''>&
+  column_file()
+  {
+    return column_file_;
+  }
+
+  void
+  column_file(const shared_ptr<ColumnFile_'''+self._class_name+'''> &ptr)
+  {
+    column_file_=ptr;
+  }
+
+private:
+  std::string name_;
+  // might become lazy
+  shared_ptr<ColumnFile_'''+self._class_name+'''> column_file_;
+  '''+self._class_name+'''_config(){}
+  friend class odb::access;
+
+};
+
 ''']
-
-
-      else:
-        self._protected_section.append("boost::unordered_map<std::string, shared_ptr<Column"+self._store_as+"> "+self._class_name+"::* > columns_;")
+      else:   
+        self._protected_section.append("odb::vector<ColumnBlob> columns_;")
     
-  def visit_column(self,column):
-    self._default_init.append('columns_["'+column.name+'"] = &'+self._class_name+'::column_'+column.name+'_;')
-    if self._store_as == 'File':
-      self._protected_section.append('shared_ptr<'+self._class_name+'_column> column_'+column.name+'_;')
-    else:
-      self._protected_section.append('shared_ptr<Column'+self._store_as+'> column_'+column.name+'_;')
+# if we prepare the vector, this will be stored in th db even without data reference
+#  def visit_column(self,column):
+#    if self._store_as == 'File':
+#      self._default_init.append('columns_.push_back('+self._class_name+'_config("'+column.name+'"));')
+#    else:
+#      self._default_init.append('columns_.push_back(ColumnBlob("'+column.name+'"));')
+
 
   def visit_data(self,data):
     if data.store_as == 'blob':

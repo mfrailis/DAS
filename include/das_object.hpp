@@ -92,12 +92,15 @@ protected:
 #pragma db transient
   bool is_dirty_;                                   // does it need an update?
 
-  virtual void save_data(){};                                // update external data.
-  virtual void save_data(std::string &path){};                // save external data, check if the path is empty.
-  virtual void update(){};  // update self and associated if necessary
+// polimorphic internal persistent interface
+  
+  virtual void save_data(){}                                // update external data.
+  virtual void save_data(const std::string &path,das::tpl::DbBundle &db){}                // save external data, check if the path is empty.
+  virtual void update(){}  // update self and associated if necessary
   // we need a database pointer because this ogbject is not bouded to any db yet
-  virtual void persist_associated_pre (das::tpl::DbBundle &db){}; // call persist on shared many associated objects
-  virtual void persist_associated_post(das::tpl::DbBundle &db){}; // call persist on exclusive and oneassociated objects
+  virtual void persist_associated_pre (das::tpl::DbBundle &db){} // call persist on shared many associated objects
+  virtual void persist_associated_post(das::tpl::DbBundle &db){} // call persist on exclusive and oneassociated objects
+  virtual void set_dirty_columns(){} //set all entries on odb::vector columns as dirty in order to force an update
 
 private:
   friend class odb::access;

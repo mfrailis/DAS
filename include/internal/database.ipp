@@ -21,12 +21,18 @@ namespace das {
         inline
         Transaction
         Database::begin() {
+            shared_ptr<odb::transaction> t = bundle_.transaction();
+            if(t){
+                throw das::already_in_transaction();
+            }
             shared_ptr<odb::session> s = bundle_.lock_session(false);
             if (!s) {
                 s.reset(new odb::session());
                 bundle_.reset_session(s);
             }
-            return Transaction(bundle_,s);
+            t.reset(new odb::transaction(bundle_.db()->begin()));
+            bundle_.transaction(t);
+            return Transaction(bundle_,s,t);
         }
 
         template<typename T>

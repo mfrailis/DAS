@@ -25,7 +25,7 @@ class Database;
 class Transaction
 {
 public:
-    Transaction(const DbBundle &b,const shared_ptr<odb::session> &s);
+    Transaction(const DbBundle &b,const shared_ptr<odb::session> &s, shared_ptr<odb::transaction> t);
     void commit();
     void rollback();
 private:

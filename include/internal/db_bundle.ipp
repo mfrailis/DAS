@@ -41,8 +41,12 @@ namespace das {
                 s->cache_insert<T>(*db_, obj->das_id_, obj);
                 obj->bundle_ = *this;
                 obj->is_dirty_ = true;
+                /* this will trigger a column files configuration reset on next 
+                 * commit if the object will be dirty
+                 */
+                obj->set_dirty_columns();
             }
-
+            
         }
 
         template<typename T>
@@ -81,7 +85,7 @@ namespace das {
             }
             shared_ptr<odb::session> s = lock_session(true);
 
-            obj->save_data(path);
+            obj->save_data(path,*this);
                       
             odb::session::current(*s);
             obj->persist_associated_pre(*this); 
@@ -104,7 +108,12 @@ namespace das {
             session_ = ptr;
         }
 
-
+        inline
+        void
+        DbBundle::transaction(const shared_ptr<odb::transaction> &ptr) {
+            transaction_ = ptr;
+        }
+        
     }
 }
 #endif	/* DB_BUNDLE_IPP */

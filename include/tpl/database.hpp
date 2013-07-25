@@ -53,7 +53,7 @@ namespace das {
 
             template<typename T>
             void
-            erase(const shared_ptr<T> &obj); //TODO
+            erase(const shared_ptr<T> &obj);
 
             template<typename T>
             Result<T>

@@ -71,10 +71,18 @@ namespace das {
             valid() const {
                 return db_ && !session_.expired();
             }
+            
+            shared_ptr<odb::transaction>
+            transaction(){
+                return transaction_.lock();
+            }
+
+            void
+            transaction(const shared_ptr<odb::transaction> &ptr);
 
             void
             reset_session(const shared_ptr<odb::session> &ptr);
-
+            
             void
             reset_session();
                         
@@ -95,6 +103,7 @@ namespace das {
             std::string db_alias_;
             shared_ptr<odb::database> db_;
             weak_ptr<odb::session> session_;
+            weak_ptr<odb::transaction> transaction_;
         };
 
         class WeakDbBundle {
@@ -106,13 +115,16 @@ namespace das {
             WeakDbBundle(const DbBundle &rhs) :
             db_alias_(rhs.db_alias_),
             db_(rhs.db_),
-            session_(rhs.session_) {
+            session_(rhs.session_),
+            transaction_(rhs.transaction_)
+            {
             }
 
             WeakDbBundle& operator=(const DbBundle &rhs) {
                 db_alias_ = rhs.db_alias_;
                 db_ = rhs.db_;
                 session_ = rhs.session_;
+                transaction_ = rhs.transaction_;
                 return *this;
             }
 
@@ -128,7 +140,17 @@ namespace das {
             alias() const {
                 return db_alias_;
             }
-
+            
+            shared_ptr<odb::transaction>
+            lock_transaction(){
+                return transaction_.lock();
+            }
+            
+            bool
+            transaction_expired(){
+                return transaction_.expired();
+            }
+            
             shared_ptr<odb::database>
             lock_db(bool throw_on_expired = true) const {
                 shared_ptr<odb::database> database = db_.lock();
@@ -177,6 +199,7 @@ namespace das {
             std::string db_alias_;
             weak_ptr<odb::database> db_;
             weak_ptr<odb::session> session_;
+            weak_ptr<odb::transaction> transaction_;
         };
 
         inline bool

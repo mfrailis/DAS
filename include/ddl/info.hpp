@@ -33,6 +33,7 @@ float,
 double,
 bool,
 unsigned char,
+unsigned short,
 unsigned int,
 std::string
 > column_type;
@@ -63,10 +64,8 @@ struct ColumnInfo {
             type_var_ = static_cast<double> (0);
         } else if (_type == "boolean") {
             type_var_ = static_cast<bool> (0);
-        } else if (_type == "boolean") {
-            type_var_ = static_cast<bool> (0);
         } else if (_type == "uint8") {
-            type_var_ = static_cast<unsigned int> (0);
+            type_var_ = static_cast<unsigned char> (0);
         } else if (_type == "uint16") {
             type_var_ = static_cast<unsigned short> (0);
         } else if (_type == "uint32") {

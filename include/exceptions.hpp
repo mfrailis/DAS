@@ -226,6 +226,20 @@ namespace das
       char * errstr_;
     
   }; //TODO 
+  
+    class already_in_transaction : public std::exception
+  {
+  public :
+    virtual const char*
+    what() const throw()
+    {
+      return "another transaction is active onto this database";
+    }
+  private:
+      char * errstr_;
+    
+  }; //TODO 
+  
     class not_in_session : public std::exception
   {
   public :
@@ -239,6 +253,18 @@ namespace das
     
   }; //TODO 
   
+  class invalid_transaction : public std::exception
+  {
+  public :
+      virtual const char*
+      what() const throw()
+      {
+          return "transaction corrupted. Perhaps already committed";
+      }
+  private:
+      char * errstr_;
+      
+  }; //TODO  
 }
 
 #endif
