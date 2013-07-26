@@ -5,6 +5,7 @@
 #include <string>
 #include <odb/tr1/memory.hxx>
 #include <odb/tr1/lazy-ptr.hxx>
+#include "../internal/column_buffer.hpp"
 
 #pragma db object abstract
 
@@ -35,13 +36,16 @@ public:
         return type_;
     }
 
+protected:
+
+    virtual
     void
     type(const std::string &type) {
         type_ = type;
     }
-
-protected:
+    
     long long size_;
+#pragma db access(type)
     std::string type_;
 
     Column() {
@@ -51,22 +55,19 @@ private:
 
 };
 
-template<typename T> class DasDataIn;
-template<typename T> class DasDataOut;
-
 #pragma db object abstract
 
-class ColumnFile : public Column {
+class ColumnFromFile : public Column {
 public:
 
-    ColumnFile(const long long &size,
+    ColumnFromFile(const long long &size,
             const std::string &type,
             const std::string &fname)
-    : Column(size, type), fname_(fname), id_(0) {
+    : Column(size, type), fname_(fname), id_(0), buff_(type) {
     }
 
-    ColumnFile(const std::string &type)
-    : Column(type), id_(0) {
+    ColumnFromFile(const std::string &type)
+    : Column(type), id_(0), buff_(type) {
     }
 
     const std::string&
@@ -78,7 +79,7 @@ public:
     fname(const std::string &fname) {
         fname_ = fname;
     }
-    
+
     const std::string&
     temp_path() {
         return temp_path_;
@@ -87,13 +88,30 @@ public:
     void
     temp_path(const std::string &fname) {
         temp_path_ = fname;
-    }   
+    }
+
+    ColumnBuffer&
+    buffer() {
+        return buff_;
+    }
+
 
 protected:
+    virtual
+    void
+    type(const std::string &type) {
+        type_ = type;
+        buff_.init(type);
+    }
 
-    ColumnFile() {
+#pragma db transient
+    ColumnBuffer buff_;
+    // implemented for odb library pourposes
+
+    ColumnFromFile() {
     }
 private:
+
     template<typename T>
     friend class DasDataIn;
 
@@ -106,21 +124,20 @@ private:
     std::string temp_path_;
     friend class odb::access;
 
-    void save();
     std::string fname_;
 };
 
 #pragma db object no_id
 
-class ColumnBlob : public Column {
+class ColumnFromBlob : public Column {
 public:
 
-    ColumnBlob(const long long &size,
+    ColumnFromBlob(const long long &size,
             const std::string &type)
     : Column(size, type) {
     }
 
-    ColumnBlob(const std::string &type)
+    ColumnFromBlob(const std::string &type)
     : Column(type) {
     }
 
@@ -129,7 +146,7 @@ public:
 private:
     friend class odb::access;
 
-    ColumnBlob() {
+    ColumnFromBlob() {
     }
 
 #pragma db mysql:type("MEDIUMBLOB") oracle:type("BLOB") pgsql:type("BYTEA") sqlite:type("BLOB") mssql:type("varbinary")

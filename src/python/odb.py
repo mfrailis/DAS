@@ -132,6 +132,7 @@ class DdlOdbGenerator(DdlVisitor):
       
     if datatype.data is not None:
       self._header.append('#include "../column.hpp"')
+      self._header.append('#include "../../internal/column_config.hpp"')
     
     intro.append("#pragma db object\nclass " + datatype.name)
     if self._inherit != "":
@@ -387,8 +388,8 @@ void
       self._header.append("using odb::tr1::lazy_shared_ptr;")
       self._header.append("using std::tr1::shared_ptr;")
       self._friends.append("friend class das::tpl::Database;")
-      self._protected_section.extend(['virtual void','persist_associated_pre (das::tpl::DbBundle &db);'])
-      self._protected_section.extend(['virtual void','persist_associated_post(das::tpl::DbBundle &db);'])
+      self._protected_section.extend(['virtual void persist_associated_pre (das::tpl::DbBundle &db);'])
+      self._protected_section.extend(['virtual void persist_associated_post(das::tpl::DbBundle &db);'])
       self._has_associations = True 
 	
     self._forward_section.append("class " + associated.atype + ";")
@@ -437,18 +438,38 @@ void
     
 
     self._protected_section.append("virtual void set_dirty_columns();")
-    if self._inherit != "":
-      if not self.has_inherit_column(self._inherit):
 #        self._header.append('#include "../../internal/das_io.hpp"')
-#        self._header.append('#include <blitz/array.h>')
-        self._protected_section.append("#pragma db transient")
-        self._protected_section.append("boost::unordered_map<std::string, shared_ptr<Column"+self._store_as+"> "+self._class_name+"::* > columns_;")
-    else:
-      self._header.append('#include <odb/vector.hxx>')
-#      self._header.append('#include "../../internal/das_io.hpp"')
-#      self._header.append('#include <blitz/array.h>')
-      if self._store_as == 'File':
-        self._src_body.append('''
+    self._header.append('#include <odb/vector.hxx>')
+    
+    if self._store_as == 'File':
+      self._protected_section.append('virtual ColumnFromFile* column_from_file(const std::string &col_name);')
+      self._protected_section.append('virtual void column_from_file(const std::string &col_name, const ColumnFromFile &cf);')
+      self._src_body.append('''
+ColumnFromFile*
+'''+self._class_name+'''::column_from_file(const std::string &col_name){
+  get_column_info(col_name); // will throw if not present
+  
+  for(odb::vector<'''+self._class_name+'''_config>::iterator i = columns_.begin(); i != columns_.end(); ++i){
+    if(i->column_name() == col_name)
+      return i->column_from_file();
+  }
+  return NULL;
+}
+
+void
+'''+self._class_name+'''::column_from_file(const std::string &col_name, const ColumnFromFile &cf){
+  get_column_info(col_name); // will throw if not present
+  for(odb::vector<'''+self._class_name+'''_config>::iterator i = columns_.begin(); i != columns_.end(); ++i){
+    if(i->column_name() == col_name){
+      i.modify().column_from_file(cf);
+      return;
+    }
+  }
+  '''+self._class_name+'''_config conf(col_name);
+  conf.column_from_file(cf);
+  columns_.push_back(conf);
+}
+
 void
 '''+self._class_name+'''::set_dirty_columns()
 {
@@ -456,56 +477,66 @@ void
     i.modify();
 }
 ''')
-        self._protected_section.append("odb::vector<"+self._class_name+"_config> columns_;")
-        self._column_type = ['''
+      self._private_section.append("odb::vector<"+self._class_name+"_config> columns_;")
+      self._column_type = ['''
 #pragma db object session(false)
-class ColumnFile_'''+self._class_name+''' : public ColumnFile
+class ColumnFromFile_'''+self._class_name+''' : public ColumnFromFile
 {
 public:
-  ColumnFile_'''+self._class_name+'''(const long long &size,
+  ColumnFromFile_'''+self._class_name+'''(const long long &size,
 	     const std::string &type,
 	     const std::string &fname)
-  : ColumnFile(size,type,fname) {}
+  : ColumnFromFile(size,type,fname) {}
 
-  ColumnFile_'''+self._class_name+'''(const std::string &type)
-  : ColumnFile(type) {}
+  ColumnFromFile_'''+self._class_name+'''(const std::string &type)
+  : ColumnFromFile(type) {}
+
+  ColumnFromFile_'''+self._class_name+'''(const ColumnFromFile &cff)
+  : ColumnFromFile(cff){}
 private:
-  ColumnFile_'''+self._class_name+'''(){}
+  ColumnFromFile_'''+self._class_name+'''(){}
   friend class odb::access;
 };
 
 #pragma db value
-class '''+self._class_name+'''_config
+class '''+self._class_name+'''_config : public ColumnConfig
 {
 public:
   '''+self._class_name+'''_config(const std::string &col_name)
-    : name_(col_name) {}
+    : col_name_(col_name) {}
 
-  const
-  shared_ptr<ColumnFile_'''+self._class_name+'''>&
-  column_file()
-  {
-    return column_file_;
+  virtual
+  ColumnFromFile *
+  column_from_file() const{
+    // null if there's no data in this column
+    return cff_.get();
   }
 
+  virtual
   void
-  column_file(const shared_ptr<ColumnFile_'''+self._class_name+'''> &ptr)
-  {
-    column_file_=ptr;
+  column_from_file(const ColumnFromFile &cff){
+    cff_.reset(new ColumnFromFile_'''+self._class_name+'''(cff));
+  }
+
+  virtual
+  const std::string&
+  column_name() const {
+    return col_name_;
   }
 
 private:
-  std::string name_;
-  // might become lazy
-  shared_ptr<ColumnFile_'''+self._class_name+'''> column_file_;
-  '''+self._class_name+'''_config(){}
   friend class odb::access;
+  std::string col_name_;
+  // might become lazy
+  shared_ptr<ColumnFromFile_'''+self._class_name+'''> cff_;
+  '''+self._class_name+'''_config(){}
+
 
 };
 
 ''']
-      else:   
-        self._protected_section.append("odb::vector<ColumnBlob> columns_;")
+    else:   
+      self._private_section.append("odb::vector<ColumnFromBlob> columns_;")
     
 # if we prepare the vector, this will be stored in th db even without data reference
 #  def visit_column(self,column):

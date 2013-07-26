@@ -68,6 +68,7 @@ set(DAS_SRC
   ${CPP_SOURCE_DIR}/tpl/transaction.cpp
   ${CPP_SOURCE_DIR}/tpl/db_bundle.cpp
   ${CPP_SOURCE_DIR}/database_config.cpp
+  ${CPP_SOURCE_DIR}/column_buffer.cpp
 #  ${CPP_SOURCE_DIR}/das_io.cpp
 )
 

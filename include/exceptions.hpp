@@ -264,6 +264,18 @@ namespace das
   private:
       char * errstr_;
       
+  }; //TODO    
+  class no_external_data : public std::exception
+  {
+  public :
+      virtual const char*
+      what() const throw()
+      {
+          return "the object does not provide non-database data access";
+      }
+  private:
+      char * errstr_;
+      
   }; //TODO  
 }
 

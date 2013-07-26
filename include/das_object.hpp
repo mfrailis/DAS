@@ -4,6 +4,7 @@
 #include <odb/core.hxx>
 #include <string>
 #include "ddl/info.hpp"
+#include "ddl/column.hpp"
 //#include "tpl/Database.hpp"
 //template <typename T>
 //class DasVector;
@@ -97,11 +98,18 @@ protected:
   virtual void save_data(){}                                // update external data.
   virtual void save_data(const std::string &path,das::tpl::DbBundle &db){}                // save external data, check if the path is empty.
   virtual void update(){}  // update self and associated if necessary
-  // we need a database pointer because this ogbject is not bouded to any db yet
+  // we need a database pointer because this object is not bound to any db yet
   virtual void persist_associated_pre (das::tpl::DbBundle &db){} // call persist on shared many associated objects
   virtual void persist_associated_post(das::tpl::DbBundle &db){} // call persist on exclusive and oneassociated objects
   virtual void set_dirty_columns(){} //set all entries on odb::vector columns as dirty in order to force an update
 
+// external data interface
+  virtual ColumnFromFile* column_from_file(const std::string &col_name){throw das::no_external_data();}
+  virtual void column_from_file(const std::string &col_name, const ColumnFromFile &cf){throw das::no_external_data();}
+ 
+//  virtual ImageFromFile* image_from_file(){throw das::no_external_data();}
+//  virtual void image_from_file(const ImageFromFile &cf){throw das::no_external_data();}
+  
 private:
   friend class odb::access;
   friend class das::tpl::Database;
