@@ -25,13 +25,11 @@ class Database;
 class Transaction
 {
 public:
-    Transaction(const DbBundle &b,const shared_ptr<odb::session> &s, shared_ptr<odb::transaction> t);
+    Transaction(const shared_ptr<TransactionBundle> &tb);
     void commit();
     void rollback();
 private:
-     shared_ptr<odb::transaction> transaction_;
-     shared_ptr<odb::session> session_;
-     DbBundle b_;
+     shared_ptr<TransactionBundle> tb_;
 };
     
 }//namespace tpl

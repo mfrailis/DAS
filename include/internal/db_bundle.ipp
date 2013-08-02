@@ -5,6 +5,7 @@
 #include "../ddl/types/mysql/aux_query-odb.hxx"
 #include "../internal/log.hpp"
 #include "../das_object.hpp"
+#include "../storage_engine.hpp"
 namespace das {
 
     namespace tpl {
@@ -51,19 +52,19 @@ namespace das {
 
         template<typename T>
         long long
-        DbBundle::persist(const shared_ptr<T> &obj, std::string path) {
+        TransactionBundle::persist(const shared_ptr<T> &obj, std::string path) {
 
             if (!obj->is_new()) {
-                if (operator !=(obj->bundle_)) // another db intance owns this obj
+                if (! equal(obj->bundle_)) // another db intance owns this obj
                 {
                     throw wrong_database();
                 }
                 return obj->das_id_;
             } //FIXME should we do an update insted?
 
-            if (!obj->bundle_.blank()) // should never happen
+            if (!obj->bundle_.blank() && obj->bundle_.alias() != db_alias_)
             {
-                DAS_LOG_DBG("DAS debug INFO: ERROR: obj '" << obj->name_ << "' is new and his bundle isn't blank");
+                DAS_LOG_DBG("DAS debug INFO: ERROR: trying persisting obj '" << obj->name_ << "' in another database");
                 throw wrong_database();
             }
 
@@ -83,11 +84,10 @@ namespace das {
             } else {
                 obj->version_ = 1;
             }
-            shared_ptr<odb::session> s = lock_session(true);
 
             obj->save_data(path,*this);
                       
-            odb::session::current(*s);
+            odb::session::current(*session_);
             obj->persist_associated_pre(*this); 
             
             DAS_LOG_DBG("DAS debug INFO: PRS " << obj->name_ << "... ");

@@ -4,26 +4,6 @@
 #include <boost/variant.hpp>
 #include <string>
 
-struct KeywordInfo {
-
-    KeywordInfo() {
-    }
-
-    KeywordInfo(const std::string& _name,
-            const std::string& _type,
-            const std::string& _unit,
-            const std::string& _description)
-    : name(_name),
-    type(_type),
-    unit(_unit),
-    description(_description) {
-    }
-    std::string name;
-    std::string type;
-    std::string unit;
-    std::string description;
-};
-
 typedef boost::variant<
 char,
 short,
@@ -38,8 +18,42 @@ unsigned int,
 std::string
 > column_type;
 
-struct ColumnInfo {
+typedef boost::variant<
+char,
+short,
+int,
+long long,
+float,
+double,
+bool,
+unsigned char,
+unsigned int,
+std::string
+>
+keyword_type;
 
+struct KeywordInfo {
+
+    KeywordInfo(const std::string& _name,
+            const std::string& _type,
+            const std::string& _unit,
+            const std::string& _description)
+    : name(_name),
+    type(_type),
+    unit(_unit),
+    description(_description) {
+    }
+    std::string name;
+    std::string type;
+    std::string unit;
+    std::string description;
+private:
+   KeywordInfo(); 
+};
+
+
+
+struct ColumnInfo {
     ColumnInfo(const std::string& _name,
             const std::string& _type,
             const std::string& _unit,
@@ -75,22 +89,18 @@ struct ColumnInfo {
         }
     }
 
-    ColumnInfo() : max_string_length(0) {
-    }
-
     std::string name;
     std::string type;
     std::string unit;
     std::string description;
     int max_string_length;
     column_type type_var_;
+private:
+    // we do not allow default constructor because the type_var_ member unassigned brings undefined behaviour in boost visits
+    ColumnInfo();
 };
 
 struct AssociationInfo {
-
-    AssociationInfo() {
-    }
-
     AssociationInfo(const std::string& ass_type,
             const std::string& table_name,
             const std::string& ass_key,
@@ -104,6 +114,9 @@ struct AssociationInfo {
     std::string association_table;
     std::string association_key;
     std::string object_key;
+    
+private:
+   AssociationInfo(); 
 };
 
 class DdlInfo {

@@ -4,6 +4,7 @@
 #include <odb/session.hxx>
 #include <odb/transaction.hxx>
 #include <memory>
+#include <vector>
 #include <odb/traits.hxx>
 #include <odb/tr1/memory.hxx>
 #include "../exceptions.hpp"
@@ -13,7 +14,57 @@ using std::tr1::weak_ptr;
 
 namespace das {
     namespace tpl {
+
+        class Transaction;
+        class StorageTransaction;
         class WeakDbBundle;
+        class DbBundle;
+
+        class TransactionBundle {
+        public:
+            typedef std::vector<shared_ptr<StorageTransaction> > data_list_type;
+
+            TransactionBundle(const std::string &alias,
+                    const shared_ptr<odb::database> &db,
+                    const shared_ptr<odb::session> &s,
+                    const shared_ptr<odb::transaction> &t)
+            : db_alias_(alias), db_(db), session_(s), transaction_(t) {
+            }
+
+            template<typename T>
+            long long
+            persist(const shared_ptr<T> &obj, std::string path = "");
+
+
+            void
+            flush_session();
+            
+            void
+            flush_data();
+            
+            void 
+            add(const shared_ptr<StorageTransaction> &e){
+                data_list_.push_back(e);
+            }
+
+            const shared_ptr<odb::database>&
+            db() {
+                return db_;
+            }
+
+            bool equal(const DbBundle &rhs) const;
+
+            bool equal(const WeakDbBundle &rhs) const;
+
+        private:
+            friend class WeakDbBundle;
+            friend class Transaction;
+            data_list_type data_list_;
+            std::string db_alias_;
+            shared_ptr<odb::database> db_;
+            shared_ptr<odb::session> session_;
+            shared_ptr<odb::transaction> transaction_;
+        };
 
         class DbBundle {
         public:
@@ -35,19 +86,11 @@ namespace das {
             session_(session) {
             }
 
-            bool operator ==(const DbBundle&rhs) const {
+            bool equal(const DbBundle &rhs) const {
                 return db_ == rhs.db_ && session_.lock() == rhs.session_.lock();
             }
 
-            bool operator !=(const DbBundle&rhs) const {
-                return !operator ==(rhs);
-            }
-
-            bool operator ==(const WeakDbBundle&rhs) const;
-
-            bool operator !=(const WeakDbBundle&rhs) const {
-                return !operator ==(rhs);
-            }
+            bool equal(const WeakDbBundle&rhs) const;
 
             const std::string&
             alias() const {
@@ -71,9 +114,9 @@ namespace das {
             valid() const {
                 return db_ && !session_.expired();
             }
-            
+
             shared_ptr<odb::transaction>
-            transaction(){
+            transaction() {
                 return transaction_.lock();
             }
 
@@ -82,20 +125,15 @@ namespace das {
 
             void
             reset_session(const shared_ptr<odb::session> &ptr);
-            
+
             void
             reset_session();
-                        
-            void
-            flush_session();
-            
+
             template<typename T>
             void
             attach(const shared_ptr<T>& obj);
 
-            template<typename T>
-            long long
-            persist(const shared_ptr<T> &obj, std::string path = "");
+
 
 
         private:
@@ -112,14 +150,31 @@ namespace das {
             WeakDbBundle() {
             }
 
+            WeakDbBundle(const std::string &alias) : db_alias_(alias) {
+            }
+
+            WeakDbBundle(const TransactionBundle &rhs) :
+            db_alias_(rhs.db_alias_),
+            db_(rhs.db_),
+            session_(rhs.session_),
+            transaction_(rhs.transaction_) {
+            }
+            
             WeakDbBundle(const DbBundle &rhs) :
             db_alias_(rhs.db_alias_),
             db_(rhs.db_),
             session_(rhs.session_),
-            transaction_(rhs.transaction_)
-            {
+            transaction_(rhs.transaction_) {
             }
 
+            WeakDbBundle& operator=(const TransactionBundle &rhs) {
+                db_alias_ = rhs.db_alias_;
+                db_ = rhs.db_;
+                session_ = rhs.session_;
+                transaction_ = rhs.transaction_;
+                return *this;
+            }
+            
             WeakDbBundle& operator=(const DbBundle &rhs) {
                 db_alias_ = rhs.db_alias_;
                 db_ = rhs.db_;
@@ -127,7 +182,7 @@ namespace das {
                 transaction_ = rhs.transaction_;
                 return *this;
             }
-
+            
             bool operator ==(const DbBundle &rhs) const {
                 return lock_db(false) == rhs.db() && lock_session(false) == rhs.lock_session(false);
             }
@@ -140,17 +195,17 @@ namespace das {
             alias() const {
                 return db_alias_;
             }
-            
+
             shared_ptr<odb::transaction>
-            lock_transaction(){
+            lock_transaction() {
                 return transaction_.lock();
             }
-            
+
             bool
-            transaction_expired(){
+            transaction_expired() {
                 return transaction_.expired();
             }
-            
+
             shared_ptr<odb::database>
             lock_db(bool throw_on_expired = true) const {
                 shared_ptr<odb::database> database = db_.lock();
@@ -203,8 +258,30 @@ namespace das {
         };
 
         inline bool
-        DbBundle::operator==(const WeakDbBundle &rhs) const {
+        DbBundle::equal(const WeakDbBundle &rhs) const {
             return db_ == rhs.lock_db(false) && session_.lock() == rhs.lock_session(false);
+        }
+
+        inline bool
+        TransactionBundle::equal(const WeakDbBundle &rhs) const {
+            return db_ == rhs.lock_db(false) && session_ == rhs.lock_session(false);
+        }
+
+        inline bool
+        TransactionBundle::equal(const DbBundle &rhs) const {
+            return db_ == rhs.db() && session_ == rhs.lock_session(false);
+        }
+
+
+
+        template<typename T>
+        bool operator==(const T &lhs, const WeakDbBundle &rhs) {
+            return lhs.equal(rhs);
+        }
+        
+                template<typename T>
+        bool operator!=(const T &lhs, const WeakDbBundle &rhs) {
+            return !lhs.equal(rhs);
         }
 
     }

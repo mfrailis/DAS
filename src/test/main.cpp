@@ -20,13 +20,16 @@ void print(const shared_ptr<lfiHkDaeSlowVoltage>& hk) {
 
 int main(int argc, char * argv[]) {
     long long int ss_id;
+    
+    std::string db_alias("test_level1");
+    
     {
         shared_ptr<D::Database> db = D::Database::create("test_level1");
 
-        shared_ptr<site> s = site::create("site_name");
-        shared_ptr<testlevel> tl = testlevel::create("test_level_name");
-        shared_ptr<campaign> camp = campaign::create("campaign_2");
-        shared_ptr<session> ss = session::create("session_2");
+        shared_ptr<site> s = site::create("site_name",db_alias);
+        shared_ptr<testlevel> tl = testlevel::create("test_level_name",db_alias);
+        shared_ptr<campaign> camp = campaign::create("campaign_2",db_alias);
+        shared_ptr<session> ss = session::create("session_2",db_alias);
 
         camp->campaign_site(s);
         camp->campaign_test(tl);
@@ -45,14 +48,14 @@ int main(int argc, char * argv[]) {
 
     std::vector<shared_ptr<measure> > ms;
 
-    ms.push_back(measure::create("measure_1"));
-    ms.push_back(measure::create("measure_2"));
-    ms.push_back(measure::create("measure_3"));
+    ms.push_back(measure::create("measure_1",db_alias));
+    ms.push_back(measure::create("measure_2",db_alias));
+    ms.push_back(measure::create("measure_3",db_alias));
     for (std::vector<shared_ptr<measure> >::iterator i = ms.begin(); i < ms.end(); i++) {
         std::string log_name("log for measure ");
         log_name += (*i)->name();
         measure::log_vector logs;
-        logs.push_back(measurelogs::create(log_name));
+        logs.push_back(measurelogs::create(log_name,db_alias));
         (*i)->log(logs);
     }
 
@@ -82,5 +85,13 @@ int main(int argc, char * argv[]) {
         t2.commit();
         db->end_session();
     }
+    
+    //FIXME remove all till the end
+    shared_ptr<lfiHkDaeSlowVoltage> ptr = lfiHkDaeSlowVoltage::create("test1","test_level1");
+    das::Array<long long> a;
+    ptr->append_column<long long>("sampleOBT", a);
+    
+    das::Array<long long> b = ptr->get_column<long long>("sampleOBT",0,10);
+    
     return 0;
 }

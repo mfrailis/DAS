@@ -140,7 +140,8 @@ COMMAND ${ODB_COMPILER}
     --include-regex "%(column.hpp)|(image.hpp)%../../../ddl/$1$2%"
     --include-regex "%aux_query.hpp%../../../internal/aux_query.hpp%"
     --include-regex "%ddl_(.+).hpp%../ddl_$1.hpp%"
-    --include-regex "%(.*)column-odb.hxx%ddl/types/'''+db_type+'''/column-odb.hxx%"
+
+            --include-regex "%(.*)(column-odb.hxx)|(.*)(image-odb.hxx)%$2$4%"
     --include-regex "%das_object-odb.hxx%ddl/types/'''+db_type+'''/das_object-odb.hxx%"
     --include-regex "%das_object.hpp%../../../das_object.hpp%"
 

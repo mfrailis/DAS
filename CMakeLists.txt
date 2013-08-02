@@ -67,9 +67,12 @@ set(DAS_SRC
   ${CPP_SOURCE_DIR}/info.cpp
   ${CPP_SOURCE_DIR}/tpl/transaction.cpp
   ${CPP_SOURCE_DIR}/tpl/db_bundle.cpp
+  ${CPP_SOURCE_DIR}/tpl/storage_engine.cpp
   ${CPP_SOURCE_DIR}/database_config.cpp
   ${CPP_SOURCE_DIR}/column_buffer.cpp
-#  ${CPP_SOURCE_DIR}/das_io.cpp
+#remove from now on
+${CPP_SOURCE_DIR}/storage_engine_raw.cpp
+
 )
 
 include_directories(${CPP_INCLUDE_DIR})

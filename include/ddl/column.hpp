@@ -8,7 +8,6 @@
 #include "../internal/column_buffer.hpp"
 
 #pragma db object abstract
-
 class Column {
 public:
 
@@ -56,7 +55,6 @@ private:
 };
 
 #pragma db object abstract
-
 class ColumnFromFile : public Column {
 public:
 
@@ -69,7 +67,7 @@ public:
     ColumnFromFile(const std::string &type)
     : Column(type), id_(0), buff_(type) {
     }
-
+    
     const std::string&
     fname() {
         return fname_;
@@ -106,8 +104,8 @@ protected:
 
 #pragma db transient
     ColumnBuffer buff_;
-    // implemented for odb library pourposes
 
+    // implemented for odb library pourposes
     ColumnFromFile() {
     }
 private:
@@ -128,7 +126,6 @@ private:
 };
 
 #pragma db object no_id
-
 class ColumnFromBlob : public Column {
 public:
 

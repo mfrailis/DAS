@@ -46,23 +46,23 @@ class DdlInfoGenerator(_odb.DdlVisitor):
         self._get_columns(data_type.name)
         self._get_associations(data_type.name)
 
-        self._init_keywords.append('all_keywords_["'+data_type.name+'"]["das_id"] = KeywordInfo("das_id","int64","none","object id");')
+        self._init_keywords.append('all_keywords_["'+data_type.name+'"].insert(std::pair<std::string,KeywordInfo>("das_id",KeywordInfo("das_id","int64","none","object id")));')
         for k in self._keywords:
             if k.description is None:
                 d = ""
             else:
                 d = k.description
-            self._init_keywords.append('all_keywords_["'+data_type.name+'"]["'+k.name+'"] = KeywordInfo("'+k.name+'","'+k.ktype+'","'+k.unit+'","'+d+'");')
+            self._init_keywords.append('all_keywords_["'+data_type.name+'"].insert(std::pair<std::string,KeywordInfo>("'+k.name+'",KeywordInfo("'+k.name+'","'+k.ktype+'","'+k.unit+'","'+d+'")));')
 
         for c in self._columns:
             if c.description is None:
                 d = ""
             else:
                 d = c.description
-            self._init_columns.append('all_columns_["'+data_type.name+'"]["'+c.name+'"] = ColumnInfo("'+c.name+'","'+c.ctype+'","'+c.unit+'","'+d+'",'+c.max_string_length+');')
+            self._init_columns.append('all_columns_["'+data_type.name+'"].insert(std::pair<std::string,ColumnInfo>("'+c.name+'",ColumnInfo("'+c.name+'","'+c.ctype+'","'+c.unit+'","'+d+'",'+c.max_string_length+')));')
 
         for (ass_name,association) in self._associations:
-            self._init_associations.append('all_associations_["'+data_type.name+'"]["'+ass_name+'"] = '+_association_info_gen(data_type.name,ass_name,association)+';')
+            self._init_associations.append('all_associations_["'+data_type.name+'"].insert(std::pair<std::string,AssociationInfo>("'+ass_name+'",'+_association_info_gen(data_type.name,ass_name,association)+'));')
 
         ddl_list = self._ddl_map.get_ddl_list(data_type.name)
         for ddl in ddl_list:

@@ -105,11 +105,10 @@ def update(association, priv_type):
   {
     if('''+association.name+'''_temp->is_new())
     {
-      //das::tpl::DbBundle bundle = bundle_.lock();
-      bundle.persist<'''+association.atype+'''> ('''+association.name+'''_temp);
+      tb.persist<'''+association.atype+'''> ('''+association.name+'''_temp);
     }
     // call update anyways because of the nested associated objects
-    '''+association.name+'''_temp->update();
+    '''+association.name+'''_temp->update(tb);
   }
 ''' 
 ###############################################################################################################################################
@@ -122,7 +121,7 @@ def persist(association, priv_type):
   shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = '''+association.name+'''_.get_eager();
   if('''+association.name+'''_temp){ // the association may not be setted
     if('''+association.name+'''_temp->is_new())
-      db.persist<'''+association.atype+'''> ('''+association.name+'''_temp);
+      tb.persist<'''+association.atype+'''> ('''+association.name+'''_temp);
     else
       // the foreign key nedds to be updated with the new one from this object
       '''+association.name+'''_temp->is_dirty_ = true;

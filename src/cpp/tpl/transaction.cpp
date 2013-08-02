@@ -3,28 +3,39 @@
 
 using namespace das::tpl;
 
-Transaction::Transaction(const DbBundle &b, const shared_ptr<odb::session> &s, shared_ptr<odb::transaction> t)
-: b_(b), session_(s), transaction_(t) {
-}
+Transaction::Transaction(const shared_ptr<TransactionBundle> &tb) : tb_(tb){}
 
 void
 Transaction::commit() {
-    if (!transaction_)
+    if (!tb_->transaction_)
         throw das::invalid_transaction();
-
-    b_.flush_session();
-    session_.reset();
-    transaction_->commit();
-    transaction_.reset();
+    
+    tb_->flush_session();
+    tb_->flush_data();   
+  
+    for(TransactionBundle::data_list_type::iterator it = tb_->data_list_.begin();
+            it != tb_->data_list_.end(); ++it)
+        (*it)->commit();
+    
+    tb_->session_.reset();    
+    tb_->data_list_.clear();
+    tb_->transaction_->commit();
+    tb_->transaction_.reset();
 }
 
 void
 inline
 Transaction::rollback() {
-    if (!transaction_)
+    if (!tb_->transaction_)
         throw das::invalid_transaction();
 
-    session_.reset();
-    transaction_->rollback();
-    transaction_.reset();
+   
+    for(TransactionBundle::data_list_type::iterator it = tb_->data_list_.begin();
+            it != tb_->data_list_.end(); ++it)
+        (*it)->rollback();
+
+    tb_->session_.reset();    
+    tb_->data_list_.clear();
+    tb_->transaction_->rollback();
+    tb_->transaction_.reset();
 }

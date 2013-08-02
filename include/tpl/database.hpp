@@ -93,6 +93,7 @@ namespace das {
         private:
             friend class Transaction;
             
+            weak_ptr<TransactionBundle> tb_;
             shared_ptr<odb::session> extended_;
             DbBundle bundle_;
             DdlInfo *info_;

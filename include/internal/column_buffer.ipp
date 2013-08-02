@@ -1,4 +1,7 @@
-#include "internal/column_buffer.hpp"
+#ifndef COLUMN_BUFFER_IPP
+#define COLUMN_BUFFER_IPP
+
+#include "column_buffer.hpp"
 #include <iterator>
 
 template<typename T>
@@ -233,3 +236,36 @@ ColumnBuffer::get_iterator(bool is_end) {
         it.seek_e();
     return it;
 }
+
+template<typename T>
+class ColumnBuffer_buckets : public boost::static_visitor<std::vector<std::pair<T*, size_t> > > {
+public:
+    template<typename U>
+    std::vector<std::pair<T*, size_t> >
+    operator() (std::vector< das::Array<U> > &vec) const {
+        std::cout << "type mismatch" << std::endl;
+        throw std::exception();
+    }
+
+    std::vector<std::pair<T*, size_t> >
+    operator() (std::vector< das::Array<T> > &vec) const {
+        std::vector<std::pair<T*, size_t> > bks;
+        for(typename std::vector< das::Array<T> >::iterator it = vec.begin();
+                it != vec.end(); ++it ){
+            T* buff = it->data();
+            bks.push_back(std::pair<T*, size_t>(buff,it->size()));
+        }
+        return bks;
+    }   
+    
+    
+};
+
+template<typename T>
+std::vector<std::pair<T*, size_t> >
+ColumnBuffer::buckets() {
+    return boost::apply_visitor(ColumnBuffer_buckets<T>(), buffer_);
+}
+
+
+#endif

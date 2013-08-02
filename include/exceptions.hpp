@@ -6,6 +6,17 @@ namespace das
 {
   typedef odb::object_not_persistent object_not_persistent;
   
+    class not_implemented : public std::exception
+  {
+  public :
+    virtual const char*
+    what() const throw()
+    {
+      return "functionality not implemented yet";
+    }
+    
+  };
+  
   class wrong_database : public std::exception
   {
   public :
@@ -148,6 +159,16 @@ namespace das
     
   }; //TODO
   
+  class not_in_transaction : public std::exception
+  {
+  public :
+    virtual const char*
+    what() const throw()
+    {
+      return "operation forbidden outside a transaction";
+    }
+    
+  }; //TODO  
   class new_object : public std::exception
   {
   public :

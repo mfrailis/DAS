@@ -110,6 +110,10 @@ public:
     template<typename T>
     BufferIterator<T>
     end(){return get_iterator<T>(true);}
+
+    template<typename T>
+    std::vector<std::pair<T*,size_t> >
+    buckets();
     
 private:
     template<typename T>
