@@ -394,7 +394,6 @@ def generate_database_config(db_list,filename):
     f.writelines(['''
 #include "internal/database_config.hpp"
 namespace das{
-  std::string DatabaseConfig::temp_;
 
   void 
   DatabaseConfig::prepare_config()
@@ -408,24 +407,54 @@ namespace das{
       info.port = ''',str(db['port']),''';
       info.db_name = "''',str(db['db_name']),'''";
       info.db_type = "''',str(db['db_type']),'''";
-      info.data_root_dir = "''',str(db['data_root_dir']),'''";
-      info.time_interval = "''',str(db['time_interval']),'''";
-    }
 '''])
+        f.writelines(l for l in  storage_engine_tree_visit(db['storage_engine'],''))
+        f.writelines(['    }\n'])
+    f.writelines(['''  }
 
-    f.writelines(['''
-  }
-
-  const
-  std::string&
-  DatabaseConfig::temp_dir()
-  {
-    
-  }
 }
 '''])
     f.close()      
       
+def storage_engine_tree_visit(tree,path):
+    src = []
+    if type(tree) is dict:
+        for (name,subtree) in tree.items():
+            if path == '':
+                pt = name
+            else:
+                pt = path + '.' + name
+            src.extend(storage_engine_tree_visit(subtree,pt))
+    elif type(tree) is list:
+        for item in tree:
+            src.extend(storage_engine_list_visit(item,path))
+    else:
+        if isinstance(tree, (int, long, float)):
+           src.append('      info.storage_engine.put("'+path+'",'+str(tree)+');\n')
+        else: 
+            src.append('      info.storage_engine.put("'+path+'","'+str(tree)+'");\n')
+
+    return src
+
+def storage_engine_list_visit(tree,path):
+    src = []
+    if type(tree) is dict:
+        for (name,subtree) in tree.items():
+            if path == '':
+                pt = name
+            else:
+                pt = path + '.' + name
+            src.extend(storage_engine_tree_visit(subtree,pt))
+    elif type(tree) is list:
+        for item in tree:
+            src.extend(storage_engine_list_visit(item,path))
+    else:
+        if isinstance(tree, (int, long, float)):
+           src.append('      info.storage_engine.add("'+path+'",'+str(tree)+');\n')
+        else: 
+            src.append('      info.storage_engine.add("'+path+'","'+str(tree)+'");\n')
+
+    return src
 
     
 if __name__ == '__main__':

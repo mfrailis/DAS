@@ -94,7 +94,7 @@ public:
     
     bool empty();
 
-    size_t size();
+    size_t size() const;
 
     template<typename T>
     void append(das::Array<T> &array);
@@ -114,6 +114,9 @@ public:
     template<typename T>
     std::vector<std::pair<T*,size_t> >
     buckets();
+    
+    void
+    clear();
     
 private:
     template<typename T>

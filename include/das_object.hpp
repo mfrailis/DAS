@@ -186,8 +186,11 @@ protected:
         throw das::no_external_data();
     }
 
+    
     das::tpl::StorageAccess*
     storage_access(){
+        if (sa_.get() == NULL)
+            sa_.reset(das::tpl::StorageAccess::create(bundle_.alias(), this));
         return sa_.get();
     }
     

@@ -61,13 +61,13 @@ public:
     template<typename T>
     size_t operator() (T &vec) const {
         size_t s = 0;
-        for (typename T::iterator it = vec.begin(); it != vec.end(); ++it)
+        for (typename T::const_iterator it = vec.begin(); it != vec.end(); ++it)
             s += it->size();
         return s;
     }
 };
 
-size_t ColumnBuffer::size() {
+size_t ColumnBuffer::size() const{
     if(!is_init_){
         std::cout << "buffer type uninitialized" << std::endl;
         throw std::exception();   

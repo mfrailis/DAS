@@ -89,24 +89,23 @@ template<typename X>
 class ColumnBuffer_add : public boost::static_visitor<void> {
 public:
 
-    ColumnBuffer_add(das::Array<X> &elem) {
-        elem_ = &elem;
+    ColumnBuffer_add(das::Array<X> &elem) : elem_(elem){
     }
 
-    void operator() (std::vector< das::Array<X> > &vec) {
-        if (elem_->size() > 0)
-            vec.push_back(*elem_);
+    void operator() (std::vector< das::Array<X> > &vec) const{
+        if (elem_.size() > 0)
+            vec.push_back(elem_);
     }
 
     template<typename Y>
-    void operator() (std::vector< das::Array<Y> > &vec) {
-        size_t size = elem_->size();
+    void operator() (std::vector< das::Array<Y> > &vec) const {
+        size_t size = elem_.size();
 
         if (size == 0) return;
 
         Y *data = new Y[size];
         size_t i = 0;
-        for (typename das::Array<X>::iterator it = elem_->begin(); it != elem_->end(); ++it) {
+        for (typename das::Array<X>::iterator it = elem_.begin(); it != elem_.end(); ++it) {
             data[i] = *it;
             ++i;
         }
@@ -115,10 +114,9 @@ public:
 
     void operator() (std::vector< das::Array<std::string> > &vec) {
         std::cout << "string conversion not supported yet" << std::endl;
-
     }
 
-    das::Array<X> *elem_;
+    das::Array<X> &elem_;
 
 };
 
@@ -129,8 +127,7 @@ ColumnBuffer::append(das::Array<T> &array) {
         std::cout << "buffer type uninitialized" << std::endl;
         throw std::exception();
     }
-    ColumnBuffer_add<T> v(array);
-    boost::apply_visitor(v, buffer_);
+    boost::apply_visitor(ColumnBuffer_add<T>(array), buffer_);
 }
 
 template<class OutputIterator>
@@ -257,8 +254,6 @@ public:
         }
         return bks;
     }   
-    
-    
 };
 
 template<typename T>
@@ -267,5 +262,23 @@ ColumnBuffer::buckets() {
     return boost::apply_visitor(ColumnBuffer_buckets<T>(), buffer_);
 }
 
+
+
+
+class ColumnBuffer_clear : public boost::static_visitor<void> {
+public:
+    template<typename T>
+    void
+    operator() (std::vector< das::Array<T> > &vec) const {
+        vec.clear();
+    }
+
+};
+
+inline
+void
+ColumnBuffer::clear(){
+    boost::apply_visitor(ColumnBuffer_clear(), buffer_);
+}
 
 #endif

@@ -8,8 +8,8 @@
   "additionalItems" : false,
 
   "database"  : {
-     "id"         : "#database",
-     "type"	  : "object",
+     "id"              : "#database",
+     "type"	       : "object",
      "properties" : {
          "host"  : {
 	     "type"     : "string",
@@ -39,17 +39,24 @@
 	     "type"     : "string",
 	     "required" : true
 	 },
-	 "data_root_dir" : {
-	     "type" : "string",
-	     "pattern"  : "^\/",
-	     "required" : true
-	 },
-	 "time_interval" : {
-	     "type" : "string",
-	     "enum" : ["hour", "day", "month", "week"],
+	 "storage_engine" : {
+	     "type"     : [{ "$ref" : "#storageengine"}],
 	     "required" : true
 	 }
-     }
-  } 
-  
+     },
+     "additionalProperties" : false
+  },
+
+  "storageengine" : {
+      "id"         : "#storageengine",
+      "type"       : "object",
+      "properties" : {
+	  "name"    : {
+	      "type"     : "string",
+	      "required" : true
+	  }
+      },
+      "additionalProperties" : true
+  }
+
 }

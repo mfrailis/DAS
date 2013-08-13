@@ -7,7 +7,7 @@ namespace das {
     namespace tpl {
 
         template <typename T>
-        class result_iterator : private odb::result_iterator<T, odb::class_object> {
+        class result_iterator : public /*private*/ odb::result_iterator<T, odb::class_object> {
         private:
             typedef odb::result_iterator<T, odb::class_object> super;
 

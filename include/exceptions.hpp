@@ -17,6 +17,17 @@ namespace das
     
   };
   
+      class abstract_das_object : public std::exception
+  {
+  public :
+    virtual const char*
+    what() const throw()
+    {
+      return "virtual function not implemented in this object";
+    }
+    
+  };
+  
   class wrong_database : public std::exception
   {
   public :
@@ -220,7 +231,18 @@ namespace das
     
   }; //TODO
   
+  
 //IO exceptions
+     class io_exception : public std::exception
+  {
+  public :
+    virtual const char*
+    what() const throw()
+    {
+      return "io exception";
+    }
+    
+  }; //TODO
   class das_io_exception : public std::exception
   {
   public :

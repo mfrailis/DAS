@@ -85,13 +85,6 @@ int main(int argc, char * argv[]) {
         t2.commit();
         db->end_session();
     }
-    
-    //FIXME remove all till the end
-    shared_ptr<lfiHkDaeSlowVoltage> ptr = lfiHkDaeSlowVoltage::create("test1","test_level1");
-    das::Array<long long> a;
-    ptr->append_column<long long>("sampleOBT", a);
-    
-    das::Array<long long> b = ptr->get_column<long long>("sampleOBT",0,10);
-    
+       
     return 0;
 }

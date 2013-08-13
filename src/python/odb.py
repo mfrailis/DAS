@@ -538,6 +538,10 @@ public:
 
   ColumnFromFile_'''+self._class_name+'''(const ColumnFromFile &cff)
   : ColumnFromFile(cff){}
+
+  virtual
+  void
+  persist(odb::database &db);
 private:
   ColumnFromFile_'''+self._class_name+'''(){}
   friend class odb::access;
@@ -580,6 +584,12 @@ private:
 };
 
 ''']
+      self._src_body.append('''
+void
+ColumnFromFile_'''+self._class_name+'''::persist(odb::database &db){
+  db.persist(*this);
+}
+''')
     else:   
       self._private_section.append("odb::vector<ColumnFromBlob> columns_;")
     

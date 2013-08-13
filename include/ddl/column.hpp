@@ -1,11 +1,13 @@
 #ifndef DAS_COLUMN_HPP
 #define DAS_COLUMN_HPP
 #include <odb/core.hxx>
+#include <odb/database.hxx>
 #include <vector>
 #include <string>
 #include <odb/tr1/memory.hxx>
 #include <odb/tr1/lazy-ptr.hxx>
 #include "../internal/column_buffer.hpp"
+#include "../exceptions.hpp"
 
 #pragma db object abstract
 class Column {
@@ -20,31 +22,27 @@ public:
     : size_(0), type_(type) {
     }
 
-    const long long&
-    size() const {
+    virtual
+    long long
+    _size() const {
         return size_;
     }
-
-    void
-    size(const long long &size) {
-        size_ = size;
-    }
-
+    
     const std::string&
-    type() const {
+    get_type() const {
         return type_;
     }
 
 protected:
-
+        
     virtual
     void
-    type(const std::string &type) {
+    set_type(const std::string &type) {
         type_ = type;
     }
     
     long long size_;
-#pragma db access(type)
+#pragma db get(get_type) set(set_type)
     std::string type_;
 
     Column() {
@@ -72,12 +70,6 @@ public:
     fname() {
         return fname_;
     }
-
-    void
-    fname(const std::string &fname) {
-        fname_ = fname;
-    }
-
     const std::string&
     temp_path() {
         return temp_path_;
@@ -92,12 +84,43 @@ public:
     buffer() {
         return buff_;
     }
+    
+    bool
+    is_new(){return id_ == 0;}
+    
+    virtual
+    void
+    persist(odb::database &db){
+        throw das::abstract_das_object();
+    }
+
+    const
+    long long&
+    id(){
+        return id_;
+    }
+    
+        virtual
+    long long
+    size() const {
+        return size_ + buff_.size();
+    }
+    
+    const long long&
+    file_size() const {
+        return size_;
+    }
 
 
+    void
+    file_size(const long long &size) {
+        size_ = size;
+    }
+    
 protected:
     virtual
     void
-    type(const std::string &type) {
+    set_type(const std::string &type) {
         type_ = type;
         buff_.init(type);
     }
@@ -106,15 +129,9 @@ protected:
     ColumnBuffer buff_;
 
     // implemented for odb library pourposes
-    ColumnFromFile() {
+    ColumnFromFile() : id_(0){
     }
 private:
-
-    template<typename T>
-    friend class DasDataIn;
-
-    template<typename T>
-    friend class DasDataOut;
 
 #pragma db id auto
     long long id_;
