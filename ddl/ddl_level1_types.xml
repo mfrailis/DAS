@@ -108,7 +108,7 @@
                 <column name="LM151322Flag" type="int32" description="I1 LFI27 M1 - Flags"/>
                 <column name="LM152322Raw" type="uint16" unit="ADU" description="I1 LFI27 M2 - Raw value"/>
                 <column name="LM152322Eng" type="float64" unit="V" description="I1 LFI27 M2 - Eng. value"/>
-                <column name="LM152322Flag" type="int32" description="I1 LFI27 M2 - Flags"/>                
+                <column name="LM152322Flag" type="int32" description="I1 LFI27 M2 - Flags"/>  
             </binaryTable>
         </data>
     </type>

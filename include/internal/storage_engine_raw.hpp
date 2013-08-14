@@ -17,7 +17,7 @@ namespace das {
             virtual void add(DasObject *ptr, const Extension &e);
 
             virtual void save(const std::string &path);
-            
+
             virtual void save();
 
             virtual void commit() {
@@ -41,7 +41,13 @@ namespace das {
             RawStorageAccess(DasObject *obj, const DatabaseInfo &i) : StorageAccess(obj, i), cp_(0) {
                 configure();
             }
-            virtual size_t read(ColumnFromFile* col, column_buffer_ptr buffer, size_t offset, size_t count);
+            virtual size_t read(
+                    const std::string &col_name,
+                    ColumnFromFile* col,
+                    column_buffer_ptr buffer,
+                    size_t offset,
+                    size_t count);
+            
             virtual void flush_buffer(const std::string &col_name, ColumnFromFile* col);
 
             virtual size_t read(ImageFromFile* col, void *buffer, size_t offset, size_t count) {
@@ -56,18 +62,19 @@ namespace das {
                 return false;
             }
 
-            size_t append(std::fstream &stream, column_buffer_ptr buffer, size_t count);
+            //            size_t append(std::fstream &stream, column_buffer_ptr buffer, size_t count);
 
             std::string
             get_default_path(const bool& mkdirs = false);
 
             std::string
-            get_custom_path(const std::string &custom_path,const bool& mkdirs = false);
+            get_custom_path(const std::string &custom_path, const bool& mkdirs = false);
 
             std::string
             get_temp_path(const bool& mkdirs = false);
         private:
             void make_dirs(const std::string &s);
+
             class ResolveToken {
             public:
                 virtual void expand(std::stringstream &ss) = 0;

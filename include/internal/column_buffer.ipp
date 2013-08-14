@@ -89,10 +89,10 @@ template<typename X>
 class ColumnBuffer_add : public boost::static_visitor<void> {
 public:
 
-    ColumnBuffer_add(das::Array<X> &elem) : elem_(elem){
+    ColumnBuffer_add(das::Array<X> &elem) : elem_(elem) {
     }
 
-    void operator() (std::vector< das::Array<X> > &vec) const{
+    void operator() (std::vector< das::Array<X> > &vec) const {
         if (elem_.size() > 0)
             vec.push_back(elem_);
     }
@@ -112,12 +112,33 @@ public:
         vec.push_back(das::Array<Y>(data, size, das::deleteDataWhenDone));
     }
 
-    void operator() (std::vector< das::Array<std::string> > &vec) {
-        std::cout << "string conversion not supported yet" << std::endl;
+    void operator() (std::vector< das::Array<std::string> > &vec) const {
+        std::cout << "conversion to string is not supported" << std::endl;
     }
 
+private:
     das::Array<X> &elem_;
 
+};
+
+template<>
+class ColumnBuffer_add<std::string> : public boost::static_visitor<void> {
+public:
+
+    ColumnBuffer_add(das::Array<std::string> &elem) : elem_(elem) {
+    }
+
+    void operator() (std::vector< das::Array<std::string> > &vec) const {
+        if (elem_.size() > 0)
+            vec.push_back(elem_);
+    }
+
+    template<typename Y>
+    void operator() (std::vector< das::Array<Y> > &vec) const {
+        std::cout << "conversion from string is not supported" << std::endl;
+    }
+private:
+    das::Array<std::string> &elem_;
 };
 
 template<typename T>
@@ -237,23 +258,24 @@ ColumnBuffer::get_iterator(bool is_end) {
 template<typename T>
 class ColumnBuffer_buckets : public boost::static_visitor<std::vector<std::pair<T*, size_t> > > {
 public:
+
     template<typename U>
     std::vector<std::pair<T*, size_t> >
     operator() (std::vector< das::Array<U> > &vec) const {
-        std::cout << "type mismatch" << std::endl;
+        std::cout << "type and type pointer mismatch" << std::endl;
         throw std::exception();
     }
 
     std::vector<std::pair<T*, size_t> >
     operator() (std::vector< das::Array<T> > &vec) const {
         std::vector<std::pair<T*, size_t> > bks;
-        for(typename std::vector< das::Array<T> >::iterator it = vec.begin();
-                it != vec.end(); ++it ){
+        for (typename std::vector< das::Array<T> >::iterator it = vec.begin();
+                it != vec.end(); ++it) {
             T* buff = it->data();
-            bks.push_back(std::pair<T*, size_t>(buff,it->size()));
+            bks.push_back(std::pair<T*, size_t>(buff, it->size()));
         }
         return bks;
-    }   
+    }
 };
 
 template<typename T>
@@ -262,11 +284,9 @@ ColumnBuffer::buckets() {
     return boost::apply_visitor(ColumnBuffer_buckets<T>(), buffer_);
 }
 
-
-
-
 class ColumnBuffer_clear : public boost::static_visitor<void> {
 public:
+
     template<typename T>
     void
     operator() (std::vector< das::Array<T> > &vec) const {
@@ -277,7 +297,7 @@ public:
 
 inline
 void
-ColumnBuffer::clear(){
+ColumnBuffer::clear() {
     boost::apply_visitor(ColumnBuffer_clear(), buffer_);
 }
 

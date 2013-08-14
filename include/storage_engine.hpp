@@ -45,10 +45,18 @@ namespace das {
 
 
 
-            virtual size_t read(ColumnFromFile* col, column_buffer_ptr buffer, size_t offset, size_t count) = 0;
-//            virtual size_t write(ColumnFromFile* col, column_buffer_ptr buffer, size_t offset, size_t count) = 0;
-//            virtual size_t append(ColumnFromFile* col, column_buffer_ptr buffer, size_t count) = 0;
-            virtual void flush_buffer(const std::string &col_name, ColumnFromFile* col) = 0;
+            virtual size_t read(
+                    const std::string &col_name,
+                    ColumnFromFile* col,
+                    column_buffer_ptr buffer,
+                    size_t offset,
+                    size_t count
+                    ) = 0;
+
+            virtual void flush_buffer(
+                    const std::string &col_name,
+                    ColumnFromFile* col
+                    ) = 0;
 
             virtual size_t read(ImageFromFile* col, void *buffer, size_t offset, size_t count) = 0;
             virtual size_t write(ImageFromFile* col, void *buffer, size_t offset, size_t count) = 0;
@@ -75,11 +83,11 @@ namespace das {
             static
             StorageAccess*
             create(const std::string &db_alias, DasObject *obj);
-            
+
             const DatabaseInfo &info;
         protected:
 
-            StorageAccess(DasObject *obj,const DatabaseInfo &i) : obj_(obj), info(i) {
+            StorageAccess(DasObject *obj, const DatabaseInfo &i) : obj_(obj), info(i) {
             }
 
             static
@@ -97,12 +105,12 @@ namespace das {
             column_from_file(DasObject *ptr,
                     const std::string &col_name,
                     const ColumnFromFile &cf);
-            
+
             static
             ColumnFromFile*
             column_from_file(DasObject *ptr,
                     const std::string &col_name);
-            
+
             static
             const ImageFromFile *
             image_from_file(DasObject *ptr);
@@ -168,13 +176,13 @@ namespace das {
                     const ColumnFromFile &cf) {
                 StorageAccess::column_from_file(ptr, col_name, cf);
             }
-            
+
             static
             ColumnFromFile*
             column_from_file(DasObject *ptr,
                     const std::string &col_name) {
-               return StorageAccess::column_from_file(ptr, col_name);
-            }          
+                return StorageAccess::column_from_file(ptr, col_name);
+            }
 
             static
             const ImageFromFile *

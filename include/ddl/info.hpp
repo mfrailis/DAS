@@ -58,7 +58,7 @@ struct ColumnInfo {
             const std::string& _type,
             const std::string& _unit,
             const std::string& _description,
-            int _max_sting_length)
+            size_t _max_sting_length)
     : name(_name),
     type(_type),
     unit(_unit),
@@ -85,7 +85,7 @@ struct ColumnInfo {
         } else if (_type == "uint32") {
             type_var_ = static_cast<unsigned int> (0);
         } else if (_type == "string") {
-            type_var_ = "";
+            type_var_ = std::string();
         }
     }
 
@@ -93,7 +93,7 @@ struct ColumnInfo {
     std::string type;
     std::string unit;
     std::string description;
-    int max_string_length;
+    size_t max_string_length;
     column_type type_var_;
 private:
     // we do not allow default constructor because the type_var_ member unassigned brings undefined behaviour in boost visits

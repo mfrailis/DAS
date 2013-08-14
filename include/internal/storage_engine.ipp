@@ -14,8 +14,8 @@ namespace das {
         class StorageAccess_get_column : public boost::static_visitor<Array<T> > {
         public:
 
-            StorageAccess_get_column(StorageAccess *acc, ColumnFromFile *c, size_t start, size_t length)
-            : sa_(acc), c_(c), s_(start), l_(length) {
+            StorageAccess_get_column(StorageAccess *acc, const std::string &col_name, ColumnFromFile *c, size_t start, size_t length)
+            : sa_(acc), c_(c), s_(start), l_(length), cn_(col_name) {
             }
 
             template<typename U >
@@ -29,7 +29,7 @@ namespace das {
                     U *buff_temp = new U[size];
                     StorageAccess::column_buffer_ptr tb = buff_temp;
 
-                    count = sa_->read(c_, tb, s_, size);
+                    count = sa_->read(cn_, c_, tb, s_, size);
 
                     for (size_t i = 0; i < count; ++i)
                         buffer[i] = buff_temp[i];
@@ -59,9 +59,9 @@ namespace das {
                 T* b = &buffer[0];
                 T* e = &buffer[l_]; //first not valid index
                 size_t count = 0;
-                
+
                 // check if we need to read some (or all) data from file
-                if (c_->file_size() > s_) { 
+                if (c_->file_size() > s_) {
                     /*
                      * calculate the amount of date to read from file:
                      *  min(file_size - offset, length) 
@@ -69,7 +69,7 @@ namespace das {
                     size_t to_read = c_->file_size() - s_;
                     to_read = to_read > l_ ? l_ : to_read;
                     StorageAccess::column_buffer_ptr tb = buffer;
-                    count = sa_->read(c_, tb, s_, to_read);
+                    count = sa_->read(cn_, c_, tb, s_, to_read);
                     if (count < to_read)
                         return Array<T>(buffer, count, das::deleteDataWhenDone);
                 }
@@ -91,24 +91,56 @@ namespace das {
             ColumnFromFile *c_;
             size_t s_;
             size_t l_;
+            const std::string &cn_;
         };
 
         template<>
         class StorageAccess_get_column<std::string> : public boost::static_visitor<Array<std::string> > {
         public:
 
-            StorageAccess_get_column(ColumnFromFile *c, size_t start, size_t length)
-            : c_(c), s_(start), l_(length) {
+            StorageAccess_get_column(StorageAccess *acc, const std::string &col_name, ColumnFromFile *c, size_t start, size_t length)
+            : sa_(acc), c_(c), s_(start), l_(length), cn_(col_name) {
             }
 
             template<typename T >
             Array<std::string> operator()(T & native_type) const {
                 throw das::not_implemented();
             }
+
+            Array<std::string> operator()(std::string &native_type) const {
+                std::string* buffer = new std::string[l_];
+                std::string* b = &buffer[0];
+                std::string* e = &buffer[l_]; //first not valid index
+                size_t count = 0;
+
+                // check if we need to read some (or all) data from file
+                if (c_->file_size() > s_) {
+                    /*
+                     * calculate the amount of date to read from file:
+                     *  min(file_size - offset, length) 
+                     */
+                    size_t to_read = c_->file_size() - s_;
+                    to_read = to_read > l_ ? l_ : to_read;
+                    StorageAccess::column_buffer_ptr tb = buffer;
+                    count = sa_->read(cn_, c_, tb, s_, to_read);
+                    if (count < to_read)
+                        return Array<std::string>(buffer, count, das::deleteDataWhenDone);
+                }
+                b += count;
+                size_t missing = 0;
+                if (count < l_) {
+                    std::string* cached = c_->buffer().copy(b, e, 0);
+                    missing = e - cached;
+                }
+                return Array<std::string>(buffer, l_ - missing, das::deleteDataWhenDone);
+            }
+
         private:
+            StorageAccess *sa_;
             ColumnFromFile *c_;
             size_t s_;
             size_t l_;
+            const std::string &cn_;
         };
 
         template<typename T>
@@ -121,9 +153,9 @@ namespace das {
             column_type type = DdlInfo::get_instance(db_alias(obj_))->
                     get_column_info(type_name(obj_), col_name).type_var_;
 
-            return boost::apply_visitor(StorageAccess_get_column<T>(this, c, start, length), type);
+            return boost::apply_visitor(StorageAccess_get_column<T>(this, col_name, c, start, length), type);
         }
-        
+
         template<typename T>
         void
         StorageAccess::append_column(const string &col_name, Array<T> &a) {
@@ -143,12 +175,11 @@ namespace das {
              * content on the file. Note that in case of type matching, we pass
              * around just references
              */
-            c->buffer().append(a);            
-            
+            c->buffer().append(a);
+
             if (!obj_->storage_access()->buffered_only() &&
-                    !obj_->storage_access()->info.buffered_data())
-            {
-                obj_->storage_access()->flush_buffer(col_name,c);
+                    !obj_->storage_access()->info.buffered_data()) {
+                obj_->storage_access()->flush_buffer(col_name, c);
             }
         }
 
@@ -173,7 +204,7 @@ namespace das {
                 const ColumnFromFile &cf) {
             ptr->column_from_file(col_name, cf);
         }
-        
+
         inline
         ColumnFromFile*
         StorageAccess::column_from_file(DasObject *ptr,
