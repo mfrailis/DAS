@@ -6,9 +6,23 @@
 #include "column_buffer.ipp"
 #include "log.hpp"
 #include <boost/variant.hpp>
+#include <boost/interprocess/smart_ptr/unique_ptr.hpp>
+
+
+
+
 
 namespace das {
     namespace tpl {
+
+        template<typename T>
+        class ArrayDeleter {
+        public:
+
+            void operator() (T* t) {
+                delete [] t;
+            }
+        };
 
         template<typename T>
         class StorageAccess_get_column : public boost::static_visitor<Array<T> > {
@@ -20,44 +34,46 @@ namespace das {
 
             template<typename U >
             Array<T> operator()(U& native_type) const {
-                T* buffer = new T[l_];
-                T* b = &buffer[0];
-                T* e = &buffer[l_]; //first index not valid
+                using boost::interprocess::unique_ptr;
+
+                unique_ptr<T, ArrayDeleter<T> > buffer(new T[l_]);
+                T* b = &buffer.get()[0];
+                T* e = &buffer.get()[l_]; //first index not valid
                 size_t count = 0;
                 if (c_->file_size() > s_) {
                     size_t size = c_->file_size() - s_;
-                    U *buff_temp = new U[size];
-                    StorageAccess::column_buffer_ptr tb = buff_temp;
+                    unique_ptr<U, ArrayDeleter<U> > buff_temp(new U[size]);
+                    StorageAccess::column_buffer_ptr tb = buff_temp.get();
 
                     count = sa_->read(cn_, c_, tb, s_, size);
 
-                    for (size_t i = 0; i < count; ++i)
-                        buffer[i] = buff_temp[i];
-
-                    delete[] buff_temp;
-
-
-                    /* 
-                     * data missing in the file, avoid gaps between data not
-                     * loaded from file and memory buffer returning only the data
-                     * succesfully loaded from file
-                     */
                     if (count < size)
-                        return Array<T>(buffer, count, das::deleteDataWhenDone);
+                        throw io_exception();
+
+                    for (size_t i = 0; i < count; ++i)
+                        buffer.get()[i] = buff_temp.get()[i];
                 }
+
                 b += count;
                 size_t missing = 0;
                 if (count < l_) {
                     T* cached = c_->buffer().copy(b, e, 0);
                     missing = e - cached;
                 }
-                return Array<T>(buffer, l_ - missing, das::deleteDataWhenDone);
+                if (missing > 0) {
+                    throw io_exception();
+                }
+
+                return Array<T>(buffer.release(), l_, das::deleteDataWhenDone);
             }
 
             Array<T> operator()(T& native_type) const {
-                T* buffer = new T[l_];
-                T* b = &buffer[0];
-                T* e = &buffer[l_]; //first not valid index
+                using boost::interprocess::unique_ptr;
+
+                unique_ptr<T, ArrayDeleter<T> > buffer(new T[l_]);
+                T* b = &buffer.get()[0];
+                T* e = &buffer.get()[l_]; //first index not valid
+
                 size_t count = 0;
 
                 // check if we need to read some (or all) data from file
@@ -68,10 +84,14 @@ namespace das {
                      */
                     size_t to_read = c_->file_size() - s_;
                     to_read = to_read > l_ ? l_ : to_read;
-                    StorageAccess::column_buffer_ptr tb = buffer;
+
+                    StorageAccess::column_buffer_ptr tb = buffer.get();
+
                     count = sa_->read(cn_, c_, tb, s_, to_read);
+
                     if (count < to_read)
-                        return Array<T>(buffer, count, das::deleteDataWhenDone);
+                        throw io_exception();
+
                 }
                 b += count;
                 size_t missing = 0;
@@ -79,7 +99,10 @@ namespace das {
                     T* cached = c_->buffer().copy(b, e, 0);
                     missing = e - cached;
                 }
-                return Array<T>(buffer, l_ - missing, das::deleteDataWhenDone);
+                if (missing > 0)
+                    throw io_exception();
+                
+                return Array<T>(buffer.release(), l_, das::deleteDataWhenDone);
             }
 
             Array<T> operator()(std::string & native_type) const {
@@ -108,23 +131,28 @@ namespace das {
             }
 
             Array<std::string> operator()(std::string &native_type) const {
-                std::string* buffer = new std::string[l_];
-                std::string* b = &buffer[0];
-                std::string* e = &buffer[l_]; //first not valid index
+                using boost::interprocess::unique_ptr;
+
+                unique_ptr<std::string, ArrayDeleter<std::string> > buffer(new std::string[l_]);
+                std::string* b = &buffer.get()[0];
+                std::string* e = &buffer.get()[l_]; //first not valid index
                 size_t count = 0;
 
                 // check if we need to read some (or all) data from file
                 if (c_->file_size() > s_) {
                     /*
-                     * calculate the amount of date to read from file:
+                     * calculate the amount of data to read from file:
                      *  min(file_size - offset, length) 
                      */
                     size_t to_read = c_->file_size() - s_;
                     to_read = to_read > l_ ? l_ : to_read;
-                    StorageAccess::column_buffer_ptr tb = buffer;
+                    StorageAccess::column_buffer_ptr tb = buffer.get();
+                    
                     count = sa_->read(cn_, c_, tb, s_, to_read);
+                    
                     if (count < to_read)
-                        return Array<std::string>(buffer, count, das::deleteDataWhenDone);
+                        throw io_exception();
+                    
                 }
                 b += count;
                 size_t missing = 0;
@@ -132,7 +160,10 @@ namespace das {
                     std::string* cached = c_->buffer().copy(b, e, 0);
                     missing = e - cached;
                 }
-                return Array<std::string>(buffer, l_ - missing, das::deleteDataWhenDone);
+                if (missing > 0)
+                    throw io_exception();
+                
+                return Array<std::string>(buffer.release(), l_, das::deleteDataWhenDone);
             }
 
         private:
@@ -147,8 +178,8 @@ namespace das {
         Array<T>
         StorageAccess::get_column(const string& col_name, size_t start, size_t length) {
             ColumnFromFile *c = obj_->column_from_file(col_name); //throw if bad name
-            if (!c || length == 0) { //no data, return an empty array
-                return Array<T>();
+            if (!c || length == 0) { //no data, throw exception
+                throw empty_column();
             }
             column_type type = DdlInfo::get_instance(db_alias(obj_))->
                     get_column_info(type_name(obj_), col_name).type_var_;

@@ -83,13 +83,13 @@ namespace das
     
   }; //TODO
   
-  class no_data_column : public std::exception
+  class empty_column : public std::exception
   {
   public :
     virtual const char*
     what() const throw()
     {
-      return "the column requested is not present";
+      return "the column requested is empty";
     }
     
   }; //TODO
