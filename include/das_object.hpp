@@ -6,9 +6,6 @@
 #include "ddl/info.hpp"
 #include "ddl/column.hpp"
 #include "ddl/image.hpp"
-//#include "tpl/Database.hpp"
-//template <typename T>
-//class DasVector;
 #include <odb/database.hxx>
 #include <odb/tr1/memory.hxx>
 #include <odb/tr1/lazy-ptr.hxx>
@@ -202,7 +199,35 @@ protected:
         map.insert(std::pair<std::string, keyword_type>("creationDate", creationDate_));
     }
 
+    static inline
+    std::string
+    escape_string(const std::string &str){
+        std::string s;
+        size_t len = str.length();
+        for(size_t i =0; i < len; ++i){
+            if(str[i] == '\'')
+                s.push_back('\\');
+            s.push_back(str[i]);
+        }
+        return s;
+    }
+    
+    static inline
+    std::string
+    unescape_string(const std::string &str){
+        std::string s;
+        size_t len = str.length();
+        for(size_t i =0; i < len; ++i){
+            if(str[i] == '\'' && i+1 < len && str[i+1] == '\'')
+                continue;
+            s.push_back(str[i]);
+        }
+        return s;
+    }
 private:
+    std::string get_name() const {return escape_string(name_);}
+    void set_name(const std::string &name){name_ = unescape_string(name);}
+    
     friend class odb::access;
     friend class das::tpl::Database;
     friend class das::tpl::Transaction;
@@ -226,8 +251,7 @@ private:
 
 protected:
     short version_;
-#pragma db type("VARCHAR(256)")
-#pragma db index
+#pragma db type("VARCHAR(256)") set(set_name) get(get_name) index
     std::string name_;
 
 };

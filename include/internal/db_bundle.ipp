@@ -64,19 +64,19 @@ namespace das {
 
             if (!obj->bundle_.blank() && obj->bundle_.alias() != db_alias_)
             {
-                DAS_LOG_DBG("DAS debug INFO: ERROR: trying persisting obj '" << obj->name_ << "' in another database");
+                DAS_LOG_DBG("DAS debug INFO: ERROR: trying persisting obj '" << obj->name() << "' in another database");
                 throw wrong_database();
             }
 
             DAS_DBG
                     (
             if (obj->version_ != 0)
-                    DAS_LOG_DBG("DAS debug INFO: WARNING: changing version number while persisting obj " << obj->name_);
+                    DAS_LOG_DBG("DAS debug INFO: WARNING: changing version number while persisting obj " << obj->name());
                     );
 
             typedef odb::result<max_version> result;
             odb::session::reset_current();
-            result r(db_->query<max_version> ("SELECT MAX(version) FROM " + obj->type_name_ + " WHERE name = '" + obj->name_ + "'"));
+            result r(db_->query<max_version> ("SELECT MAX(version) FROM " + obj->type_name_ + " WHERE name = '" + obj->get_name() + "'"));
             result::iterator i(r.begin());
 
             if (i != r.end()) {
@@ -90,7 +90,7 @@ namespace das {
             odb::session::current(*session_);
             obj->persist_associated_pre(*this); 
             
-            DAS_LOG_DBG("DAS debug INFO: PRS " << obj->name_ << "... ");
+            DAS_LOG_DBG("DAS debug INFO: PRS " << obj->name() << "... ");
             long long id = db_->persist(obj);
             DAS_LOG_DBG("done: id= " << id);
 

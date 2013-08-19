@@ -434,7 +434,12 @@ void
     k_type = self.KTYPE_MAP[keyword.ktype]
 
     if keyword.ktype == 'string':
-      self._private_section.append('#pragma db type("VARCHAR(256)")')
+      self._private_section.append('')
+      self._private_section.append('std::string get_'+keyword.name+'() const {return escape_string('+keyword.name+'_);}')
+      self._private_section.append('void set_'+keyword.name+'(const std::string &'+keyword.name+'){'+keyword.name+'_ = unescape_string('+keyword.name+');}')
+      self._private_section.append('')
+      self._private_section.append('#pragma db type("VARCHAR(256)") set(set_'+keyword.name+') get(get_'+keyword.name+')')
+
     if keyword.index is not None and keyword.index == "yes":
       self._private_section.append("#pragma db index")
     if keyword.default is not None:
@@ -630,6 +635,7 @@ private:
   ImageFromFile_'''+self._class_name+'''(){}
   friend class odb::access;
 };
+
 ''']
     else:
       self._protected_section.append("ImageBlob image_;")
