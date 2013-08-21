@@ -5,7 +5,28 @@
 namespace das
 {
   typedef odb::object_not_persistent object_not_persistent;
+  class incompatible_array_shape : public std::exception
+  {
+  public :
+    virtual const char*
+    what() const throw()
+    {
+      return "incompatible array shapes";
+    }
+    
+  };
   
+    typedef odb::object_not_persistent object_not_persistent;
+  class bad_array_slice : public std::exception
+  {
+  public :
+    virtual const char*
+    what() const throw()
+    {
+      return "bad offset, count or stride parameter while slicing array";
+    }
+    
+  };
     class not_implemented : public std::exception
   {
   public :

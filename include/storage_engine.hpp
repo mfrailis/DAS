@@ -43,6 +43,15 @@ namespace das {
             std::string*
             > column_buffer_ptr;
 
+            typedef boost::variant<
+            char*,
+            short*,
+            int*,
+            float*,
+            double*
+            > image_buffer_ptr;
+
+
 
 
             virtual size_t read(
@@ -58,9 +67,16 @@ namespace das {
                     ColumnFromFile* col
                     ) = 0;
 
-            
-            virtual size_t read(ImageFromFile* col, void *buffer, size_t offset, size_t count) = 0;
-            virtual size_t write(ImageFromFile* col, void *buffer, size_t offset, size_t count) = 0;
+
+            virtual size_t read(
+                    ImageFromFile* col,
+                    image_buffer_ptr buffer,
+                    const das::TinyVector<size_t,11> &offset,
+                    const das::TinyVector<size_t,11> &count,
+                    const das::TinyVector<size_t,11> &stride
+                    ) = 0;
+
+            virtual size_t flush_buffer(ImageFromFile* img) = 0;
 
             virtual bool buffered_only() {
                 return true;
@@ -75,12 +91,15 @@ namespace das {
             template <typename T>
             void append_column(const string &col_name, Array<T> &a);
 
-            template <typename T>
-            Image<T> get_image();
+            template <typename T, int Rank>
+            Array<T,Rank> get_image();
 
-            template <typename T>
-            void set_image(Image<T> &i);
-
+            template <typename T, int Rank>
+            void set_image(Array<T,Rank> &i);
+            
+            template <typename T, int Rank>
+            void append_tiles(Array<T,Rank> &i);
+            
             static
             StorageAccess*
             create(const std::string &db_alias, DasObject *obj);

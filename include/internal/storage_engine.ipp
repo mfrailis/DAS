@@ -4,6 +4,7 @@
 #include "../ddl/info.hpp"
 #include "../das_object.hpp"
 #include "column_buffer.ipp"
+#include "image_buffer.ipp"
 #include "log.hpp"
 #include <boost/variant.hpp>
 #include <boost/interprocess/smart_ptr/unique_ptr.hpp>
@@ -101,7 +102,7 @@ namespace das {
                 }
                 if (missing > 0)
                     throw io_exception();
-                
+
                 return Array<T>(buffer.release(), l_, das::deleteDataWhenDone);
             }
 
@@ -147,12 +148,12 @@ namespace das {
                     size_t to_read = c_->file_size() - s_;
                     to_read = to_read > l_ ? l_ : to_read;
                     StorageAccess::column_buffer_ptr tb = buffer.get();
-                    
+
                     count = sa_->read(cn_, c_, tb, s_, to_read);
-                    
+
                     if (count < to_read)
                         throw io_exception();
-                    
+
                 }
                 b += count;
                 size_t missing = 0;
@@ -162,7 +163,7 @@ namespace das {
                 }
                 if (missing > 0)
                     throw io_exception();
-                
+
                 return Array<std::string>(buffer.release(), l_, das::deleteDataWhenDone);
             }
 
@@ -213,6 +214,42 @@ namespace das {
                 obj_->storage_access()->flush_buffer(col_name, c);
             }
         }
+
+        template <typename T, int Rank>
+        void
+        StorageAccess::append_tiles(Array<T, Rank> &t) {
+            ImageFromFile *i = obj_->image_from_file(); //throw if type does not provide image data
+
+            const ImageInfo &info = DdlInfo::get_instance()->get_image_info(obj_->type_name_);
+
+            if (!i) {
+                ImageFromFile iff(info.type);
+                obj_->image_from_file(iff);
+                i = obj_->image_from_file();
+            }
+
+            /*
+             * considerations as for append coulmn.
+             */
+            i->buffer().append(t, info.dimensions);
+
+            if (!obj_->storage_access()->buffered_only() &&
+                    !obj_->storage_access()->info.buffered_data()) {
+                obj_->storage_access()->flush_buffer(i);
+            }
+
+        }
+
+        /*                
+                 template <typename T, int Rank>
+                 Array<T,Rank> get_image();
+
+                 template <typename T, int Rank>
+                 void set_image(Array<T,Rank> &i);
+         */
+
+
+
 
         inline
         void

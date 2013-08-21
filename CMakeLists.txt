@@ -70,6 +70,7 @@ set(DAS_SRC
   ${CPP_SOURCE_DIR}/tpl/storage_engine.cpp
   ${CPP_SOURCE_DIR}/database_config.cpp
   ${CPP_SOURCE_DIR}/column_buffer.cpp
+  ${CPP_SOURCE_DIR}/image_buffer.cpp
 #remove from now on
 ${CPP_SOURCE_DIR}/storage_engine_raw.cpp
 

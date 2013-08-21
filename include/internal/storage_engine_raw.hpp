@@ -47,14 +47,20 @@ namespace das {
                     column_buffer_ptr buffer,
                     size_t offset,
                     size_t count);
-            
+
             virtual void flush_buffer(const std::string &col_name, ColumnFromFile* col);
 
-            virtual size_t read(ImageFromFile* col, void *buffer, size_t offset, size_t count) {
+            virtual size_t read(
+                    ImageFromFile* col,
+                    image_buffer_ptr buffer,
+                    const das::TinyVector<size_t, 11> &offset,
+                    const das::TinyVector<size_t, 11> &count,
+                    const das::TinyVector<size_t, 11> &stride
+                    ) {
                 return 0;
             }
 
-            virtual size_t write(ImageFromFile* col, void *buffer, size_t offset, size_t count) {
+            virtual size_t flush_buffer(ImageFromFile* col) {
                 return 0;
             }
 

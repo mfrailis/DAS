@@ -295,8 +295,9 @@ class Column:
     
     
 class Image:
-  def __init__(self, pix_type):
+  def __init__(self, pix_type, dimensions):
     self.pix_type = pix_type
+    self.dimensions = dimensions
     
   def accept(self, visitor):
     visitor.visit_image(self)
@@ -405,7 +406,7 @@ class DdlParser:
         
     else:
       image = data.find(DdlParser.NSPACE + 'image')
-      im = Image(image.get('pixType'))
+      im = Image(image.get('pixType'),image.get('dimensions'))
       d.data_obj = im
       
     return d

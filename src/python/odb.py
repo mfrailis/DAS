@@ -620,11 +620,9 @@ ColumnFromFile_'''+self._class_name+'''::persist(odb::database &db){
 class ImageFromFile_'''+self._class_name+''' : public ImageFromFile
 {
 public:
-  ImageFromFile_'''+self._class_name+'''(const unsigned int &size1,
-            const unsigned int &size2,
-            const std::string &pixel_type,
+  ImageFromFile_'''+self._class_name+'''(const std::string &pixel_type,
             const std::string &fname)
-  : ImageFromFile(size1,size2,pixel_type,fname) {}
+  : ImageFromFile(pixel_type,fname) {}
 
   ImageFromFile_'''+self._class_name+'''(const std::string &pixel_type)
   : ImageFromFile(pixel_type) {}

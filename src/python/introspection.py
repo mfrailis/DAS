@@ -28,6 +28,7 @@ class DdlInfoGenerator(_odb.DdlVisitor):
         self._src_dir = source_dir
         self._init_keywords = []
         self._init_columns = []
+        self._init_images = []
         self._init_associations = []
         self._DdlInfo_children = {}
 
@@ -63,6 +64,8 @@ class DdlInfoGenerator(_odb.DdlVisitor):
 
         for (ass_name,association) in self._associations:
             self._init_associations.append('all_associations_["'+data_type.name+'"].insert(std::pair<std::string,AssociationInfo>("'+ass_name+'",'+_association_info_gen(data_type.name,ass_name,association)+'));')
+        if data_type.data is not None and data_type.data.isImage():
+            self._init_images.append('all_images_.insert(std::pair<std::string,ImageInfo>("'+data_type.name+'",ImageInfo("'+data_type.data.data_obj.pix_type+'",'+data_type.data.data_obj.dimensions+')));')
 
         ddl_list = self._ddl_map.get_ddl_list(data_type.name)
         for ddl in ddl_list:
@@ -73,12 +76,14 @@ class DdlInfoGenerator(_odb.DdlVisitor):
                 self._DdlInfo_children[ddl].append('columns_["'+data_type.name+'"] = &all_columns_["'+data_type.name+'"];')
             if self._associations:
                 self._DdlInfo_children[ddl].append('associations_["'+data_type.name+'"] = &all_associations_["'+data_type.name+'"];')
-
+            if data_type.data is not None and data_type.data.isImage():
+                self._DdlInfo_children[ddl].append('images_["'+data_type.name+'"] = &all_images_.at("'+data_type.name+'");')
     def visit_type_list(self,_):
 
         f = open(_os.path.join(self._src_dir, 'ddl_info.cpp'), 'w')
         f.writelines('#include "'+ddl+'.hpp"\n' for ddl in set(self._db_map.values()))
         f.writelines(['\nvoid\n','DdlInfo::init()\n','{\n'])
+        f.writelines("  "+l + "\n" for l in self._init_images)
         f.writelines("  "+l + "\n" for l in self._init_columns)
         f.writelines("  "+l + "\n" for l in self._init_keywords)
         f.writelines("  "+l + "\n" for l in self._init_associations)
@@ -166,6 +171,7 @@ public:
 private:
   boost::unordered_map<std::string, DdlInfo::Keyword_map* > keywords_;
   boost::unordered_map<std::string, DdlInfo::Column_map* > columns_;
+  boost::unordered_map<std::string, ImageInfo* > images_;
   boost::unordered_map<std::string, DdlInfo::Association_map* > associations_;
   static '''+ddl_name+'''* instance_;
 ''']

@@ -90,18 +90,25 @@ public:
         sa_->append_column<T>(col_name, a);
     }
 
-    template <typename T>
-    das::Image<T> get_image() {
+    template <typename T, int Rank>
+    das::Array<T, Rank> get_image() {
         if (sa_.get() == NULL)
             sa_.reset(das::tpl::StorageAccess::create(bundle_.alias(), this));
-        sa_->get_image<T>();
+        sa_->get_image<T, Rank>();
     }
 
-    template <typename T>
-    void set_image(das::Image<T> &i) {
+    template <typename T, int Rank>
+    void set_image(das::Array<T, Rank> &i) {
         if (sa_.get() == NULL)
             sa_.reset(das::tpl::StorageAccess::create(bundle_.alias(), this));
-        sa_->set_image<T>(i);
+        sa_->set_image<T, Rank>(i);
+    }
+
+    template <typename T, int Rank>
+    void append_tiles(das::Array<T, Rank> &i) {
+        if (sa_.get() == NULL)
+            sa_.reset(das::tpl::StorageAccess::create(bundle_.alias(), this));
+        sa_->append_tiles<T, Rank>(i);
     }
 
     //polimorphic interface
@@ -183,14 +190,13 @@ protected:
         throw das::no_external_data();
     }
 
-    
     das::tpl::StorageAccess*
-    storage_access(){
+    storage_access() {
         if (sa_.get() == NULL)
             sa_.reset(das::tpl::StorageAccess::create(bundle_.alias(), this));
         return sa_.get();
     }
-    
+
     virtual void get_keywords(std::map<std::string, keyword_type> &map) {
         map.insert(std::pair<std::string, keyword_type>("das_id", das_id_));
         map.insert(std::pair<std::string, keyword_type>("name", name_));
@@ -201,33 +207,39 @@ protected:
 
     static inline
     std::string
-    escape_string(const std::string &str){
+    escape_string(const std::string &str) {
         std::string s;
         size_t len = str.length();
-        for(size_t i =0; i < len; ++i){
-            if(str[i] == '\'')
+        for (size_t i = 0; i < len; ++i) {
+            if (str[i] == '\'')
                 s.push_back('\\');
             s.push_back(str[i]);
         }
         return s;
     }
-    
+
     static inline
     std::string
-    unescape_string(const std::string &str){
+    unescape_string(const std::string &str) {
         std::string s;
         size_t len = str.length();
-        for(size_t i =0; i < len; ++i){
-            if(str[i] == '\'' && i+1 < len && str[i+1] == '\'')
+        for (size_t i = 0; i < len; ++i) {
+            if (str[i] == '\'' && i + 1 < len && str[i + 1] == '\'')
                 continue;
             s.push_back(str[i]);
         }
         return s;
     }
 private:
-    std::string get_name() const {return escape_string(name_);}
-    void set_name(const std::string &name){name_ = unescape_string(name);}
-    
+
+    std::string get_name() const {
+        return escape_string(name_);
+    }
+
+    void set_name(const std::string &name) {
+        name_ = unescape_string(name);
+    }
+
     friend class odb::access;
     friend class das::tpl::Database;
     friend class das::tpl::Transaction;

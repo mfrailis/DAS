@@ -275,9 +275,6 @@ namespace das {
             }
         }
 
-
-        //FIXME!!! HOW WE DEAL WITH CUSTOM PATHS IN UPDATES?!?!
-
         void
         RawStorageTransaction::save() {
             for (std::vector<DasObject*>::iterator obj_it = objs_.begin();
@@ -285,13 +282,42 @@ namespace das {
                 std::map<std::string, ColumnFromFile*> map;
                 DasObject* obj = *obj_it;
                 StorageTransaction::get_columns_from_file(obj, map);
-
+                RawStorageAccess *rsa = dynamic_cast<RawStorageAccess*> (storage_access(obj));
+                
+                std::string storage_path;
+                
+                /*
+                 * if some column was previously stored, use that path for storing
+                 *  new and updated data
+                 */
+                for (std::map<std::string, ColumnFromFile*>::iterator m_it = map.begin();
+                        m_it != map.end(); ++m_it) {
+                    ColumnFromFile* cff = m_it->second;
+                    
+                    if(cff == NULL || cff->fname() == "")
+                        continue;
+                    
+                    std::string str = cff->fname();
+                    size_t found = str.find_last_of("/");
+                    if(found < std::string::npos){
+                        storage_path = str.substr(0,found);
+                        break;
+                    }
+                    
+                }
+                
+                /*
+                 * if we didn't find any suitable path, than fall back on 
+                 * default path
+                 */
+                if(storage_path == "")
+                    storage_path = rsa->get_default_path(true);
+                
                 for (std::map<std::string, ColumnFromFile*>::iterator m_it = map.begin();
                         m_it != map.end(); ++m_it) {
                     std::string c_name = m_it->first;
                     ColumnFromFile* cff = m_it->second;
-
-                    RawStorageAccess *rsa = dynamic_cast<RawStorageAccess*> (storage_access(obj));
+                    
                     if (cff == NULL) // empty column, skip
                         continue;
 
@@ -301,7 +327,7 @@ namespace das {
                     if (temp_path != "") {
                         std::stringstream ss;
 
-                        ss << rsa->get_default_path(true);
+                        ss << storage_path;
                         ss << m_it->first << "_";
 
                         ColumnFromFile cffn(cff->file_size(), cff->get_type(), ss.str());

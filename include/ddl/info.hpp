@@ -22,6 +22,14 @@ typedef boost::variant<
 char,
 short,
 int,
+float,
+double
+> image_type;
+
+typedef boost::variant<
+char,
+short,
+int,
 long long,
 float,
 double,
@@ -48,12 +56,36 @@ struct KeywordInfo {
     std::string unit;
     std::string description;
 private:
-   KeywordInfo(); 
+    KeywordInfo();
 };
 
+struct ImageInfo {
 
+    ImageInfo(const std::string& _type, size_t _dimensions)
+    : type(_type), dimensions(_dimensions) {
+        if (_type == "byte") {
+            type_var_ = static_cast<char> (0);
+        } else if (_type == "int16") {
+            type_var_ = static_cast<short> (0);
+        } else if (_type == "int32") {
+            type_var_ = static_cast<int> (0);
+        } else if (_type == "float32") {
+            type_var_ = static_cast<float> (0);
+        } else if (_type == "float64") {
+            type_var_ = static_cast<double> (0);
+        }
+    }
+
+    std::string type;
+    size_t dimensions;
+    image_type type_var_;
+private:
+    // we do not allow default constructor because the type_var_ member unassigned brings undefined behaviour in boost visits
+    ImageInfo();
+};
 
 struct ColumnInfo {
+
     ColumnInfo(const std::string& _name,
             const std::string& _type,
             const std::string& _unit,
@@ -101,6 +133,7 @@ private:
 };
 
 struct AssociationInfo {
+
     AssociationInfo(const std::string& ass_type,
             const std::string& table_name,
             const std::string& ass_key,
@@ -114,9 +147,9 @@ struct AssociationInfo {
     std::string association_table;
     std::string association_key;
     std::string object_key;
-    
+
 private:
-   AssociationInfo(); 
+    AssociationInfo();
 };
 
 class DdlInfo {
@@ -134,6 +167,13 @@ public:
     get_column_info(const std::string &type_name, const std::string &column_name)
     const throw (std::out_of_range) {
         return all_columns_.at(type_name).at(column_name);
+    }
+    
+    virtual
+    const ImageInfo&
+    get_image_info(const std::string &type_name)
+    const throw (std::out_of_range) {
+        return all_images_.at(type_name);
     }
 
     static DdlInfo*
@@ -165,6 +205,7 @@ protected:
 
     static boost::unordered_map< std::string, Keyword_map > all_keywords_;
     static boost::unordered_map< std::string, Column_map > all_columns_;
+    static boost::unordered_map< std::string, ImageInfo > all_images_;
     static boost::unordered_map< std::string, Association_map > all_associations_;
 
     DdlInfo() {

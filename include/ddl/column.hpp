@@ -24,7 +24,7 @@ public:
 
     virtual
     long long
-    _size() const {
+    size() const {
         return size_;
     }
     
@@ -100,7 +100,7 @@ public:
         return id_;
     }
     
-        virtual
+    virtual
     long long
     size() const {
         return size_ + buff_.size();
