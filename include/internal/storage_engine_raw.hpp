@@ -53,9 +53,9 @@ namespace das {
             virtual size_t read(
                     ImageFromFile* col,
                     image_buffer_ptr buffer,
-                    const das::TinyVector<size_t, 11> &offset,
-                    const das::TinyVector<size_t, 11> &count,
-                    const das::TinyVector<size_t, 11> &stride
+                    const das::TinyVector<int, 11> &offset,
+                    const das::TinyVector<int, 11> &count,
+                    const das::TinyVector<int, 11> &stride
                     ) {
                 return 0;
             }

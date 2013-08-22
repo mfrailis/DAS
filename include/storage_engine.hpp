@@ -71,9 +71,9 @@ namespace das {
             virtual size_t read(
                     ImageFromFile* col,
                     image_buffer_ptr buffer,
-                    const das::TinyVector<size_t,11> &offset,
-                    const das::TinyVector<size_t,11> &count,
-                    const das::TinyVector<size_t,11> &stride
+                    const das::TinyVector<int,11> &offset,
+                    const das::TinyVector<int,11> &count,
+                    const das::TinyVector<int,11> &stride
                     ) = 0;
 
             virtual size_t flush_buffer(ImageFromFile* img) = 0;
@@ -93,6 +93,14 @@ namespace das {
 
             template <typename T, int Rank>
             Array<T,Rank> get_image();
+            
+            template <typename T, int Rank>
+            Array<T,Rank> 
+            get_image(
+            const TinyVector<int,Rank> &offset,
+            const TinyVector<int,Rank> &count,
+            const TinyVector<int,Rank> &stride
+            );
 
             template <typename T, int Rank>
             void set_image(Array<T,Rank> &i);

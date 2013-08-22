@@ -10,15 +10,15 @@ ImageBuffer::init(const std::string &type) {
     }
     
     if (type == "byte" ) {
-        type_ = static_cast<char*> (NULL);
+        type_ = static_cast<char> (0);
     } else if (type == "int16") {
-        type_ = static_cast<short*> (NULL);
+        type_ = static_cast<short> (0);
     } else if (type == "int32") {
-        type_ = static_cast<int*> (NULL);
+        type_ = static_cast<int> (0);
     } else if (type == "float32") {
-        type_ = static_cast<float*> (NULL);
+        type_ = static_cast<float> (0);
     } else if (type == "float64") {
-        type_ = static_cast<double*> (NULL);
+        type_ = static_cast<double> (0);
     } else {
         std::cout << "type not supported" << std::endl;
         throw std::exception();

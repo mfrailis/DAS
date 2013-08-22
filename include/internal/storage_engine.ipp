@@ -248,8 +248,39 @@ namespace das {
                  void set_image(Array<T,Rank> &i);
          */
 
-
-
+        template <typename T, int Rank>
+        Array<T, Rank>
+        StorageAccess::get_image(
+                const TinyVector<int, Rank> &offset,
+                const TinyVector<int, Rank> &count,
+                const TinyVector<int, Rank> &stride
+                ) {
+            using boost::interprocess::unique_ptr;
+            
+            TinyVector<int, 11> cnt_(0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+            TinyVector<int, 11> off_(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+            TinyVector<int, 11> str_(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+            
+            size_t elems = 1;
+            for (size_t i = 0; i < Rank; ++i){
+                elems *= count[i];
+                cnt_[i] = count[i];
+                off_[i] = offset[i];
+                str_[i] = stride[i];
+            }
+        
+            unique_ptr<T, ArrayDeleter<T> > buffer(new T[elems]);
+            T* begin = buffer.get();
+            
+            //TODO
+            ImageFromFile *i = obj_->image_from_file();
+            if(i == NULL)
+                throw das::empty_image();
+                    
+            size_t elems_copied = i->buffer().copy(begin,off_,cnt_,str_);
+            std::cout << "copied " << elems_copied << "/" << elems << std::endl;
+            return Array<T,Rank>(buffer.release(), count, das::deleteDataWhenDone);
+        }
 
         inline
         void

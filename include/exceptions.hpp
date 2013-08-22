@@ -114,7 +114,16 @@ namespace das
     }
     
   }; //TODO
-  
+    class empty_image : public std::exception
+  {
+  public :
+    virtual const char*
+    what() const throw()
+    {
+      return "the image requested is empty";
+    }
+    
+  }; //TODO
   class association_not_present : public std::exception
   {
   public :

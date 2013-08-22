@@ -96,6 +96,16 @@ public:
             sa_.reset(das::tpl::StorageAccess::create(bundle_.alias(), this));
         sa_->get_image<T, Rank>();
     }
+    
+    template <typename T, int Rank>
+    das::Array<T, Rank> get_image(
+            const das::TinyVector<int,Rank> &offset,
+            const das::TinyVector<int,Rank> &count,
+            const das::TinyVector<int,Rank> &stride) {
+        if (sa_.get() == NULL)
+            sa_.reset(das::tpl::StorageAccess::create(bundle_.alias(), this));
+        sa_->get_image<T, Rank>(offset,count,stride);
+    }
 
     template <typename T, int Rank>
     void set_image(das::Array<T, Rank> &i) {

@@ -6,6 +6,7 @@
 #include "array.hpp"
 #include <boost/variant.hpp>
 #include <boost/any.hpp>
+#include "../ddl/info.hpp"
 
 class ImageBufferEntry {
 public:
@@ -142,17 +143,17 @@ public:
         return size0_ * size1_ * size2_ * size3_ * size4_ *
                 size5_ * size6_ * size7_ * size8_ * size9_ * size10_;
     }
-    
+
+
     template<class OutputIterator>
-    OutputIterator
+    size_t
     copy(OutputIterator &begin,
-            OutputIterator &end,
-            const das::TinyVector<size_t, 11> &offset,
-            const das::TinyVector<size_t, 11> &count,
-            const das::TinyVector<size_t, 11> &stride);
+            const das::TinyVector<int, 11> &offset,
+            const das::TinyVector<int, 11> &count,
+            const das::TinyVector<int, 11> &stride);
 
 private:
-    ImageBufferEntry::data_ptr type_;
+    image_type type_;
     std::vector<ImageBufferEntry> buffer_;
     bool is_init_;
 

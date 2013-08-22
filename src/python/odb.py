@@ -236,43 +236,7 @@ struct das_traits<'''+self._class_name+'''>
     static const std::string name;
 };
 ''')
-#    if datatype.data and datatype.data.store_as == 'File' and datatype.data.isTable():
-#      i.writelines(['''
-#template<typename T>
-#blitz::Array<T,1>
-#'''+self._class_name+'''::get_column(const std::string &column, long long start, long long length)
-#{
-#  const ColumnInfo &info = get_column_info(column);
-#  shared_ptr<'''+self._class_name+'''_column> &cl = this->*columns_.at(column);
-#
-#  if(!cl)
-#  {
-#    throw das::no_data_column();
-#  }
-#
-#  if(start < 0 || start > cl->size())
-#  {
-#    throw das::bad_param();
-#  }
-#  long long len = length == -1 ? cl->size()-start : length;
-#
-#  DasDataIn<T> io(cl);
-#  return io.get(info,start,len);
-#
-#}
-#'''])
-    #null pointer getter
-#    i.writelines(['''
-#inline const shared_ptr<'''+self._class_name+'''>&
-#'''+self._class_name+'''::get_null_ptr()
-#{
-#  if(!'''+self._class_name+'''::null_ptr_)
-#  {
-#    '''+self._class_name+'''::null_ptr_.reset(new '''+self._class_name+'''("I am a null object. If you see me, libdas has a bug: the developers apologize"));
-#  }
-#  return '''+self._class_name+'''::null_ptr_;
-#}
-#'''])
+
     i.close()
 
     self._src_header.append('#include "tpl/database.hpp"')
@@ -615,6 +579,8 @@ ColumnFromFile_'''+self._class_name+'''::persist(odb::database &db){
   def visit_image(self,_):
     if  self._store_as == 'File':
       self._protected_section.append("shared_ptr<ImageFromFile_"+self._class_name+"> image_;")
+      self._protected_section.append("virtual ImageFromFile* image_from_file();")
+      self._protected_section.append("virtual void image_from_file(const ImageFromFile &iff);")
       self._data_types = ['''
 #pragma db object session(false)
 class ImageFromFile_'''+self._class_name+''' : public ImageFromFile
@@ -635,6 +601,18 @@ private:
 };
 
 ''']
+      self._src_body.extend(['''
+ImageFromFile*
+'''+self._class_name+'''::image_from_file(){
+  return image_.get();
+}
+
+void
+'''+self._class_name+'''::image_from_file(const ImageFromFile &iff){
+  image_.reset(new ImageFromFile_'''+self._class_name+'''(iff));
+}
+'''])
+
     else:
       self._protected_section.append("ImageBlob image_;")
 

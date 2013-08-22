@@ -14,7 +14,9 @@ namespace das {
     class TinyVector : public blitz::TinyVector<Num_type, Length> {
         typedef blitz::TinyVector<Num_type, Length> super;
     public:
-
+        TinyVector(const super &vector) : super(vector) {
+        }
+        
         TinyVector(Num_type x0) : super(x0) {
         }
 
@@ -72,6 +74,7 @@ namespace das {
     template<typename P_numtype, int N_Rank = 1 >
     class Array : public blitz::Array<P_numtype, N_Rank> {
         typedef blitz::Array<P_numtype, N_Rank> super;
+    public:
 
         Array(P_numtype *buffer, const TinyVector<int, N_Rank> &shape, buffer_policy flag)
         : super(buffer, shape, flag) {
