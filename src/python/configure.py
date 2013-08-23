@@ -117,7 +117,8 @@ foreach(type_name ${TYPE_NAMES_ALL})
             --default-pointer std::tr1::shared_ptr
 	    -I${ODB_SOURCE_DIR}
             -I${CPP_INCLUDE_DIR}
-            -x -I${Boost_INCLUDE_DIR}
+            -I${ODB_INCLUDE_DIR}
+            -x -I${Boost_INCLUDE_DIR} -x -I${BLITZ_INCLUDE_DIR}
 	    ${ODB_SOURCE_DIR}/${TYPE_PREFIX}${type_name}.hpp
     
 
@@ -148,7 +149,8 @@ COMMAND ${ODB_COMPILER}
     --default-pointer std::tr1::shared_ptr
     -I${ODB_SOURCE_DIR}
     -I${CPP_INCLUDE_DIR}
-    -x -I${Boost_INCLUDE_DIR}
+    -I${ODB_INCLUDE_DIR}
+    -x -I${Boost_INCLUDE_DIR} -x -I${BLITZ_INCLUDE_DIR}
     ${CPP_INCLUDE_DIR}/das_object.hpp
 
 COMMAND mv "'''+db_dir+'''/das_object-odb.hxx" "${DDL_HEADERS_DIR}/'''+db_type+'''/das_object-odb.hxx"
@@ -173,6 +175,7 @@ COMMAND ${ODB_COMPILER}
     --default-pointer std::tr1::shared_ptr 
     -I${ODB_SOURCE_DIR}
     -I${CPP_INCLUDE_DIR}
+    -I${ODB_INCLUDE_DIR}
     -x -I${Boost_INCLUDE_DIR}
     ${CPP_INCLUDE_INTERNAL_DIR}/aux_query.hpp
 COMMAND mv "'''+db_dir+'''/aux_query-odb.hxx" "${DDL_HEADERS_DIR}/'''+db_type+'''/aux_query-odb.hxx"
@@ -194,7 +197,8 @@ COMMAND ${ODB_COMPILER}
     --default-pointer std::tr1::shared_ptr
     -I${ODB_SOURCE_DIR}
     -I${CPP_INCLUDE_DIR}
-    -x -I${Boost_INCLUDE_DIR}
+    -I${ODB_INCLUDE_DIR}
+    -x -I${Boost_INCLUDE_DIR} -x -I${BLITZ_INCLUDE_DIR}
     ${CPP_INCLUDE_DIR}/ddl/column.hpp
 COMMAND mv "'''+db_dir+'''/column-odb.hxx" "${DDL_HEADERS_DIR}/'''+db_type+'''/column-odb.hxx"
 COMMAND mv "'''+db_dir+'''/column-odb.ixx" "${DDL_HEADERS_DIR}/'''+db_type+'''/column-odb.ixx"
@@ -215,7 +219,8 @@ COMMAND ${ODB_COMPILER}
     --default-pointer std::tr1::shared_ptr 
     -I${ODB_SOURCE_DIR}
     -I${CPP_INCLUDE_DIR}
-    -x -I${Boost_INCLUDE_DIR}
+    -I${ODB_INCLUDE_DIR}
+    -x -I${Boost_INCLUDE_DIR} -x -I${BLITZ_INCLUDE_DIR}
     ${CPP_INCLUDE_DIR}/ddl/image.hpp
 COMMAND mv "'''+db_dir+'''/image-odb.hxx" "${DDL_HEADERS_DIR}/'''+db_type+'''/image-odb.hxx"
 COMMAND mv "'''+db_dir+'''/image-odb.ixx" "${DDL_HEADERS_DIR}/'''+db_type+'''/image-odb.ixx"
@@ -340,7 +345,8 @@ foreach(type_name ${TYPE_NAMES})
             --omit-drop
             -I${ODB_SOURCE_DIR}
             -I${CPP_INCLUDE_DIR}
-            -x -I${Boost_INCLUDE_DIR}
+            -I${ODB_INCLUDE_DIR}
+            -x -I${Boost_INCLUDE_DIR} -x -I${BLITZ_INCLUDE_DIR}
 	    ${ODB_SOURCE_DIR}/${TYPE_PREFIX}${type_name}.hpp
     DEPENDS ${DDL_LOCAL_SIGNATURE}
     COMMENT "Generating schema for type ${type_name} on '''+db['alias']+'''"
