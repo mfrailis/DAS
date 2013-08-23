@@ -16,17 +16,22 @@ public:
 
     ImageFromFile(const std::string &pixel_type,
             const std::string &fname)
-    : pixel_type_(pixel_type), fname_(fname), size0_(0), size1_(1), size2_(1),
-    size3_(1), size4_(1), size5_(1), size6_(1), size7_(1), size8_(1),
-    size9_(1), size10_(1), id_(0),
-    buff_(pixel_type, size1_, size2_, size3_, size4_, size5_, size6_, size7_, size8_, size9_, size10_) {
+    : pixel_type_(pixel_type), fname_(fname), id_(0),
+    buff_(pixel_type, this) {
     }
 
     ImageFromFile(const std::string &pixel_type)
     : pixel_type_(pixel_type), id_(0),
-    size0_(0), size1_(1), size2_(1), size3_(1), size4_(1), size5_(1),
-    size6_(1), size7_(1), size8_(1), size9_(1), size10_(1),
-    buff_(pixel_type, size1_, size2_, size3_, size4_, size5_, size6_, size7_, size8_, size9_, size10_) {
+    buff_(pixel_type, this) {
+    }
+
+    ImageFromFile(const ImageFromFile &rhs)
+    :
+    id_(0),
+    pixel_type_(rhs.pixel_type_),
+    buff_(rhs.pixel_type_, this),
+    fname_(rhs.fname_),
+    temp_path_(rhs.temp_path_) {
     }
 
     const std::string&
@@ -34,37 +39,40 @@ public:
         return pixel_type_;
     }
 
+    virtual
     unsigned int
-    extent(size_t rank) {
-        switch (rank) {
-            case 0: return size0_ + buff_.extent(0);
-            case 1: return size1_;
-            case 2: return size2_;
-            case 3: return size3_;
-            case 4: return size4_;
-            case 5: return size5_;
-            case 6: return size6_;
-            case 7: return size7_;
-            case 8: return size8_;
-            case 9: return size9_;
-            case 10: return size10_;
-            default:
-                return 1;
-        }
+    extent(size_t rank) const {
+        return 0;
     }
 
+    virtual
+    unsigned int
+    file_tiles() const {
+        return 0;
+    }
+    
+    virtual
+    void
+    extent(const size_t &rank, size_t value) {
+    }
+
+    virtual
+    unsigned int
+    rank() const {
+        return 0;
+    }
+
+    virtual
     unsigned int
     num_elements() const {
-        return (size0_ * size1_ * size2_ * size3_ * size4_ *
-                size5_ * size6_ * size7_ * size8_ * size9_ * size10_) +
-                buff_.num_elements();
+        return 0;
     }
 
     const std::string&
     fname() {
         return fname_;
     }
-    
+
     const std::string&
     temp_path() {
         return temp_path_;
@@ -74,24 +82,15 @@ public:
     temp_path(const std::string &fname) {
         temp_path_ = fname;
     }
-    
+
     ImageBuffer&
     buffer() {
         return buff_;
     }
-    
+
+
 protected:
-    unsigned int size0_;
-    unsigned int size1_;
-    unsigned int size2_;
-    unsigned int size3_;
-    unsigned int size4_;
-    unsigned int size5_;
-    unsigned int size6_;
-    unsigned int size7_;
-    unsigned int size8_;
-    unsigned int size9_;
-    unsigned int size10_;
+
 
 #pragma db access(pixel_type)
     std::string pixel_type_;
@@ -103,7 +102,7 @@ protected:
     // implemented for odb library pourposes
 
     ImageFromFile() : id_(0),
-    buff_(size1_, size2_, size3_, size4_, size5_, size6_, size7_, size8_, size9_, size10_) {
+    buff_(this) {
     }
 
     void
@@ -114,6 +113,7 @@ protected:
 private:
 
     friend class odb::access;
+    friend class ImageBuffer;
 #pragma db id auto
     long long id_;
 #pragma db transient

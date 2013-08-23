@@ -94,7 +94,7 @@ public:
     das::Array<T, Rank> get_image() {
         if (sa_.get() == NULL)
             sa_.reset(das::tpl::StorageAccess::create(bundle_.alias(), this));
-        sa_->get_image<T, Rank>();
+        return sa_->get_image<T, Rank>();
     }
     
     template <typename T, int Rank>
@@ -104,7 +104,7 @@ public:
             const das::TinyVector<int,Rank> &stride) {
         if (sa_.get() == NULL)
             sa_.reset(das::tpl::StorageAccess::create(bundle_.alias(), this));
-        sa_->get_image<T, Rank>(offset,count,stride);
+        return sa_->get_image<T, Rank>(offset,count,stride);
     }
 
     template <typename T, int Rank>

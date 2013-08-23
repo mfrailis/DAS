@@ -182,7 +182,7 @@ namespace das {
             if (!c || length == 0) { //no data, throw exception
                 throw empty_column();
             }
-            column_type type = DdlInfo::get_instance(db_alias(obj_))->
+            column_type type = DdlInfo::get_instance()->
                     get_column_info(type_name(obj_), col_name).type_var_;
 
             return boost::apply_visitor(StorageAccess_get_column<T>(this, col_name, c, start, length), type);
@@ -209,9 +209,8 @@ namespace das {
              */
             c->buffer().append(a);
 
-            if (!obj_->storage_access()->buffered_only() &&
-                    !obj_->storage_access()->info.buffered_data()) {
-                obj_->storage_access()->flush_buffer(col_name, c);
+            if (!buffered_only() && !info.buffered_data()) {
+                flush_buffer(col_name, c);
             }
         }
 
@@ -220,10 +219,8 @@ namespace das {
         StorageAccess::append_tiles(Array<T, Rank> &t) {
             ImageFromFile *i = obj_->image_from_file(); //throw if type does not provide image data
 
-            const ImageInfo &info = DdlInfo::get_instance()->get_image_info(obj_->type_name_);
-
             if (!i) {
-                ImageFromFile iff(info.type);
+                ImageFromFile iff(DdlInfo::get_instance()->get_image_info(obj_->type_name_).type);
                 obj_->image_from_file(iff);
                 i = obj_->image_from_file();
             }
@@ -231,11 +228,10 @@ namespace das {
             /*
              * considerations as for append coulmn.
              */
-            i->buffer().append(t, info.dimensions);
+            i->buffer().append(t);
 
-            if (!obj_->storage_access()->buffered_only() &&
-                    !obj_->storage_access()->info.buffered_data()) {
-                obj_->storage_access()->flush_buffer(i);
+            if (!buffered_only() && !info.buffered_data()) {
+                flush_buffer(i);
             }
 
         }
@@ -247,6 +243,144 @@ namespace das {
                  template <typename T, int Rank>
                  void set_image(Array<T,Rank> &i);
          */
+        template <typename T, int Rank>
+        class StorageAccess_get_image : public boost::static_visitor<Array<T, Rank> > {
+        public:
+
+            StorageAccess_get_image(
+                    StorageAccess *acc,
+                    ImageFromFile *i,
+                    const TinyVector<int, 11> &offset,
+                    const TinyVector<int, 11> &count,
+                    const TinyVector<int, 11> &stride)
+            : sa_(acc), i_(i), off_(offset), cnt_(count), str_(stride) {
+            }
+
+            template<typename U >
+            Array<T, Rank> operator()(U& native_type) const {
+                using boost::interprocess::unique_ptr;
+
+                /*  unique_ptr<T, ArrayDeleter<T> > buffer(new T[l_]);
+                  T* b = &buffer.get()[0];
+                  T* e = &buffer.get()[l_]; //first index not valid
+                  size_t count = 0;
+                  if (c_->file_size() > s_) {
+                      size_t size = c_->file_size() - s_;
+                      unique_ptr<U, ArrayDeleter<U> > buff_temp(new U[size]);
+                      StorageAccess::column_buffer_ptr tb = buff_temp.get();
+
+                      count = sa_->read(cn_, c_, tb, s_, size);
+
+                      if (count < size)
+                          throw io_exception();
+
+                      for (size_t i = 0; i < count; ++i)
+                          buffer.get()[i] = buff_temp.get()[i];
+                  }
+
+                  b += count;
+                  size_t missing = 0;
+                  if (count < l_) {
+                      T* cached = c_->buffer().copy(b, e, 0);
+                      missing = e - cached;
+                  }
+                  if (missing > 0) {
+                      throw io_exception();
+                  }
+
+                  return Array<T>(buffer.release(), l_, das::deleteDataWhenDone);
+                 */
+            }
+
+            Array<T, Rank> operator()(T& native_type) const {
+                using boost::interprocess::unique_ptr;
+
+                /*
+                                 unique_ptr<T, ArrayDeleter<T> > buffer(new T[l_]);
+                                T* b = &buffer.get()[0];
+                                T* e = &buffer.get()[l_]; //first index not valid
+
+                                size_t count = 0;
+
+                                // check if we need to read some (or all) data from file
+                                if (c_->file_size() > s_) {
+                                    /*
+                 * calculate the amount of date to read from file:
+                 *  min(file_size - offset, length) 
+                 *//*
+                    size_t to_read = c_->file_size() - s_;
+                    to_read = to_read > l_ ? l_ : to_read;
+
+                    StorageAccess::column_buffer_ptr tb = buffer.get();
+
+                    count = sa_->read(cn_, c_, tb, s_, to_read);
+
+                    if (count < to_read)
+                        throw io_exception();
+
+                }
+                b += count;
+                size_t missing = 0;
+                if (count < l_) {
+                    T* cached = c_->buffer().copy(b, e, 0);
+                    missing = e - cached;
+                }
+                if (missing > 0)
+                    throw io_exception();
+
+                return Array<T>(buffer.release(), l_, das::deleteDataWhenDone);
+                */
+                size_t elems = cnt_[0] * cnt_[1] * cnt_[2] * cnt_[3] * cnt_[4] *
+                        cnt_[5] * cnt_[6] * cnt_[7] * cnt_[8] * cnt_[9] * cnt_[10];
+
+                unique_ptr<T, ArrayDeleter<T> > buffer(new T[elems]);
+                T* b = &buffer.get()[0];
+
+                size_t tiles_count = 0;
+
+                // check if we need to read some (or all) tiles from file
+                if (i_->file_tiles() > off_[0]) {
+                    /*
+                     * calculate the amount of tiles to read from file:
+                     *  min(1+(file_tiles - offset[0] -1)/stride[0], count[0]) 
+                     */
+
+                    size_t tiles_to_read = 1;
+                    tiles_to_read += ((i_->file_tiles() - 1) - off_[0]) / str_[0];
+                    tiles_to_read = tiles_to_read > cnt_[0] ? cnt_[0] : tiles_to_read;
+
+                    TinyVector<int, 11> count(
+                            tiles_to_read,
+                            cnt_[1],
+                            cnt_[2],
+                            cnt_[3],
+                            cnt_[4],
+                            cnt_[5],
+                            cnt_[6],
+                            cnt_[7],
+                            cnt_[8],
+                            cnt_[9],
+                            cnt_[10]);
+
+                    StorageAccess::image_buffer_ptr tb = buffer.get();
+
+                    tiles_count = sa_->read(i, tb, off_, count, str_);
+
+                    if (tiles_count < tiles_to_read)
+                        throw io_exception();
+
+                }
+                //TODO read from buffer the remaining tiles, adjust offset with stride
+            }
+
+
+        private:
+            StorageAccess *sa_;
+            ImageFromFile *i_;
+            const TinyVector<int, 11> &cnt_;
+            const TinyVector<int, 11> &off_;
+            const TinyVector<int, 11> &str_;
+        };
 
         template <typename T, int Rank>
         Array<T, Rank>
@@ -256,30 +390,37 @@ namespace das {
                 const TinyVector<int, Rank> &stride
                 ) {
             using boost::interprocess::unique_ptr;
-            
+
             TinyVector<int, 11> cnt_(0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
             TinyVector<int, 11> off_(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
             TinyVector<int, 11> str_(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-            
+
             size_t elems = 1;
-            for (size_t i = 0; i < Rank; ++i){
+            for (size_t i = 0; i < Rank; ++i) {
                 elems *= count[i];
                 cnt_[i] = count[i];
                 off_[i] = offset[i];
                 str_[i] = stride[i];
             }
-        
+            DAS_LOG_DBG("IMAGE copy: " << elems << " elements");
             unique_ptr<T, ArrayDeleter<T> > buffer(new T[elems]);
             T* begin = buffer.get();
-            
+
             //TODO
             ImageFromFile *i = obj_->image_from_file();
-            if(i == NULL)
+            if (i == NULL)
                 throw das::empty_image();
-                    
-            size_t elems_copied = i->buffer().copy(begin,off_,cnt_,str_);
-            std::cout << "copied " << elems_copied << "/" << elems << std::endl;
-            return Array<T,Rank>(buffer.release(), count, das::deleteDataWhenDone);
+
+            image_type type = DdlInfo::get_instance()->
+                    get_image_info(type_name(obj_)).type_var_;
+
+            return boost::apply_visitor(StorageAccess_get_image<T, Rank>(this, i, off_, cnt_, str_), type);
+
+            /* 
+               size_t elems_copied = i->buffer().copy(begin, off_, cnt_, str_);
+               std::cout << "copied " << elems_copied << "/" << elems << std::endl;
+               return Array<T, Rank>(buffer.release(), count, das::deleteDataWhenDone);
+             */
         }
 
         inline

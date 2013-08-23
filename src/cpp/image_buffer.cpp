@@ -1,6 +1,17 @@
 #include "internal/image_buffer.hpp"
+#include "ddl/image.hpp"
 #include <iostream>
 
+unsigned int
+ImageBuffer::num_elements() const {
+    unsigned int elems = size0_;
+    
+    for(size_t i=1; i<iff_->rank(); ++i)
+        elems *= iff_->extent(i);
+    
+    return elems;
+
+}
 
 void
 ImageBuffer::init(const std::string &type) {

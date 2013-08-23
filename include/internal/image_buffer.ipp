@@ -2,6 +2,7 @@
 #define IMAGE_BUFFER_IPP
 
 #include "image_buffer.hpp"
+#include "../ddl/image.hpp"
 #include "log.hpp"
 
 template<typename X, int N>
@@ -30,7 +31,7 @@ public:
             ++i;
         }
         das::Array<Y, N> a(data, elem_.shape(), das::deleteDataWhenDone);
-        buff_.push_back(ImageBufferEntry(a,rank_));
+        buff_.push_back(ImageBufferEntry(a, rank_));
     }
 
 private:
@@ -40,12 +41,13 @@ private:
 };
 
 template<typename T, int N>
-void ImageBuffer::append(das::Array<T, N> &array, size_t rank) {
+void ImageBuffer::append(das::Array<T, N> &array) {
+    unsigned int rank = iff_->rank();
     if (N != rank && N != (rank - 1))
         throw das::incompatible_array_shape();
 
 
-    if (size0_ == 0 && size1_ == 1) {
+    if (iff_->extent(0) == 0) {
         /*
          * the buffer is empty and the shape of the image is uninizialized.
          * We deduce the shape from the shape from the array passed as argument
@@ -56,62 +58,27 @@ void ImageBuffer::append(das::Array<T, N> &array, size_t rank) {
             /* note. we need to initialize all dimensions starting from the higher
              * so we don't need break statements
              */
-            switch (N) {
-                case 11: size10_ = array.extent(10);
-                case 10: size9_ = array.extent(9);
-                case 9: size8_ = array.extent(8);
-                case 8: size7_ = array.extent(7);
-                case 7: size6_ = array.extent(6);
-                case 6: size5_ = array.extent(5);
-                case 5: size4_ = array.extent(4);
-                case 4: size3_ = array.extent(3);
-                case 3: size2_ = array.extent(2);
-                case 2: size1_ = array.extent(1);
-            }
+            for (size_t i = 1; i < N; ++i)
+                iff_->extent(i, array.extent(i));
+
         } else {// we are adding one tile
-            switch (N) {
-                case 10: size9_ = array.extent(10);
-                case 9: size8_ = array.extent(9);
-                case 8: size7_ = array.extent(8);
-                case 7: size6_ = array.extent(7);
-                case 6: size5_ = array.extent(6);
-                case 5: size4_ = array.extent(5);
-                case 4: size3_ = array.extent(4);
-                case 3: size2_ = array.extent(3);
-                case 2: size1_ = array.extent(2);
-                case 1: size1_ = array.extent(1);
-            }
+            for (size_t i = 0; i < N; ++i)
+                iff_->extent(i + 1, array.extent(i));
         }
     } else {
         if (N == rank) {
             /* note. we need to check all dimensions starting from the higher
              * so we don't need break statements
              */
-            switch (N) {
-                case 11: if (size10_ != array.extent(10)) throw das::incompatible_array_shape();
-                case 10: if (size9_ != array.extent(9)) throw das::incompatible_array_shape();
-                case 9: if (size8_ != array.extent(8)) throw das::incompatible_array_shape();
-                case 8: if (size7_ != array.extent(7)) throw das::incompatible_array_shape();
-                case 7: if (size6_ != array.extent(6)) throw das::incompatible_array_shape();
-                case 6: if (size5_ != array.extent(5)) throw das::incompatible_array_shape();
-                case 5: if (size4_ != array.extent(4)) throw das::incompatible_array_shape();
-                case 4: if (size3_ != array.extent(3)) throw das::incompatible_array_shape();
-                case 3: if (size2_ != array.extent(2)) throw das::incompatible_array_shape();
-                case 2: if (size1_ != array.extent(1)) throw das::incompatible_array_shape();
-            }
+            for (size_t i = 1; i < N; ++i)
+                if (iff_->extent(i) != array.extent(i))
+                    throw das::incompatible_array_shape();
+
         } else {// we are adding one tile
-            switch (N) {
-                case 10: if (size9_ != array.extent(10)) throw das::incompatible_array_shape();
-                case 9: if (size8_ != array.extent(9)) throw das::incompatible_array_shape();
-                case 8: if (size7_ != array.extent(8)) throw das::incompatible_array_shape();
-                case 7: if (size6_ != array.extent(7)) throw das::incompatible_array_shape();
-                case 6: if (size5_ != array.extent(6)) throw das::incompatible_array_shape();
-                case 5: if (size4_ != array.extent(5)) throw das::incompatible_array_shape();
-                case 4: if (size3_ != array.extent(4)) throw das::incompatible_array_shape();
-                case 3: if (size2_ != array.extent(3)) throw das::incompatible_array_shape();
-                case 2: if (size1_ != array.extent(2)) throw das::incompatible_array_shape();
-                case 1: if (size1_ != array.extent(1)) throw das::incompatible_array_shape();
-            }
+            for (size_t i = 0; i < N; ++i)
+                if (iff_->extent(i + 1) != array.extent(i))
+                    throw das::incompatible_array_shape();
+
         }
     }
 
@@ -123,7 +90,6 @@ void ImageBuffer::append(das::Array<T, N> &array, size_t rank) {
     else
         size0_++;
 }
-
 
 template<class OutputIterator>
 class ImageBuffer_copy : public boost::static_visitor<size_t> {
@@ -147,22 +113,23 @@ public:
         std::vector<ImageBufferEntry>::iterator buff_it = buffer_.begin();
         if (buff_it == buffer_.end()) return count;
 
-        size_t off0 = offset_[0];
+/*        size_t off0 = offset_[0];
         size_t off_tile0 = 0;
 
-        const das::TinyVector<int, 11> &shape = buff_it->shape();
+
 
         while (off0 > 0 && buff_it != buffer_.end()) {
             off_tile0 = buff_it->shape()[0];
             if (off0 <= off_tile0) {
-                off_tile0 -= off0;
+                off_tile0 = off0;
                 off0 = 0;
             } else {
                 off0 -= off_tile0;
                 ++buff_it;
             }
         }
-
+*/ 
+        const das::TinyVector<int, 11> &shape = buff_it->shape();
         if (buff_it == buffer_.end()) return count;
 
         size_t dsp[] = {
@@ -182,12 +149,34 @@ public:
         const T * ptrs[11];
 
         size_t tiles = count_[0];
-
-        while (tiles > 0 && buff_it != buffer_.end()) {
+        size_t tiles_count = 0;
+      
+        size_t off_tile0 = offset_[0];
+        while (tiles_count < tiles && buff_it != buffer_.end()) {
+            
+            if(buff_it->shape()[0] <= off_tile0){ // this can happen due to stride[0] value
+                DAS_LOG_DBG("offset: "<< off_tile0 << ", skipping a bucket of " << buff_it->shape()[0] << " tiles");                
+                off_tile0 -= buff_it->shape()[0];
+                ++buff_it;
+                continue;
+            }
             ptrs[0] = buff_it->data<T>() + off_tile0 * dsp[0];
-            off_tile0 = 0; //we need the remain offset only for the first batch of tiles
-            size_t bucket_tiles = buff_it->shape()[0] < count_[0] ? shape[0] : count_[0];
+            size_t bucket_tiles_avaiable = 1;
+            bucket_tiles_avaiable += ((buff_it->shape()[0] - 1) - off_tile0)/stride_[0];
 
+            
+            size_t bucket_tiles = bucket_tiles_avaiable < count_[0] - tiles_count ? bucket_tiles_avaiable : count_[0] - tiles_count;
+
+            
+            DAS_LOG_DBG("----------------------------");          
+            DAS_LOG_DBG("buff_it->shape()[0]  : "<<buff_it->shape()[0]);           
+            DAS_LOG_DBG("bucket_tiles_avaiable: "<<bucket_tiles_avaiable);
+            DAS_LOG_DBG("bucket_tiles         : "<<bucket_tiles);
+            DAS_LOG_DBG("off_tile0            : "<<off_tile0);
+            DAS_LOG_DBG("----------------------------");
+            
+            off_tile0 = (buff_it->shape()[0] - off_tile0) % stride_[0];            
+            
             DAS_DBG_NO_SCOPE(
                     size_t DBG_batch_elem = buff_it->num_elements();
                     const T* DBG_batch_begin = buff_it->data<T>();
@@ -228,10 +217,11 @@ public:
                                                         ptrs[10] += d10 == 0 ? dsp[10] * offset_[10] : dsp[10] * stride_[10];
                                                         DAS_DBG_NO_SCOPE(
                                                                 size_t DBG_offset = ptrs[10] - DBG_batch_begin;
-                                                        if (DBG_offset > DBG_batch_elem)
-                                                                DAS_LOG_DBG("IMAGE BUFFER OVERFLOW!!! requested offset " << DBG_offset << " in array[" << DBG_batch_elem << "]");
-                                                        return count;
-                                                                );
+                                                        if (DBG_offset > DBG_batch_elem) {
+                                                            DAS_LOG_DBG("IMAGE BUFFER OVERFLOW!!! requested offset " << DBG_offset << " in array[" << DBG_batch_elem << "]");
+                                                            return count;
+                                                        }
+                                                        );
                                                         *next++ = *ptrs[10];
                                                         ++count;
                                                     }
@@ -245,6 +235,8 @@ public:
                     }
                 }
             }
+            tiles_count += bucket_tiles;
+            ++buff_it;
         }
         return count;
     }
@@ -263,38 +255,21 @@ ImageBuffer::copy(OutputIterator& begin,
         const das::TinyVector<int, 11>& offset,
         const das::TinyVector<int, 11>& count,
         const das::TinyVector<int, 11>& stride) {
-    
+
     if (!is_init_) {
         std::cout << "buffer type uninitialized" << std::endl;
         throw std::exception();
     }
-    
+
     if (size0_ < stride[0] * count[0] + offset[0])
         throw das::bad_array_slice();
-    if (size1_ < stride[1] * count[1] + offset[1])
-        throw das::bad_array_slice();
-    if (size2_ < stride[2] * count[2] + offset[2])
-        throw das::bad_array_slice();
-    if (size3_ < stride[3] * count[3] + offset[3])
-        throw das::bad_array_slice();
-    if (size4_ < stride[4] * count[4] + offset[4])
-        throw das::bad_array_slice();
-    if (size5_ < stride[5] * count[5] + offset[5])
-        throw das::bad_array_slice();
-    if (size6_ < stride[6] * count[6] + offset[6])
-        throw das::bad_array_slice();
-    if (size7_ < stride[7] * count[7] + offset[7])
-        throw das::bad_array_slice();
-    if (size8_ < stride[8] * count[8] + offset[8])
-        throw das::bad_array_slice();
-    if (size9_ < stride[9] * count[9] + offset[9])
-        throw das::bad_array_slice();
-    if (size10_ < stride[10] * count[10] + offset[10])
-        throw das::bad_array_slice();
 
-    
+    for (size_t i = 1; i < 11; ++i)
+        if (iff_->extent(i) < stride[i] * count[i] + offset[i])
+            throw das::bad_array_slice();
+
     return boost::apply_visitor(
-            ImageBuffer_copy<OutputIterator>(begin,offset,count,stride,buffer_),
+            ImageBuffer_copy<OutputIterator>(begin, offset, count, stride, buffer_),
             type_);
 }
 #endif

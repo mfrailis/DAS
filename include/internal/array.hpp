@@ -77,7 +77,7 @@ namespace das {
     public:
 
         Array(P_numtype *buffer, const TinyVector<int, N_Rank> &shape, buffer_policy flag)
-        : super(buffer, shape, flag) {
+        : super(buffer, shape, (blitz::preexistingMemoryPolicy) flag) {
         }
 
         Array() : super() {
@@ -90,8 +90,13 @@ namespace das {
     public:
 
         Array(T *buffer, size_t length, buffer_policy flag)
-        : super(buffer, blitz::shape(length), flag) {
+        : super(buffer, blitz::shape(length), (blitz::preexistingMemoryPolicy) flag) {
         }
+        
+        Array(T *buffer, const TinyVector<int, 1> &shape, buffer_policy flag)
+        : super(buffer, shape, (blitz::preexistingMemoryPolicy) flag) {
+        }
+        
 
         Array() : super() {
         }
