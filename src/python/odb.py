@@ -629,6 +629,12 @@ public:
     return size0_;
   }
 
+  virtual
+  void
+  file_tiles(const unsigned int& tiles){
+    size0_ = tiles;
+  }
+
   virtual void
   extent(const size_t &rank, size_t value){
     switch(rank){'''])

@@ -53,6 +53,11 @@ public:
     
     virtual
     void
+    file_tiles(const unsigned int& tiles){
+    }
+    
+    virtual
+    void
     extent(const size_t &rank, size_t value) {
     }
 
@@ -88,7 +93,10 @@ public:
         return buff_;
     }
 
-
+    const long long&
+    id(){
+        return id_;
+    }
 protected:
 
 

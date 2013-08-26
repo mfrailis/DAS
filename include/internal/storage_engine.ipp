@@ -252,84 +252,103 @@ namespace das {
                     ImageFromFile *i,
                     const TinyVector<int, 11> &offset,
                     const TinyVector<int, 11> &count,
-                    const TinyVector<int, 11> &stride)
-            : sa_(acc), i_(i), off_(offset), cnt_(count), str_(stride) {
+                    const TinyVector<int, 11> &stride,
+                    const TinyVector<int, Rank> &shape
+                    )
+            : sa_(acc), i_(i), off_(offset), cnt_(count), str_(stride), shape_(shape) {
             }
 
             template<typename U >
             Array<T, Rank> operator()(U& native_type) const {
                 using boost::interprocess::unique_ptr;
 
-                /*  unique_ptr<T, ArrayDeleter<T> > buffer(new T[l_]);
-                  T* b = &buffer.get()[0];
-                  T* e = &buffer.get()[l_]; //first index not valid
-                  size_t count = 0;
-                  if (c_->file_size() > s_) {
-                      size_t size = c_->file_size() - s_;
-                      unique_ptr<U, ArrayDeleter<U> > buff_temp(new U[size]);
-                      StorageAccess::column_buffer_ptr tb = buff_temp.get();
+                const size_t elems = cnt_[0] * cnt_[1] * cnt_[2] * cnt_[3] * cnt_[4] *
+                        cnt_[5] * cnt_[6] * cnt_[7] * cnt_[8] * cnt_[9] * cnt_[10];
 
-                      count = sa_->read(cn_, c_, tb, s_, size);
+                unique_ptr<T, ArrayDeleter<T> > buffer(new T[elems]);
+                T* b = &buffer.get()[0];
 
-                      if (count < size)
-                          throw io_exception();
+                size_t tiles_count = 0;
 
-                      for (size_t i = 0; i < count; ++i)
-                          buffer.get()[i] = buff_temp.get()[i];
-                  }
+                // check if we need to read some (or all) tiles from file
+                if (i_->file_tiles() > off_[0]) {
+                    /*
+                     * calculate the amount of tiles to read from file:
+                     *  min(1+(file_tiles - offset[0] -1)/stride[0], count[0]) 
+                     */
 
-                  b += count;
-                  size_t missing = 0;
-                  if (count < l_) {
-                      T* cached = c_->buffer().copy(b, e, 0);
-                      missing = e - cached;
-                  }
-                  if (missing > 0) {
-                      throw io_exception();
-                  }
+                    size_t tiles_to_read = 1;
+                    tiles_to_read += ((i_->file_tiles() - 1) - off_[0]) / str_[0];
+                    tiles_to_read = tiles_to_read > cnt_[0] ? cnt_[0] : tiles_to_read;
 
-                  return Array<T>(buffer.release(), l_, das::deleteDataWhenDone);
-                 */
+
+                    unique_ptr<U, ArrayDeleter<U> > buff_temp(new U[(elems / cnt_[0]) * tiles_to_read]);
+                    StorageAccess::image_buffer_ptr tb = buff_temp.get();
+
+                    TinyVector<int, 11> count(
+                            tiles_to_read,
+                            cnt_[1],
+                            cnt_[2],
+                            cnt_[3],
+                            cnt_[4],
+                            cnt_[5],
+                            cnt_[6],
+                            cnt_[7],
+                            cnt_[8],
+                            cnt_[9],
+                            cnt_[10]);
+
+                    size_t el_from_file = sa_->read(i_, tb, off_, count, str_);
+
+                    
+                    if (el_from_file < tiles_to_read * cnt_[1] * cnt_[2] * cnt_[3] * cnt_[4] *
+                        cnt_[5] * cnt_[6] * cnt_[7] * cnt_[8] * cnt_[9] * cnt_[10])
+                        throw io_exception();
+                    
+                    tiles_count = tiles_to_read;
+
+
+                    T* buff_ptr = buffer.get();
+                    U* tmp_buff_ptr = buff_temp.get();
+
+                    for (size_t i = 0; i < (elems / cnt_[0]) * tiles_to_read; ++i)
+                        buff_ptr[i] = tmp_buff_ptr[i];
+
+                }
+
+                TinyVector<int, 11> offset(off_);
+                TinyVector<int, 11> count(cnt_);
+
+                if (tiles_count != 0) {
+                    offset[0] = i_->file_tiles() - tiles_count * str_[0];
+                    count[0] -= tiles_count;
+                }
+
+                T* ptr = buffer.get() + (elems / cnt_[0]) * tiles_count;
+                size_t buff_elems = count[0] * count[1] * count[2] * count[3] *
+                        count[4] * count[5] * count[6] * count[7] *
+                        count[8] * count[9] * count[10];
+                DAS_DBG(if (ptr > buffer.get() + elems)
+                        DAS_LOG_DBG("arithmetic buffer overflow in storage_engine.ipp");
+                        );
+                size_t c = i_->buffer().copy(ptr, offset, count, str_);
+
+                DAS_DBG(
+                if (c > buff_elems)
+                        DAS_LOG_DBG("arithmetic buffer overflow in storage_engine.ipp");
+                        );
+
+                if (c != buff_elems) {
+                    throw io_exception();
+                }
+
+                return Array<T, Rank>(buffer.release(), shape_, das::deleteDataWhenDone);
+
             }
 
             Array<T, Rank> operator()(T& native_type) const {
                 using boost::interprocess::unique_ptr;
 
-                /*
-                                 unique_ptr<T, ArrayDeleter<T> > buffer(new T[l_]);
-                                T* b = &buffer.get()[0];
-                                T* e = &buffer.get()[l_]; //first index not valid
-
-                                size_t count = 0;
-
-                                // check if we need to read some (or all) data from file
-                                if (c_->file_size() > s_) {
-                                    /*
-                 * calculate the amount of date to read from file:
-                 *  min(file_size - offset, length) 
-                 *//*
-                    size_t to_read = c_->file_size() - s_;
-                    to_read = to_read > l_ ? l_ : to_read;
-
-                    StorageAccess::column_buffer_ptr tb = buffer.get();
-
-                    count = sa_->read(cn_, c_, tb, s_, to_read);
-
-                    if (count < to_read)
-                        throw io_exception();
-
-                }
-                b += count;
-                size_t missing = 0;
-                if (count < l_) {
-                    T* cached = c_->buffer().copy(b, e, 0);
-                    missing = e - cached;
-                }
-                if (missing > 0)
-                    throw io_exception();
-
-                return Array<T>(buffer.release(), l_, das::deleteDataWhenDone);
-                */
                 size_t elems = cnt_[0] * cnt_[1] * cnt_[2] * cnt_[3] * cnt_[4] *
                         cnt_[5] * cnt_[6] * cnt_[7] * cnt_[8] * cnt_[9] * cnt_[10];
 
@@ -364,13 +383,45 @@ namespace das {
 
                     StorageAccess::image_buffer_ptr tb = buffer.get();
 
-                    tiles_count = sa_->read(i, tb, off_, count, str_);
+                    size_t el_from_file = sa_->read(i_, tb, off_, count, str_);
 
-                    if (tiles_count < tiles_to_read)
+                    
+                    if (el_from_file < tiles_to_read * cnt_[1] * cnt_[2] * cnt_[3] * cnt_[4] *
+                        cnt_[5] * cnt_[6] * cnt_[7] * cnt_[8] * cnt_[9] * cnt_[10])
                         throw io_exception();
+                    
+                    tiles_count = tiles_to_read;
 
                 }
-                //TODO read from buffer the remaining tiles, adjust offset with stride
+
+                TinyVector<int, 11> offset(off_);
+                TinyVector<int, 11> count(cnt_);
+
+                if (tiles_count != 0) {
+                    offset[0] = i_->file_tiles() - tiles_count * str_[0];
+                    count[0] -= tiles_count;
+                }
+
+                if (count[0] != 0) {
+                    T* ptr = buffer.get() + (elems / cnt_[0]) * tiles_count;
+                    size_t buff_elems = count[0] * count[1] * count[2] * count[3] *
+                            count[4] * count[5] * count[6] * count[7] *
+                            count[8] * count[9] * count[10];
+                    DAS_DBG(if (ptr > buffer.get() + elems)
+                            DAS_LOG_DBG("arithmetic buffer overflow in storage_engine.ipp");
+                            );
+                    size_t c = i_->buffer().copy(ptr, offset, count, str_);
+
+                    DAS_DBG(
+                    if (c > buff_elems)
+                            DAS_LOG_DBG("arithmetic buffer overflow in storage_engine.ipp");
+                            );
+
+                    if (c != buff_elems) {
+                        throw io_exception();
+                    }
+                }
+                return Array<T, Rank>(buffer.release(), shape_, das::deleteDataWhenDone);
             }
 
 
@@ -380,6 +431,7 @@ namespace das {
             const TinyVector<int, 11> &cnt_;
             const TinyVector<int, 11> &off_;
             const TinyVector<int, 11> &str_;
+            const TinyVector<int, Rank> shape_;
         };
 
         template <typename T, int Rank>
@@ -406,7 +458,7 @@ namespace das {
             unique_ptr<T, ArrayDeleter<T> > buffer(new T[elems]);
             T* begin = buffer.get();
 
-            //TODO
+
             ImageFromFile *i = obj_->image_from_file();
             if (i == NULL)
                 throw das::empty_image();
@@ -414,7 +466,7 @@ namespace das {
             image_type type = DdlInfo::get_instance()->
                     get_image_info(type_name(obj_)).type_var_;
 
-            return boost::apply_visitor(StorageAccess_get_image<T, Rank>(this, i, off_, cnt_, str_), type);
+            return boost::apply_visitor(StorageAccess_get_image<T, Rank>(this, i, off_, cnt_, str_, count), type);
 
             /* 
                size_t elems_copied = i->buffer().copy(begin, off_, cnt_, str_);

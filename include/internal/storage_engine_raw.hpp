@@ -41,6 +41,7 @@ namespace das {
             RawStorageAccess(DasObject *obj, const DatabaseInfo &i) : StorageAccess(obj, i), cp_(0) {
                 configure();
             }
+            
             virtual size_t read(
                     const std::string &col_name,
                     ColumnFromFile* col,
@@ -56,13 +57,9 @@ namespace das {
                     const das::TinyVector<int, 11> &offset,
                     const das::TinyVector<int, 11> &count,
                     const das::TinyVector<int, 11> &stride
-                    ) {
-                return 0;
-            }
+                    );
 
-            virtual size_t flush_buffer(ImageFromFile* col) {
-                return 0;
-            }
+            virtual void flush_buffer(ImageFromFile* img);
 
             virtual bool buffered_only() {
                 return false;

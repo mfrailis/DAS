@@ -112,23 +112,7 @@ public:
 
         std::vector<ImageBufferEntry>::iterator buff_it = buffer_.begin();
         if (buff_it == buffer_.end()) return count;
-
-/*        size_t off0 = offset_[0];
-        size_t off_tile0 = 0;
-
-
-
-        while (off0 > 0 && buff_it != buffer_.end()) {
-            off_tile0 = buff_it->shape()[0];
-            if (off0 <= off_tile0) {
-                off_tile0 = off0;
-                off0 = 0;
-            } else {
-                off0 -= off_tile0;
-                ++buff_it;
-            }
-        }
-*/ 
+ 
         const das::TinyVector<int, 11> &shape = buff_it->shape();
         if (buff_it == buffer_.end()) return count;
 

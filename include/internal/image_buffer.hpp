@@ -44,7 +44,7 @@ public:
     }
 
     template<typename T>
-    const T*
+    T*
     data() const {
         return boost::get<T*>(data_);
     }

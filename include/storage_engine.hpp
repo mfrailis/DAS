@@ -76,7 +76,7 @@ namespace das {
                     const das::TinyVector<int,11> &stride
                     ) = 0;
 
-            virtual size_t flush_buffer(ImageFromFile* img) = 0;
+            virtual void flush_buffer(ImageFromFile* img) = 0;
 
             virtual bool buffered_only() {
                 return true;

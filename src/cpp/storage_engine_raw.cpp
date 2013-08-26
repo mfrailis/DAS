@@ -56,7 +56,7 @@ namespace das {
                         count = read(fd, b, BUFF_SIZE);
                         if (count == -1) {
                             close(fd);
-                           // delete[] b;
+                            // delete[] b;
                             throw io_exception();
                         }
                         off = 0;
@@ -130,6 +130,25 @@ namespace das {
 
             template<typename T>
             size_t operator() (T* buff) const {
+                ssize_t count = write(f_, buff, c_ * sizeof (T));
+                if (count == -1) throw io_exception();
+                count /= sizeof (T);
+                return count;
+            }
+        private:
+            size_t c_;
+            int f_;
+        };
+
+        class RawStorageAccess_append_image : public boost::static_visitor<size_t> {
+        public:
+
+            RawStorageAccess_append_image(int file_desc, size_t count)
+            : c_(count), f_(file_desc) {
+            }
+
+            template<typename T>
+            size_t operator() (const T* buff) const {
                 ssize_t count = write(f_, buff, c_ * sizeof (T));
                 if (count == -1) throw io_exception();
                 count /= sizeof (T);
@@ -227,6 +246,51 @@ namespace das {
             RawStorageAccess* s_;
         };
 
+        class RawStorageAccess_FlushImageBuffer : public boost::static_visitor<void> {
+        public:
+
+            RawStorageAccess_FlushImageBuffer(
+                    ImageFromFile *i,
+                    RawStorageAccess *s)
+            : i_(i), s_(s) {
+
+            }
+
+            template<typename T>
+            void operator() (T &native_type) const {
+                typedef std::vector<ImageBufferEntry> buckets_type;
+                const buckets_type &bks = i_->buffer().buckets();
+                size_t tiles = 0;
+
+                int file_des = open(i_->temp_path().c_str(), O_WRONLY | O_APPEND);
+                if (file_des == -1)
+                    throw io_exception();
+
+                for (typename buckets_type::const_iterator it = bks.begin(); it != bks.end(); ++it) {
+
+                    StorageAccess::image_buffer_ptr buffer = it->data<T>();
+                    size_t count = boost::apply_visitor(
+                            RawStorageAccess_append_image(file_des, it->num_elements()),
+                            buffer);
+
+                    if (count != it->num_elements())
+                        throw io_exception();
+
+                    tiles += it->shape()[0];
+                }
+
+                close(file_des);
+
+                tiles += i_->file_tiles();
+                i_->file_tiles(tiles);
+                i_->buffer().clear();
+            }
+
+        private:
+            ImageFromFile* i_;
+            RawStorageAccess* s_;
+        };
+
         void
         RawStorageTransaction::save(const std::string &path) {
             for (std::vector<DasObject*>::iterator obj_it = objs_.begin();
@@ -283,9 +347,9 @@ namespace das {
                 DasObject* obj = *obj_it;
                 StorageTransaction::get_columns_from_file(obj, map);
                 RawStorageAccess *rsa = dynamic_cast<RawStorageAccess*> (storage_access(obj));
-                
+
                 std::string storage_path;
-                
+
                 /*
                  * if some column was previously stored, use that path for storing
                  *  new and updated data
@@ -293,31 +357,31 @@ namespace das {
                 for (std::map<std::string, ColumnFromFile*>::iterator m_it = map.begin();
                         m_it != map.end(); ++m_it) {
                     ColumnFromFile* cff = m_it->second;
-                    
-                    if(cff == NULL || cff->fname() == "")
+
+                    if (cff == NULL || cff->fname() == "")
                         continue;
-                    
+
                     std::string str = cff->fname();
                     size_t found = str.find_last_of("/");
-                    if(found < std::string::npos){
-                        storage_path = str.substr(0,found);
+                    if (found < std::string::npos) {
+                        storage_path = str.substr(0, found);
                         break;
                     }
-                    
+
                 }
-                
+
                 /*
                  * if we didn't find any suitable path, than fall back on 
                  * default path
                  */
-                if(storage_path == "")
+                if (storage_path == "")
                     storage_path = rsa->get_default_path(true);
-                
+
                 for (std::map<std::string, ColumnFromFile*>::iterator m_it = map.begin();
                         m_it != map.end(); ++m_it) {
                     std::string c_name = m_it->first;
                     ColumnFromFile* cff = m_it->second;
-                    
+
                     if (cff == NULL) // empty column, skip
                         continue;
 
@@ -393,6 +457,224 @@ namespace das {
             boost::apply_visitor(
                     RawStorageAccess_FlushColumnBuffer(col, this),
                     col_t);
+        }
+
+        void
+
+        RawStorageAccess::flush_buffer(ImageFromFile* img) {
+            if (img->buffer().empty()) return;
+            if (img->temp_path() == "") {
+                int dst_fd;
+                std::stringstream tmp;
+                tmp << get_temp_path(true) << obj_->name() << "_XXXXXX";
+                std::string str = tmp.str();
+                size_t len = str.length();
+                char *c_str = new char[len + 1];
+                str.copy(c_str, len);
+                c_str[len] = '\0';
+                // generates unique filename and opens it exclusively
+                dst_fd = mkstemp(c_str);
+                if (dst_fd == -1) {
+                    delete[] c_str;
+                    throw io_exception();
+                }
+
+
+                img->temp_path(c_str);
+                delete[] c_str;
+
+                if (img->fname() != "") {
+
+                    std::stringstream src;
+                    src << img->fname() << img->id();
+
+                    int src_fd;
+                    struct stat stat_buf;
+                    off_t offset = 0;
+
+                    src_fd = open(src.str().c_str(), O_RDONLY);
+                    fstat(src_fd, &stat_buf);
+                    sendfile(dst_fd, src_fd, &offset, stat_buf.st_size);
+                    close(src_fd);
+                }
+                close(dst_fd);
+            }
+            image_type img_t = DdlInfo::get_instance()->
+                    get_image_info(type_name(obj_)).type_var_;
+            boost::apply_visitor(
+                    RawStorageAccess_FlushImageBuffer(img, this),
+                    img_t);
+        }
+
+        class RawStorageAccess_read_image : public boost::static_visitor<ssize_t> {
+        public:
+
+            RawStorageAccess_read_image(
+                    const ImageFromFile *i,
+                    const das::TinyVector<int, 11> &offset,
+                    const das::TinyVector<int, 11> &count,
+                    const das::TinyVector<int, 11> &stride,
+                    const char* path)
+            : i_(i), off_(offset), cnt_(count), str_(stride), path_(path) {
+            }
+
+            template<typename T>
+            ssize_t operator() (T* buff) const {
+                int fd = open(path_, O_RDONLY);
+                if (fd == -1) throw io_exception();
+                /*off_t off = lseek(fd, o_ * sizeof (T), SEEK_SET);
+                if (off == -1) {
+                    close(fd);
+                    throw io_exception();
+                }
+                ssize_t count = read(fd, buff, c_ * sizeof (T));
+                if (count == -1) {
+                    close(fd);
+                    throw io_exception();
+                }
+                 */
+                size_t count = 0;
+
+                das::TinyVector<size_t, 11> shape(
+                        i_->extent(0),
+                        i_->extent(1),
+                        i_->extent(2) == 0 ? 1 : i_->extent(2),
+                        i_->extent(3) == 0 ? 1 : i_->extent(3),
+                        i_->extent(4) == 0 ? 1 : i_->extent(4),
+                        i_->extent(5) == 0 ? 1 : i_->extent(5),
+                        i_->extent(6) == 0 ? 1 : i_->extent(6),
+                        i_->extent(7) == 0 ? 1 : i_->extent(7),
+                        i_->extent(8) == 0 ? 1 : i_->extent(8),
+                        i_->extent(9) == 0 ? 1 : i_->extent(9),
+                        i_->extent(10) == 0 ? 1 : i_->extent(10)
+                        );
+
+                size_t dsp[] = {
+                    /*dim 0*/ shape[1] * shape[2] * shape[3] * shape[4] * shape[5] * shape[6] * shape[7] * shape[8] * shape[9] * shape[10],
+                    /*dim 1*/ shape[2] * shape[3] * shape[4] * shape[5] * shape[6] * shape[7] * shape[8] * shape[9] * shape[10],
+                    /*dim 2*/ shape[3] * shape[4] * shape[5] * shape[6] * shape[7] * shape[8] * shape[9] * shape[10],
+                    /*dim 3*/ shape[4] * shape[5] * shape[6] * shape[7] * shape[8] * shape[9] * shape[10],
+                    /*dim 4*/ shape[5] * shape[6] * shape[7] * shape[8] * shape[9] * shape[10],
+                    /*dim 5*/ shape[6] * shape[7] * shape[8] * shape[9] * shape[10],
+                    /*dim 6*/ shape[7] * shape[8] * shape[9] * shape[10],
+                    /*dim 7*/ shape[8] * shape[9] * shape[10],
+                    /*dim 8*/ shape[9] * shape[10],
+                    /*dim 9*/ shape[10],
+                    /*dim10*/ 1
+                };
+                DAS_DBG_NO_SCOPE(
+                        size_t DBG_file_size = i_->file_tiles() * shape[1] *
+                        shape[2] * shape[3] * shape[4] * shape[5] *
+                        shape[6] * shape[7] * shape[8] * shape[9] *
+                        shape[10] * sizeof (T);
+                        );
+
+                off_t seeks[11];
+                seeks[0] = 0;
+                for (size_t d0 = 0; d0 < cnt_[0]; ++d0) {
+                    seeks[0] += d0 == 0 ? dsp[0] * off_[0] : dsp[0] * str_[0];
+                    seeks[1] = seeks[0];
+                    for (size_t d1 = 0; d1 < cnt_[1]; ++d1) {
+                        seeks[1] += d1 == 0 ? dsp[1] * off_[1] : dsp[1] * str_[1];
+                        seeks[2] = seeks[1];
+                        for (size_t d2 = 0; d2 < cnt_[2]; ++d2) {
+                            seeks[2] += d2 == 0 ? dsp[2] * off_[2] : dsp[2] * str_[2];
+                            seeks[3] = seeks[2];
+                            for (size_t d3 = 0; d3 < cnt_[3]; ++d3) {
+                                seeks[3] += d3 == 0 ? dsp[3] * off_[3] : dsp[3] * str_[3];
+                                seeks[4] = seeks[3];
+                                for (size_t d4 = 0; d4 < cnt_[4]; ++d4) {
+                                    seeks[4] += d4 == 0 ? dsp[4] * off_[4] : dsp[4] * str_[4];
+                                    seeks[5] = seeks[4];
+                                    for (size_t d5 = 0; d5 < cnt_[5]; ++d5) {
+                                        seeks[5] += d5 == 0 ? dsp[5] * off_[4] : dsp[5] * str_[5];
+                                        seeks[6] = seeks[5];
+                                        for (size_t d6 = 0; d6 < cnt_[6]; ++d6) {
+                                            seeks[6] += d6 == 0 ? dsp[6] * off_[6] : dsp[6] * str_[6];
+                                            seeks[7] = seeks[6];
+                                            for (size_t d7 = 0; d7 < cnt_[7]; ++d7) {
+                                                seeks[7] += d7 == 0 ? dsp[7] * off_[7] : dsp[7] * str_[7];
+                                                seeks[8] = seeks[7];
+                                                for (size_t d8 = 0; d8 < cnt_[8]; ++d8) {
+                                                    seeks[8] += d8 == 0 ? dsp[8] * off_[8] : dsp[8] * str_[8];
+                                                    seeks[9] = seeks[8];
+                                                    for (size_t d9 = 0; d9 < cnt_[9]; ++d9) {
+                                                        seeks[9] += d9 == 0 ? dsp[9] * off_[9] : dsp[9] * str_[9];
+                                                        seeks[10] = seeks[9];
+                                                        for (size_t d10 = 0; d10 < cnt_[10]; ++d10) {
+                                                            seeks[10] += d10 == 0 ? dsp[10] * off_[10] : dsp[10] * str_[10];
+                                                            DAS_DBG_NO_SCOPE(
+                                                                    size_t DBG_offset = seeks[10];
+                                                            if (DBG_offset * sizeof (T) > DBG_file_size) {
+                                                                DAS_LOG_DBG("IMAGE bad seek OVERFLOW!!! requested " << DBG_offset << " in file length " << DBG_file_size);
+                                                                return count;
+                                                            }
+                                                            );
+                                                            size_t file_pos = seeks[10] * sizeof (T);
+                                                            off_t off = lseek(fd, file_pos, SEEK_SET);
+                                                            if (off == -1) {
+                                                                close(fd);
+                                                                throw io_exception();
+                                                            }
+                                                            T* ptr = buff + count;
+                                                            ssize_t c = read(fd, ptr, sizeof (T));
+                                                            DAS_LOG_DBG("buffer["<<count <<"] = "<< *ptr);
+                                                            if (c == -1) {
+                                                                close(fd);
+                                                                throw io_exception();
+                                                            }
+                                                            ++count;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                }
+                close(fd);
+                return count;
+            }
+
+        private:
+            const ImageFromFile *i_;
+            const das::TinyVector<int, 11> &off_;
+            const das::TinyVector<int, 11> &cnt_;
+            const das::TinyVector<int, 11> &str_;
+            const char* path_;
+
+        };
+
+        size_t
+        RawStorageAccess::read(
+                ImageFromFile* i,
+                image_buffer_ptr buffer,
+                const das::TinyVector<int, 11> &offset,
+                const das::TinyVector<int, 11> &count,
+                const das::TinyVector<int, 11> &stride
+                ) {
+
+            if (i->temp_path() != "")
+                return boost::apply_visitor(
+                    RawStorageAccess_read_image(i, offset, count, stride, i->temp_path().c_str()),
+                    buffer);
+            else
+                if (i->fname() != "") {
+                std::stringstream ss;
+                ss << i->fname() << i->id();
+
+                return boost::apply_visitor(
+                        RawStorageAccess_read_image(i, offset, count, stride, i->temp_path().c_str()),
+                        buffer);
+            }
+
+            return 0;
+
+
         }
 
         inline
