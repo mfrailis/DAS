@@ -208,8 +208,7 @@ protected:
     static boost::unordered_map< std::string, ImageInfo > all_images_;
     static boost::unordered_map< std::string, Association_map > all_associations_;
 
-    DdlInfo() {
-    }
+    DdlInfo() {};
 
 
 
