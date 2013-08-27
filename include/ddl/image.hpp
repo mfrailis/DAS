@@ -77,6 +77,11 @@ public:
     fname() {
         return fname_;
     }
+    
+    void
+    fname(const std::string &fname){
+        fname_ = fname;
+    }
 
     const std::string&
     temp_path() {
@@ -97,6 +102,13 @@ public:
     id(){
         return id_;
     }
+    
+    virtual
+    void
+    persist(odb::database &db){
+        throw das::abstract_das_object();
+    }
+    
 protected:
 
 

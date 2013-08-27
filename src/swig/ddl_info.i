@@ -86,7 +86,7 @@ public:
     const ImageInfo&
     get_image_info(const std::string &type_name)
       const throw (std::out_of_range);
-    
+
 
     static DdlInfo*
     get_instance();

@@ -123,11 +123,11 @@ public:
 
     //polimorphic interface
 
-    virtual bool is_table() {
+    virtual bool is_table() const{
         return false;
     }
 
-    virtual bool is_image() {
+    virtual bool is_image() const{
         return false;
     }
 

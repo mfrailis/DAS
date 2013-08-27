@@ -175,7 +175,7 @@ public:
     const throw (std::out_of_range) {
         return all_images_.at(type_name);
     }
-
+      
     static DdlInfo*
     get_instance() {
         if (!instance_) {

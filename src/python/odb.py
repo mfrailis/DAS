@@ -425,6 +425,8 @@ void
 #        self._header.append('#include "../../internal/das_io.hpp"')
     self._header.append('#include <odb/vector.hxx>')
     
+    self._public_section.append('virtual bool is_table() const { return true; }')
+
     if self._store_as == 'File':
       self._protected_section.append('virtual ColumnFromFile* column_from_file(const std::string &col_name);')
       self._protected_section.append('virtual void column_from_file(const std::string &col_name, const ColumnFromFile &cf);')
@@ -577,11 +579,14 @@ ColumnFromFile_'''+self._class_name+'''::persist(odb::database &db){
       self._store_as = 'File'
 
   def visit_image(self,image):
+    self._public_section.append('virtual bool is_image() const { return true; }')
     dim = int(image.dimensions) + 1
     if  self._store_as == 'File':
       self._protected_section.append("shared_ptr<ImageFromFile_"+self._class_name+"> image_;")
       self._protected_section.append("virtual ImageFromFile* image_from_file();")
       self._protected_section.append("virtual void image_from_file(const ImageFromFile &iff);")
+      self._protected_section.append('virtual void save_data(const std::string &path, das::tpl::TransactionBundle &tb);')
+      self._protected_section.append('virtual void save_data(das::tpl::TransactionBundle &tb);')
       self._data_types = ['''
 #pragma db object session(false)
 class ImageFromFile_'''+self._class_name+''' : public ImageFromFile
@@ -603,11 +608,13 @@ public:
       self._data_types.extend(['    size'+str(dim-2)+'''_(1) {}
 
   ImageFromFile_'''+self._class_name+'''(const ImageFromFile &iff)
-  : ImageFromFile(iff),
-    size0_(0),'''])
-      for i in range(2,(dim-1)):
-        self._data_types.extend(['    size'+str(i-1)+'_(1),'])            
-      self._data_types.extend(['    size'+str(dim-2)+'''_(1) {}
+  : ImageFromFile(iff)
+  {'''])
+      for i in range(1,(dim)):
+        self._data_types.extend(['    size'+str(i-1)+'_ = iff.extent('+str(i-1)+');'])           
+      self._data_types.extend(['''
+
+  }
 
   virtual unsigned int rank() const { return '''+str(dim-1)+''';}
 
@@ -654,6 +661,10 @@ public:
       self._data_types.extend(['    size'+str(dim-2)+'''_;
   }
 
+  virtual
+  void
+  persist(odb::database &db);
+
 private:'''])
       for i in range(1,dim):
         self._data_types.extend(['  int size'+str(i-1)+'_;'])            
@@ -673,7 +684,30 @@ void
   image_.reset(new ImageFromFile_'''+self._class_name+'''(iff));
 }
 '''])
+      self._src_body.append('''
+void
+ImageFromFile_'''+self._class_name+'''::persist(odb::database &db){
+  db.persist(*this);
+}
 
+void
+'''+self._class_name+'''::save_data(const std::string &path, das::tpl::TransactionBundle &tb){
+  shared_ptr<das::tpl::StorageTransaction> e = das::tpl::StorageTransaction::create(bundle_.alias(),tb);
+  e->add(this);
+  e->save(path);
+  tb.add(e);
+}
+
+void
+'''+self._class_name+'''::save_data(das::tpl::TransactionBundle &tb){
+  shared_ptr<das::tpl::StorageTransaction> e = das::tpl::StorageTransaction::create(bundle_.alias(),tb);
+  e->add(this);
+  e->save();
+  tb.add(e);
+}
+
+
+''')
     else:
       self._protected_section.append("ImageBlob image_;")
 

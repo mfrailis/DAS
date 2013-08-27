@@ -168,6 +168,22 @@ public:
     return associations_.at(type_name)->at(association_name);
   }
 
+  virtual
+  bool
+  is_table(const std::string &type_name)
+  const throw (std::out_of_range){
+    keywords_.at(type_name); // throw if not exists;
+    return columns_.find(type_name) != columns_.end();
+  }
+
+  virtual
+  bool
+  is_image(const std::string &type_name)
+  const throw (std::out_of_range){
+    keywords_.at(type_name); // throw if not exists;
+    return images_.find(type_name) != images_.end();
+  }
+
 private:
   boost::unordered_map<std::string, DdlInfo::Keyword_map* > keywords_;
   boost::unordered_map<std::string, DdlInfo::Column_map* > columns_;

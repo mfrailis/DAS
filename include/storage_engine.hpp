@@ -140,7 +140,7 @@ namespace das {
                     const std::string &col_name);
 
             static
-            const ImageFromFile *
+            ImageFromFile *
             image_from_file(DasObject *ptr);
 
             static
@@ -213,7 +213,7 @@ namespace das {
             }
 
             static
-            const ImageFromFile *
+            ImageFromFile *
             image_from_file(DasObject *ptr) {
                 return StorageAccess::image_from_file(ptr);
             }

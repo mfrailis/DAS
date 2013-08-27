@@ -14,6 +14,10 @@ namespace das {
     class TinyVector : public blitz::TinyVector<Num_type, Length> {
         typedef blitz::TinyVector<Num_type, Length> super;
     public:
+        
+        TinyVector() : super() {
+        }       
+        
         TinyVector(const super &vector) : super(vector) {
         }
         

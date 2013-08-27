@@ -297,20 +297,56 @@ namespace das {
                     obj_it != objs_.end(); ++obj_it) {
                 std::map<std::string, ColumnFromFile*> map;
                 DasObject* obj = *obj_it;
-                StorageTransaction::get_columns_from_file(obj, map);
 
-                for (std::map<std::string, ColumnFromFile*>::iterator m_it = map.begin();
-                        m_it != map.end(); ++m_it) {
-                    std::string c_name = m_it->first;
-                    ColumnFromFile* cff = m_it->second;
-
+                if (obj->is_table()) {
+                    StorageTransaction::get_columns_from_file(obj, map);
                     RawStorageAccess *rsa = dynamic_cast<RawStorageAccess*> (storage_access(obj));
-                    if (cff == NULL) // empty column, skip
+                    for (std::map<std::string, ColumnFromFile*>::iterator m_it = map.begin();
+                            m_it != map.end(); ++m_it) {
+                        std::string c_name = m_it->first;
+                        ColumnFromFile* cff = m_it->second;
+
+
+                        if (cff == NULL) // empty column, skip
+                            continue;
+
+                        rsa->flush_buffer(c_name, cff);
+
+                        std::string temp_path = cff->temp_path();
+                        if (temp_path != "") {
+                            std::stringstream ss;
+                            if (path == "")
+                                ss << rsa->get_default_path(true);
+                            else
+                                ss << rsa->get_custom_path(path, true);
+
+                            ss << m_it->first << "_";
+
+                            ColumnFromFile cffn(cff->file_size(), cff->get_type(), ss.str());
+                            column_from_file(obj, c_name, cffn);
+
+                            ColumnFromFile *cffnp = column_from_file(obj, c_name);
+                            cffnp->persist(*(tb_.db()));
+
+                            ss << cffnp->id();
+                            if (rename(temp_path.c_str(), ss.str().c_str())) {
+
+                                std::cout << strerror(errno) << std::endl;
+                                throw das::io_exception();
+                            }
+
+                        }
+                    }
+                } else if (obj->is_image()) {
+                    ImageFromFile* iff = image_from_file(obj);
+
+                    if (iff == NULL)// empty image, skip
                         continue;
 
-                    rsa->flush_buffer(c_name, cff);
+                    RawStorageAccess *rsa = dynamic_cast<RawStorageAccess*> (storage_access(obj));
 
-                    std::string temp_path = cff->temp_path();
+                    rsa->flush_buffer(iff);
+                    std::string temp_path = iff->temp_path();
                     if (temp_path != "") {
                         std::stringstream ss;
                         if (path == "")
@@ -318,15 +354,36 @@ namespace das {
                         else
                             ss << rsa->get_custom_path(path, true);
 
-                        ss << m_it->first << "_";
+                        ImageFromFile iffn(iff->pixel_type(), ss.str());
+                        unsigned int e0 = iff->file_tiles();
+                        unsigned int e1 = iff->extent(1);
+                        unsigned int e2 = iff->extent(2);
+                        unsigned int e3 = iff->extent(3);
+                        unsigned int e4 = iff->extent(4);
+                        unsigned int e5 = iff->extent(5);
+                        unsigned int e6 = iff->extent(6);
+                        unsigned int e7 = iff->extent(7);
+                        unsigned int e8 = iff->extent(8);
+                        unsigned int e9 = iff->extent(9);
+                        unsigned int e10 = iff->extent(10);
+                        
+                        image_from_file(obj, iffn);
 
-                        ColumnFromFile cffn(cff->file_size(), cff->get_type(), ss.str());
-                        column_from_file(obj, c_name, cffn);
+                        ImageFromFile *iffnp = image_from_file(obj);
+                        iffnp->file_tiles(e0);
+                        iffnp->extent(1,e1);
+                        iffnp->extent(2,e2);
+                        iffnp->extent(3,e3);
+                        iffnp->extent(4,e4);
+                        iffnp->extent(5,e5);
+                        iffnp->extent(6,e6);
+                        iffnp->extent(7,e7);
+                        iffnp->extent(8,e8);
+                        iffnp->extent(9,e9);
+                        iffnp->extent(10,e10);
+                        iffnp->persist(*(tb_.db()));
 
-                        ColumnFromFile *cffnp = column_from_file(obj, c_name);
-                        cffnp->persist(*(tb_.db()));
-
-                        ss << cffnp->id();
+                        ss << iffnp->id();
                         if (rename(temp_path.c_str(), ss.str().c_str())) {
 
                             std::cout << strerror(errno) << std::endl;
@@ -334,8 +391,9 @@ namespace das {
                         }
 
                     }
-                }
 
+
+                }
             }
         }
 
@@ -345,62 +403,128 @@ namespace das {
                     obj_it != objs_.end(); ++obj_it) {
                 std::map<std::string, ColumnFromFile*> map;
                 DasObject* obj = *obj_it;
-                StorageTransaction::get_columns_from_file(obj, map);
-                RawStorageAccess *rsa = dynamic_cast<RawStorageAccess*> (storage_access(obj));
+                if (obj->is_table()) {
+                    StorageTransaction::get_columns_from_file(obj, map);
+                    RawStorageAccess *rsa = dynamic_cast<RawStorageAccess*> (storage_access(obj));
 
-                std::string storage_path;
+                    std::string storage_path;
 
-                /*
-                 * if some column was previously stored, use that path for storing
-                 *  new and updated data
-                 */
-                for (std::map<std::string, ColumnFromFile*>::iterator m_it = map.begin();
-                        m_it != map.end(); ++m_it) {
-                    ColumnFromFile* cff = m_it->second;
+                    /*
+                     * if some column was previously stored, use that path for storing
+                     *  new and updated data
+                     */
+                    for (std::map<std::string, ColumnFromFile*>::iterator m_it = map.begin();
+                            m_it != map.end(); ++m_it) {
+                        ColumnFromFile* cff = m_it->second;
 
-                    if (cff == NULL || cff->fname() == "")
+                        if (cff == NULL || cff->fname() == "")
+                            continue;
+
+                        std::string str = cff->fname();
+                        size_t found = str.find_last_of("/");
+                        if (found < std::string::npos) {
+                            storage_path = str.substr(0, found);
+                            break;
+                        }
+
+                    }
+
+                    /*
+                     * if we didn't find any suitable path, than fall back on 
+                     * default path
+                     */
+                    if (storage_path == "")
+                        storage_path = rsa->get_default_path(true);
+
+                    for (std::map<std::string, ColumnFromFile*>::iterator m_it = map.begin();
+                            m_it != map.end(); ++m_it) {
+                        std::string c_name = m_it->first;
+                        ColumnFromFile* cff = m_it->second;
+
+                        if (cff == NULL) // empty column, skip
+                            continue;
+
+                        rsa->flush_buffer(c_name, cff);
+
+                        std::string temp_path = cff->temp_path();
+                        if (temp_path != "") {
+                            std::stringstream ss;
+
+                            ss << storage_path;
+                            ss << m_it->first << "_";
+
+                            ColumnFromFile cffn(cff->file_size(), cff->get_type(), ss.str());
+                            column_from_file(obj, c_name, cffn);
+
+                            ColumnFromFile *cffnp = column_from_file(obj, c_name);
+                            cffnp->persist(*(tb_.db()));
+
+                            ss << cffnp->id();
+                            if (rename(temp_path.c_str(), ss.str().c_str())) {
+
+                                std::cout << strerror(errno) << std::endl;
+                                throw das::io_exception();
+                            }
+
+                        }
+                    }
+                } else if (obj->is_image()) {
+                    std::string storage_path;
+
+                    ImageFromFile* iff = image_from_file(obj);
+                    if (iff == NULL) //image empty, skip
                         continue;
 
-                    std::string str = cff->fname();
+                    RawStorageAccess *rsa = dynamic_cast<RawStorageAccess*> (storage_access(obj));
+
+                    rsa->flush_buffer(iff);
+
+                    std::string str = iff->fname();
                     size_t found = str.find_last_of("/");
                     if (found < std::string::npos) {
                         storage_path = str.substr(0, found);
-                        break;
                     }
-
-                }
-
-                /*
-                 * if we didn't find any suitable path, than fall back on 
-                 * default path
-                 */
-                if (storage_path == "")
-                    storage_path = rsa->get_default_path(true);
-
-                for (std::map<std::string, ColumnFromFile*>::iterator m_it = map.begin();
-                        m_it != map.end(); ++m_it) {
-                    std::string c_name = m_it->first;
-                    ColumnFromFile* cff = m_it->second;
-
-                    if (cff == NULL) // empty column, skip
-                        continue;
-
-                    rsa->flush_buffer(c_name, cff);
-
-                    std::string temp_path = cff->temp_path();
+                    if (storage_path == "")
+                        storage_path = rsa->get_default_path(true);
+                    
+                    std::string temp_path = iff->temp_path();
                     if (temp_path != "") {
                         std::stringstream ss;
 
                         ss << storage_path;
-                        ss << m_it->first << "_";
 
-                        ColumnFromFile cffn(cff->file_size(), cff->get_type(), ss.str());
-                        column_from_file(obj, c_name, cffn);
+                        ImageFromFile iffn(iff->pixel_type(), ss.str());
+                        
+                        unsigned int e0 = iff->file_tiles();
+                        unsigned int e1 = iff->extent(1);
+                        unsigned int e2 = iff->extent(2);
+                        unsigned int e3 = iff->extent(3);
+                        unsigned int e4 = iff->extent(4);
+                        unsigned int e5 = iff->extent(5);
+                        unsigned int e6 = iff->extent(6);
+                        unsigned int e7 = iff->extent(7);
+                        unsigned int e8 = iff->extent(8);
+                        unsigned int e9 = iff->extent(9);
+                        unsigned int e10 = iff->extent(10);
+                        
+                        image_from_file(obj, iffn);
 
-                        ColumnFromFile *cffnp = column_from_file(obj, c_name);
-                        cffnp->persist(*(tb_.db()));
+                        ImageFromFile *iffnp = image_from_file(obj);
+                        iffnp->file_tiles(e0);
+                        iffnp->extent(1,e1);
+                        iffnp->extent(2,e2);
+                        iffnp->extent(3,e3);
+                        iffnp->extent(4,e4);
+                        iffnp->extent(5,e5);
+                        iffnp->extent(6,e6);
+                        iffnp->extent(7,e7);
+                        iffnp->extent(8,e8);
+                        iffnp->extent(9,e9);
+                        iffnp->extent(10,e10);
+                        
+                        iffnp->persist(*(tb_.db()));
 
-                        ss << cffnp->id();
+                        ss << iffnp->id();
                         if (rename(temp_path.c_str(), ss.str().c_str())) {
 
                             std::cout << strerror(errno) << std::endl;
@@ -408,8 +532,8 @@ namespace das {
                         }
 
                     }
-                }
 
+                }
             }
         }
 
@@ -618,7 +742,7 @@ namespace das {
                                                             }
                                                             T* ptr = buff + count;
                                                             ssize_t c = read(fd, ptr, sizeof (T));
-                                                            DAS_LOG_DBG("buffer["<<count <<"] = "<< *ptr);
+                                                            DAS_LOG_DBG("buffer[" << count << "] = " << *ptr);
                                                             if (c == -1) {
                                                                 close(fd);
                                                                 throw io_exception();
@@ -634,7 +758,7 @@ namespace das {
                             }
                         }
                     }
-                    
+
                 }
                 close(fd);
                 return count;
@@ -668,7 +792,7 @@ namespace das {
                 ss << i->fname() << i->id();
 
                 return boost::apply_visitor(
-                        RawStorageAccess_read_image(i, offset, count, stride, i->temp_path().c_str()),
+                        RawStorageAccess_read_image(i, offset, count, stride, ss.str().c_str()),
                         buffer);
             }
 

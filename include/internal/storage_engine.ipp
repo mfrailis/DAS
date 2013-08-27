@@ -236,13 +236,25 @@ namespace das {
 
         }
 
-        /*                
-                 template <typename T, int Rank>
-                 Array<T,Rank> get_image();
+        template <typename T, int Rank>
+        void
+        StorageAccess::set_image(Array<T, Rank> &t) {
+            ImageFromFile iff(DdlInfo::get_instance()->get_image_info(obj_->type_name_).type);
+            obj_->image_from_file(iff);
+            ImageFromFile* i = obj_->image_from_file();
 
-                 template <typename T, int Rank>
-                 void set_image(Array<T,Rank> &i);
-         */
+
+            /*
+             * considerations as for append coulmn.
+             */
+            i->buffer().append(t);
+
+            if (!buffered_only() && !info.buffered_data()) {
+                flush_buffer(i);
+            }
+
+        }
+
         template <typename T, int Rank>
         class StorageAccess_get_image : public boost::static_visitor<Array<T, Rank> > {
         public:
@@ -300,11 +312,11 @@ namespace das {
 
                     size_t el_from_file = sa_->read(i_, tb, off_, count, str_);
 
-                    
+
                     if (el_from_file < tiles_to_read * cnt_[1] * cnt_[2] * cnt_[3] * cnt_[4] *
-                        cnt_[5] * cnt_[6] * cnt_[7] * cnt_[8] * cnt_[9] * cnt_[10])
+                            cnt_[5] * cnt_[6] * cnt_[7] * cnt_[8] * cnt_[9] * cnt_[10])
                         throw io_exception();
-                    
+
                     tiles_count = tiles_to_read;
 
 
@@ -320,28 +332,30 @@ namespace das {
                 TinyVector<int, 11> count(cnt_);
 
                 if (tiles_count != 0) {
-                    offset[0] = i_->file_tiles() - tiles_count * str_[0];
+                    offset[0] = (i_->file_tiles() - ((tiles_count - 1) * str_[0])) - off_[0];
+                    offset[0] = str_[0] - offset[0];
                     count[0] -= tiles_count;
                 }
 
-                T* ptr = buffer.get() + (elems / cnt_[0]) * tiles_count;
-                size_t buff_elems = count[0] * count[1] * count[2] * count[3] *
-                        count[4] * count[5] * count[6] * count[7] *
-                        count[8] * count[9] * count[10];
-                DAS_DBG(if (ptr > buffer.get() + elems)
-                        DAS_LOG_DBG("arithmetic buffer overflow in storage_engine.ipp");
-                        );
-                size_t c = i_->buffer().copy(ptr, offset, count, str_);
+                if (count[0] > 0) {
+                    T* ptr = buffer.get() + (elems / cnt_[0]) * tiles_count;
+                    size_t buff_elems = count[0] * count[1] * count[2] * count[3] *
+                            count[4] * count[5] * count[6] * count[7] *
+                            count[8] * count[9] * count[10];
+                    DAS_DBG(if (ptr > buffer.get() + elems)
+                            DAS_LOG_DBG("arithmetic buffer overflow in storage_engine.ipp");
+                            );
+                    size_t c = i_->buffer().copy(ptr, offset, count, str_);
 
-                DAS_DBG(
-                if (c > buff_elems)
-                        DAS_LOG_DBG("arithmetic buffer overflow in storage_engine.ipp");
-                        );
+                    DAS_DBG(
+                    if (c > buff_elems)
+                            DAS_LOG_DBG("arithmetic buffer overflow in storage_engine.ipp");
+                            );
 
-                if (c != buff_elems) {
-                    throw io_exception();
+                    if (c != buff_elems) {
+                        throw io_exception();
+                    }
                 }
-
                 return Array<T, Rank>(buffer.release(), shape_, das::deleteDataWhenDone);
 
             }
@@ -385,11 +399,11 @@ namespace das {
 
                     size_t el_from_file = sa_->read(i_, tb, off_, count, str_);
 
-                    
+
                     if (el_from_file < tiles_to_read * cnt_[1] * cnt_[2] * cnt_[3] * cnt_[4] *
-                        cnt_[5] * cnt_[6] * cnt_[7] * cnt_[8] * cnt_[9] * cnt_[10])
+                            cnt_[5] * cnt_[6] * cnt_[7] * cnt_[8] * cnt_[9] * cnt_[10])
                         throw io_exception();
-                    
+
                     tiles_count = tiles_to_read;
 
                 }
@@ -397,12 +411,14 @@ namespace das {
                 TinyVector<int, 11> offset(off_);
                 TinyVector<int, 11> count(cnt_);
 
+
                 if (tiles_count != 0) {
-                    offset[0] = i_->file_tiles() - tiles_count * str_[0];
+                    offset[0] = (i_->file_tiles() - ((tiles_count - 1) * str_[0])) - off_[0];
+                    offset[0] = str_[0] - offset[0];
                     count[0] -= tiles_count;
                 }
 
-                if (count[0] != 0) {
+                if (count[0] > 0) {
                     T* ptr = buffer.get() + (elems / cnt_[0]) * tiles_count;
                     size_t buff_elems = count[0] * count[1] * count[2] * count[3] *
                             count[4] * count[5] * count[6] * count[7] *
@@ -468,11 +484,40 @@ namespace das {
 
             return boost::apply_visitor(StorageAccess_get_image<T, Rank>(this, i, off_, cnt_, str_, count), type);
 
-            /* 
-               size_t elems_copied = i->buffer().copy(begin, off_, cnt_, str_);
-               std::cout << "copied " << elems_copied << "/" << elems << std::endl;
-               return Array<T, Rank>(buffer.release(), count, das::deleteDataWhenDone);
-             */
+        }
+
+        template <typename T, int Rank>
+        Array<T, Rank>
+        StorageAccess::get_image() {
+            using boost::interprocess::unique_ptr;
+            ImageFromFile *i_ = obj_->image_from_file();
+            if (i_ == NULL)
+                throw das::empty_image();
+
+            if (Rank != i_->rank())
+                throw das::bad_array_slice();
+
+            TinyVector<int, 11> cnt_(0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+            TinyVector<int, 11> off_(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+            TinyVector<int, 11> str_(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+
+            TinyVector<int, Rank> shape;
+            size_t elems = 1;
+            for (size_t i = 0; i < Rank; ++i) {
+                cnt_[i] = i_->extent(i);
+                str_[i] = 1;
+                shape[i] = cnt_[i];
+                elems *= cnt_[i];
+            }
+
+            DAS_LOG_DBG("IMAGE copy: " << elems << " elements");
+            unique_ptr<T, ArrayDeleter<T> > buffer(new T[elems]);
+            T* begin = buffer.get();
+
+            image_type type = DdlInfo::get_instance()->
+                    get_image_info(type_name(obj_)).type_var_;
+
+            return boost::apply_visitor(StorageAccess_get_image<T, Rank>(this, i_, off_, cnt_, str_, shape), type);
         }
 
         inline
@@ -505,7 +550,7 @@ namespace das {
         }
 
         inline
-        const ImageFromFile *
+        ImageFromFile *
         StorageAccess::image_from_file(DasObject *ptr) {
             return ptr->image_from_file();
         }
