@@ -25,7 +25,6 @@ Transaction::commit() {
 }
 
 void
-inline
 Transaction::rollback() {
     if (!tb_ || !tb_->transaction_)
         throw das::invalid_transaction();

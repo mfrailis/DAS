@@ -1,7 +1,5 @@
 
-%module ddl_info
 %{
-#define SWIG_FILE_WITH_INIT
 #include "ddl/info.hpp"
 %}
 
@@ -106,9 +104,5 @@ protected:
     DdlInfo();
 
 
-
-private:
-    void init();
-    static DdlInfo* instance_;
 };
 
