@@ -138,7 +138,7 @@ void QLVisitor::visitListName(ListName *p)
       for(unsigned int i = 0; i < p->size()-1; ++i)
 	{
 	  const AssociationInfo& info = info_->
-	    get_association_type(stack.top().current_type_,  static_cast<Keyword*>(p->at(i))->ident_);
+	    get_association_info(stack.top().current_type_,  static_cast<Keyword*>(p->at(i))->ident_);
 	  gen_join_code(info);
 	  stack.top().assoc_tables_.insert(info.association_table);
 	  stack.top().assoc_tables_.insert(info.association_type);

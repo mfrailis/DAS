@@ -82,6 +82,7 @@ class DdlInfoGenerator(_odb.DdlVisitor):
 
         f = open(_os.path.join(self._src_dir, 'ddl_info.cpp'), 'w')
         f.writelines('#include "'+ddl+'.hpp"\n' for ddl in set(self._db_map.values()))
+        f.writelines(['#include "ddl/types/ddl_types.hpp"'])
         f.writelines(['\nvoid\n','DdlInfo::init()\n','{\n'])
         f.writelines("  "+l + "\n" for l in self._init_images)
         f.writelines("  "+l + "\n" for l in self._init_columns)
@@ -229,14 +230,14 @@ private:
 def _association_info_gen(base_name,ass_name,association):
     if association.multiplicity == 'many' :
         if association.relation == 'shared':
-            return 'AssociationInfo("'+association.atype+'","'+base_name+'_'+ass_name+'","value","object_id")'
+            return 'AssociationInfo("'+association.atype+'","'+base_name+'_'+ass_name+'","value","object_id",new AssociationAccessImp_many<'+base_name+','+association.atype+'>(&'+base_name+'::'+ass_name+',&'+base_name+'::'+ass_name+'))'
         else:
-            return 'AssociationInfo("'+association.atype+'","'+association.atype+'","","'+base_name+'_'+ass_name+'")'
+            return 'AssociationInfo("'+association.atype+'","'+association.atype+'","","'+base_name+'_'+ass_name+'",new AssociationAccessImp_many<'+base_name+','+association.atype+'>(&'+base_name+'::'+ass_name+',&'+base_name+'::'+ass_name+'))'
     else:
         if association.relation == 'shared':
-            return 'AssociationInfo("'+association.atype+'","'+base_name+'","'+ass_name+'","")'
+            return 'AssociationInfo("'+association.atype+'","'+base_name+'","'+ass_name+'","",new AssociationAccessImp_one<'+base_name+','+association.atype+'>(&'+base_name+'::'+ass_name+',&'+base_name+'::'+ass_name+'))'
         else:
-            return 'AssociationInfo("'+association.atype+'","'+association.atype+'","","'+base_name+'_'+ass_name+'")'
+            return 'AssociationInfo("'+association.atype+'","'+association.atype+'","","'+base_name+'_'+ass_name+'",new AssociationAccessImp_one<'+base_name+','+association.atype+'>(&'+base_name+'::'+ass_name+',&'+base_name+'::'+ass_name+'))'
             
     
             

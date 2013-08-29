@@ -220,6 +220,26 @@ public:
         return false;
     }
 
+    shared_ptr<DasObject>
+    get_associated_object(const std::string &assoc_name) {
+        return DdlInfo::get_instance()->get_association_info(type_name_, assoc_name).access->get_one(this);
+    }
+
+    std::vector< shared_ptr<DasObject> >
+    get_associated_objects(const std::string &assoc_name) {
+        return DdlInfo::get_instance()->get_association_info(type_name_, assoc_name).access->get_many(this);
+    }
+
+    void
+    set_associated_object(const std::string &assoc_name, shared_ptr<DasObject> &obj) {
+        DdlInfo::get_instance()->get_association_info(type_name_, assoc_name).access->set_one(this, obj);
+    }
+
+    void
+    set_associated_objects(const std::string &assoc_name, std::vector< shared_ptr<DasObject> >&vec) {
+        DdlInfo::get_instance()->get_association_info(type_name_, assoc_name).access->set_many(this, vec);
+    }
+
 protected:
 
     DasObject()
