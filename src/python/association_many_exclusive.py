@@ -47,7 +47,7 @@ void
   else //if is_new()
   {
     current_vec = '''+association.name+'''();
-    das::tpl::DbBundle b = bundle_.lock();
+    das::DbBundle b = bundle_.lock();
     shared_ptr<odb::session> s = b.lock_session(false);
     if(b.valid())
     {
@@ -58,7 +58,7 @@ void
         {
           if(!(*i)->is_new())
           {
-            das::tpl::DbBundle new_bundle = (*i)->bundle_.lock();
+            das::DbBundle new_bundle = (*i)->bundle_.lock();
             if((new_bundle.valid() && new_bundle != b) ||
                (new_bundle.alias() != b.alias()))
             {

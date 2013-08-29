@@ -27,6 +27,7 @@ double
 > image_type;
 
 typedef boost::variant<
+signed char,
 char,
 short,
 int,
@@ -34,8 +35,6 @@ long long,
 float,
 double,
 bool,
-unsigned char,
-unsigned int,
 std::string
 >
 keyword_type;

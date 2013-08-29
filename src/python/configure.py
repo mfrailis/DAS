@@ -78,9 +78,9 @@ class JsonConfigParser:
                 f.write(' '+i)
         f.write(')')
         f.write('''
-set(TYPES_CPP ${DDL_SOURCE_DIR}/${TYPE_PREFIX}info.cpp ${DDL_SOURCE_DIR}/database_config.cpp)
+set(TYPES_CPP ${DDL_SOURCE_DIR}/${TYPE_PREFIX}info.cpp ${DDL_SOURCE_DIR}/database_config.cpp ${DDL_SOURCE_DIR}/database_plf.cpp)
 foreach(type_name ${TYPE_NAMES_ALL})
-  list(APPEND TYPES_CPP '''+ddl_src_dir+'''/${TYPE_PREFIX}${type_name}.cpp)
+  list(APPEND TYPES_CPP ${DDL_SOURCE_DIR}/${TYPE_PREFIX}${type_name}.cpp)
 endforeach()
 ''')
 

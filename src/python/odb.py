@@ -69,8 +69,7 @@ class DdlOdbGenerator(DdlVisitor):
     self._private_section = []
     self._init_list = []
     self._default_init = []
-    self._init = []
-    self._friends = ["friend class odb::access;","friend class das::tpl::Transaction;","friend class das::tpl::TransactionBundle;","friend class das::tpl::DbBundle;"]
+    self._friends = ["friend class odb::access;","friend class das::Transaction;","friend class das::TransactionBundle;","friend class das::DbBundle;","friend class das::tpl::Database;"]
     self._has_associations = False
     self._store_as = None
     self._keyword_touples = []
@@ -194,13 +193,13 @@ class DdlOdbGenerator(DdlVisitor):
     h.writelines("  "+l + "\n" for l in self._protected_section)
     # default constructor.
     h.writelines(["  "+self._class_name+" ();\n"])
-    h.writelines(["  virtual void  update(das::tpl::TransactionBundle &tb);\n"])
+    h.writelines(["  virtual void  update(das::TransactionBundle &tb);\n"])
     if self._keyword_touples:
       h.writelines(["  virtual void get_keywords(std::map<std::string, keyword_type> &map);\n"])
 
 # private section
     h.writelines([" private:\n"])
-    h.writelines(["  static void attach(const shared_ptr<"+self._class_name+"> &ptr, das::tpl::DbBundle &bundle);\n"])
+    h.writelines(["  static void attach(const shared_ptr<"+self._class_name+"> &ptr, das::DbBundle &bundle);\n"])
     h.writelines(["  "+self._class_name+" (const std::string &name, const std::string &db_alias);\n"])
     h.writelines("  "+l + "\n" for l in self._private_section)
     for t in self._assoc_touples:
@@ -286,7 +285,7 @@ struct das_traits<'''+self._class_name+'''>
         s.writelines(l+'\n' for l in _def_setter_assoc(i[0],i[1],i[2],self._class_name))
       
       # persist pre
-      s.writelines(['void\n',self._class_name+'::persist_associated_pre(das::tpl::TransactionBundle &tb)\n{\n'])
+      s.writelines(['void\n',self._class_name+'::persist_associated_pre(das::TransactionBundle &tb)\n{\n'])
       if self._inherit != 'DasObject':
         s.writelines(['  '+self._inherit+'::persist_associated_pre(db);\n'])
       for i in self._assoc_touples:
@@ -295,7 +294,7 @@ struct das_traits<'''+self._class_name+'''>
       s.writelines(['}\n'])
       
       #persist post
-      s.writelines(['void\n',self._class_name+'::persist_associated_post(das::tpl::TransactionBundle &tb)\n{\n'])
+      s.writelines(['void\n',self._class_name+'::persist_associated_post(das::TransactionBundle &tb)\n{\n'])
       if self._inherit != 'DasObject':
         s.writelines(['  '+self._inherit+'::persist_associated_post(db);\n'])
       for i in self._assoc_touples:
@@ -303,7 +302,7 @@ struct das_traits<'''+self._class_name+'''>
           s.writelines([_def_persist_assoc(i[0],i[2])])
       s.writelines(['}\n'])
 
-      s.writelines(['void\n',self._class_name+'::update(das::tpl::TransactionBundle &tb)\n{\n'])
+      s.writelines(['void\n',self._class_name+'::update(das::TransactionBundle &tb)\n{\n'])
       s.writelines(['''  if(is_dirty_ && !is_new())
   {
     DAS_LOG_DBG("DAS debug INFO: UPD name:'" << name() << "' version:" << version() <<"...");
@@ -321,14 +320,14 @@ struct das_traits<'''+self._class_name+'''>
       if self._inherit != 'DasObject':
         s.writelines(['  '+self._inherit+'::update(tb);\n'])
       if self._assoc_touples:
-        #s.writelines(['  das::tpl::DbBundle bundle = bundle_.lock();\n'])
+        #s.writelines(['  das::DbBundle bundle = bundle_.lock();\n'])
         for i in self._assoc_touples:
           s.writelines([_def_update_assoc(i[0],i[2])])
       s.writelines(['}\n'])
     else:
       s.writelines(['''
 void
-'''+self._class_name+'''::update(das::tpl::TransactionBundle &tb)
+'''+self._class_name+'''::update(das::TransactionBundle &tb)
 {
   if(is_dirty_){
     
@@ -341,7 +340,7 @@ void
 '''])
     s.writelines(['''
 void
-'''+self._class_name+'''::attach(const shared_ptr<'''+self._class_name+'''> &ptr,das::tpl::DbBundle &bundle)
+'''+self._class_name+'''::attach(const shared_ptr<'''+self._class_name+'''> &ptr,das::DbBundle &bundle)
 {
   bundle.attach(ptr);
 '''])
@@ -367,9 +366,8 @@ void
       self._header.append("using odb::tr1::lazy_weak_ptr;")
       self._header.append("using odb::tr1::lazy_shared_ptr;")
       self._header.append("using std::tr1::shared_ptr;")
-      self._friends.append("friend class das::tpl::Database;")
-      self._protected_section.extend(['virtual void persist_associated_pre (das::tpl::TransactionBundle &tb);'])
-      self._protected_section.extend(['virtual void persist_associated_post(das::tpl::TransactionBundle &tb);'])
+      self._protected_section.extend(['virtual void persist_associated_pre (das::TransactionBundle &tb);'])
+      self._protected_section.extend(['virtual void persist_associated_post(das::TransactionBundle &tb);'])
       self._has_associations = True 
 	
     self._forward_section.append("class " + associated.atype + ";")
@@ -396,7 +394,7 @@ void
  
   def visit_keyword(self,keyword):
     k_type = self.KTYPE_MAP[keyword.ktype]
-
+    self._default_init.append('keywords_.insert(std::pair<std::string, keyword_type_ref>("'+keyword.name+'",'+keyword.name+'_));')
     if keyword.ktype == 'string':
       self._private_section.append('')
       self._private_section.append('std::string get_'+keyword.name+'() const {return escape_string('+keyword.name+'_);}')
@@ -431,8 +429,8 @@ void
       self._protected_section.append('virtual ColumnFromFile* column_from_file(const std::string &col_name);')
       self._protected_section.append('virtual void column_from_file(const std::string &col_name, const ColumnFromFile &cf);')
       self._protected_section.append('virtual void get_columns_from_file(std::map<std::string,ColumnFromFile*> &map);')
-      self._protected_section.append('virtual void save_data(const std::string &path, das::tpl::TransactionBundle &tb);')
-      self._protected_section.append('virtual void save_data(das::tpl::TransactionBundle &tb);')
+      self._protected_section.append('virtual void save_data(const std::string &path, das::TransactionBundle &tb);')
+      self._protected_section.append('virtual void save_data(das::TransactionBundle &tb);')
       self._src_body.append('''
 void
 '''+self._class_name+'''::get_columns_from_file(std::map<std::string,ColumnFromFile*> &map){''')
@@ -445,16 +443,16 @@ void
 }
 
 void
-'''+self._class_name+'''::save_data(const std::string &path, das::tpl::TransactionBundle &tb){
-  shared_ptr<das::tpl::StorageTransaction> e = das::tpl::StorageTransaction::create(bundle_.alias(),tb);
+'''+self._class_name+'''::save_data(const std::string &path, das::TransactionBundle &tb){
+  shared_ptr<das::StorageTransaction> e = das::StorageTransaction::create(bundle_.alias(),tb);
   e->add(this);
   e->save(path);
   tb.add(e);
 }
 
 void
-'''+self._class_name+'''::save_data(das::tpl::TransactionBundle &tb){
-  shared_ptr<das::tpl::StorageTransaction> e = das::tpl::StorageTransaction::create(bundle_.alias(),tb);
+'''+self._class_name+'''::save_data(das::TransactionBundle &tb){
+  shared_ptr<das::StorageTransaction> e = das::StorageTransaction::create(bundle_.alias(),tb);
   e->add(this);
   e->save();
   tb.add(e);
@@ -585,8 +583,8 @@ ColumnFromFile_'''+self._class_name+'''::persist(odb::database &db){
       self._protected_section.append("shared_ptr<ImageFromFile_"+self._class_name+"> image_;")
       self._protected_section.append("virtual ImageFromFile* image_from_file();")
       self._protected_section.append("virtual void image_from_file(const ImageFromFile &iff);")
-      self._protected_section.append('virtual void save_data(const std::string &path, das::tpl::TransactionBundle &tb);')
-      self._protected_section.append('virtual void save_data(das::tpl::TransactionBundle &tb);')
+      self._protected_section.append('virtual void save_data(const std::string &path, das::TransactionBundle &tb);')
+      self._protected_section.append('virtual void save_data(das::TransactionBundle &tb);')
       self._data_types = ['''
 #pragma db object session(false)
 class ImageFromFile_'''+self._class_name+''' : public ImageFromFile
@@ -691,16 +689,16 @@ ImageFromFile_'''+self._class_name+'''::persist(odb::database &db){
 }
 
 void
-'''+self._class_name+'''::save_data(const std::string &path, das::tpl::TransactionBundle &tb){
-  shared_ptr<das::tpl::StorageTransaction> e = das::tpl::StorageTransaction::create(bundle_.alias(),tb);
+'''+self._class_name+'''::save_data(const std::string &path, das::TransactionBundle &tb){
+  shared_ptr<das::StorageTransaction> e = das::StorageTransaction::create(bundle_.alias(),tb);
   e->add(this);
   e->save(path);
   tb.add(e);
 }
 
 void
-'''+self._class_name+'''::save_data(das::tpl::TransactionBundle &tb){
-  shared_ptr<das::tpl::StorageTransaction> e = das::tpl::StorageTransaction::create(bundle_.alias(),tb);
+'''+self._class_name+'''::save_data(das::TransactionBundle &tb){
+  shared_ptr<das::StorageTransaction> e = das::StorageTransaction::create(bundle_.alias(),tb);
   e->add(this);
   e->save();
   tb.add(e);

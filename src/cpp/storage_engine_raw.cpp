@@ -23,7 +23,6 @@
 using namespace std;
 
 namespace das {
-    namespace tpl {
 
         class RawStorageAccess_read_column : public boost::static_visitor<ssize_t> {
         public:
@@ -1214,6 +1213,4 @@ namespace das {
                     }
                 }
          */
-    }
-
 }

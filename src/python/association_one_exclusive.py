@@ -43,7 +43,7 @@ void
   else //if is_new()
   {
     shared_ptr<'''+association.atype+'''> current = '''+association.name +'''();
-    das::tpl::DbBundle b = bundle_.lock();
+    das::DbBundle b = bundle_.lock();
     const shared_ptr<odb::database> &db = b.db();
     shared_ptr<odb::session> s = b.lock_session(false);
     if(b.valid())
@@ -52,7 +52,7 @@ void
       //check new association compatibility
       if(!'''+association.name+'''_new->is_new())
       {
-        das::tpl::DbBundle new_bundle = '''+association.name+'''_new->bundle_.lock();
+        das::DbBundle new_bundle = '''+association.name+'''_new->bundle_.lock();
         if((new_bundle.valid() && new_bundle != b) ||
            (new_bundle.alias() != b.alias()))
         {

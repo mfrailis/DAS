@@ -1,13 +1,13 @@
-#ifndef RESULT_ITERATOR_HPP
-#define	RESULT_ITERATOR_HPP
+#ifndef DAS_TPL_RESULT_ITERATOR_HPP
+#define	DAS_TPL_RESULT_ITERATOR_HPP
 #include <odb/object-result.hxx>
-#include "db_bundle.ipp"
+#include "../internal/db_bundle.ipp"
 
 namespace das {
     namespace tpl {
 
         template <typename T>
-        class result_iterator : public /*private*/ odb::result_iterator<T, odb::class_object> {
+        class result_iterator : private odb::result_iterator<T, odb::class_object> {
         private:
             typedef odb::result_iterator<T, odb::class_object> super;
 
@@ -82,13 +82,13 @@ namespace das {
 
         template <typename T>
         inline bool
-        operator!=(result_iterator<T> i, result_iterator<T> j) {
+        operator!=(const result_iterator<T> &i,const result_iterator<T> &j) {
             return !i.equal(j);
         }
 
         template <typename T>
         inline bool
-        operator==(result_iterator<T> i, result_iterator<T> j) {
+        operator==(const result_iterator<T> &i,const result_iterator<T> &j) {
             return i.equal(j);
         }
 
@@ -144,13 +144,13 @@ namespace das {
 
         template <typename T>
         inline bool
-        operator!=(result_const_iterator<T> i, result_const_iterator<T> j) {
+        operator!=(const result_const_iterator<T> &i,const result_const_iterator<T> &j) {
             return !i.equal(j);
         }
 
         template <typename T>
         inline bool
-        operator==(result_const_iterator<T> i, result_const_iterator<T> j) {
+        operator==(const result_const_iterator<T> &i,const result_const_iterator<T> &j) {
             return i.equal(j);
         }
     }

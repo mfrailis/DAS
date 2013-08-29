@@ -2,13 +2,17 @@
 #define DAS_DASOBJECT_HPP
 
 #include <odb/core.hxx>
-#include <string>
-#include "ddl/info.hpp"
-#include "ddl/column.hpp"
-#include "ddl/image.hpp"
 #include <odb/database.hxx>
 #include <odb/tr1/memory.hxx>
 #include <odb/tr1/lazy-ptr.hxx>
+
+#include <string>
+#include <boost/variant.hpp>
+#include <boost/unordered_map.hpp>
+
+#include "ddl/info.hpp"
+#include "ddl/column.hpp"
+#include "ddl/image.hpp"
 #include "internal/db_bundle.hpp"
 #include "internal/array.hpp"
 #include "storage_engine.hpp"
@@ -17,18 +21,98 @@ using std::tr1::shared_ptr;
 
 class QLVisitor;
 namespace das {
+    class Transaction;
     namespace tpl {
         class Database;
-        class Transaction;
         template<typename T>
         class result_iterator;
     }
 }
 
+class Key_set : public boost::static_visitor<void> {
+public:
+
+    void operator() (std::string& keyword, const std::string& value) const {
+        keyword = value;
+    }
+
+    void operator() (std::string& keyword, const char* value) const {
+        keyword = value;
+    }
+
+    template<typename Key_type, typename Arg_type>
+    void operator() (Key_type& keyword, const Arg_type& value) const {
+        keyword = value;
+    }
+
+    template<typename Arg_type>
+    void operator() (std::string& keyword, const Arg_type& value) const {
+        std::cout << "cannot assign numbers to string" << std::endl;
+    }
+
+    template<typename Key_type>
+    void operator() (Key_type& keyword, const std::string& value) const {
+        std::cout << "cannot assign string to numeric type" << std::endl;
+    }
+};
+
+template<typename T>
+class Key_get : public boost::static_visitor<T> {
+public:
+
+    template<typename Key_type>
+    T operator() (Key_type& key) const {
+        return key;
+    }
+
+    T operator() (std::string& key) const {
+        T lhs = 0;
+        std::cout << "cannot assign string to numeric type" << std::endl;
+    }
+};
+
+template<>
+class Key_get<std::string> : public boost::static_visitor<std::string> {
+public:
+
+    template<typename Key_type>
+    std::string operator() (Key_type& key) const {
+        std::cout << "cannot assign numbers to string" << std::endl;
+        return std::string("bad value");
+    }
+
+    std::string operator() (std::string& key) const {
+        return key;
+    }
+};
+
 #pragma db object abstract
 
 class DasObject {
 public:
+    typedef boost::variant<
+    signed char,
+    char,
+    short,
+    int,
+    long long,
+    float,
+    double,
+    bool,
+    std::string
+    > keyword_type;
+
+    typedef boost::variant<
+    signed char&,
+    char&,
+    short&,
+    int&,
+    long long&,
+    float&,
+    double&,
+    bool&,
+    std::string&
+    > keyword_type_ref;
 
     const KeywordInfo&
     get_keyword_info(std::string keyword_name) throw (std::out_of_range) {
@@ -76,103 +160,114 @@ public:
         return name_;
     }
 
+    const std::string&
+    type_name() const {
+        return type_name_;
+    }
+
     template <typename T>
     das::Array<T> get_column(const std::string &col_name, size_t start, size_t length) {
         if (sa_.get() == NULL)
-            sa_.reset(das::tpl::StorageAccess::create(bundle_.alias(), this));
+            sa_.reset(das::StorageAccess::create(bundle_.alias(), this));
         return sa_->get_column<T>(col_name, start, length);
     }
 
     template <typename T>
     void append_column(const std::string &col_name, das::Array<T> &a) {
         if (sa_.get() == NULL)
-            sa_.reset(das::tpl::StorageAccess::create(bundle_.alias(), this));
+            sa_.reset(das::StorageAccess::create(bundle_.alias(), this));
         sa_->append_column<T>(col_name, a);
     }
 
     template <typename T, int Rank>
     das::Array<T, Rank> get_image() {
         if (sa_.get() == NULL)
-            sa_.reset(das::tpl::StorageAccess::create(bundle_.alias(), this));
+            sa_.reset(das::StorageAccess::create(bundle_.alias(), this));
         return sa_->get_image<T, Rank>();
     }
-    
+
     template <typename T, int Rank>
     das::Array<T, Rank> get_image(
-            const das::TinyVector<int,Rank> &offset,
-            const das::TinyVector<int,Rank> &count,
-            const das::TinyVector<int,Rank> &stride) {
+            const das::TinyVector<int, Rank> &offset,
+            const das::TinyVector<int, Rank> &count,
+            const das::TinyVector<int, Rank> &stride) {
         if (sa_.get() == NULL)
-            sa_.reset(das::tpl::StorageAccess::create(bundle_.alias(), this));
-        return sa_->get_image<T, Rank>(offset,count,stride);
+            sa_.reset(das::StorageAccess::create(bundle_.alias(), this));
+        return sa_->get_image<T, Rank>(offset, count, stride);
     }
 
     template <typename T, int Rank>
     void set_image(das::Array<T, Rank> &i) {
         if (sa_.get() == NULL)
-            sa_.reset(das::tpl::StorageAccess::create(bundle_.alias(), this));
+            sa_.reset(das::StorageAccess::create(bundle_.alias(), this));
         sa_->set_image<T, Rank>(i);
     }
 
     template <typename T, int Rank>
     void append_tiles(das::Array<T, Rank> &i) {
         if (sa_.get() == NULL)
-            sa_.reset(das::tpl::StorageAccess::create(bundle_.alias(), this));
+            sa_.reset(das::StorageAccess::create(bundle_.alias(), this));
         sa_->append_tiles<T, Rank>(i);
     }
 
     //polimorphic interface
 
-    virtual bool is_table() const{
+    virtual bool is_table() const {
         return false;
     }
 
-    virtual bool is_image() const{
+    virtual bool is_image() const {
         return false;
     }
 
 protected:
 
-    DasObject() {
-        type_name_ = "DasObject";
-        version_ = 0;
-        das_id_ = 0;
-        is_dirty_ = false;
+    DasObject()
+    : version_(0),
+    das_id_(0),
+    is_dirty_(false),
+    type_name_("DasObject") {
+        init();
     }
 
     DasObject(const std::string &name, const std::string &db_alias)
-    : name_(name), bundle_(db_alias) {
-        type_name_ = "DasObject";
-        version_ = 0;
-        das_id_ = 0;
-        is_dirty_ = false;
+    : name_(name),
+    bundle_(db_alias),
+    type_name_("DasObject"),
+    version_(0),
+    das_id_(0),
+    is_dirty_(false) {
+        init();
     }
 #pragma db transient
     std::string type_name_;
 
+#pragma db transient    
+    boost::unordered_map<std::string, keyword_type_ref> keywords_;
+
 #pragma db transient
-    das::tpl::WeakDbBundle bundle_;
+    das::WeakDbBundle bundle_;
 
 #pragma db transient
     bool is_dirty_; // does it need an update?
 
     // polimorphic internal persistent interface
 
-    virtual void save_data(const std::string &path, das::tpl::TransactionBundle &tb) {
+    virtual void save_data(const std::string &path, das::TransactionBundle &tb) {
     } // save external data, check if the path is empty.
 
-    virtual void save_data(das::tpl::TransactionBundle &tb) {
+    virtual void save_data(das::TransactionBundle &tb) {
     } // update external data.   
 
-    virtual void update(das::tpl::TransactionBundle &tb) {
+    virtual void update(das::TransactionBundle &tb) {
     } // update self and associated if necessary
 
     // we need a database pointer because this object is not bound to any db yet
 
-    virtual void persist_associated_pre(das::tpl::TransactionBundle &tb) {
+    virtual void persist_associated_pre(das::TransactionBundle &tb) {
     } // call persist on shared many associated objects
 
-    virtual void persist_associated_post(das::tpl::TransactionBundle &tb) {
+    virtual void persist_associated_post(das::TransactionBundle &tb) {
     } // call persist on exclusive and oneassociated objects
 
     virtual void set_dirty_columns() {
@@ -200,10 +295,10 @@ protected:
         throw das::no_external_data();
     }
 
-    das::tpl::StorageAccess*
+    das::StorageAccess*
     storage_access() {
         if (sa_.get() == NULL)
-            sa_.reset(das::tpl::StorageAccess::create(bundle_.alias(), this));
+            sa_.reset(das::StorageAccess::create(bundle_.alias(), this));
         return sa_.get();
     }
 
@@ -242,6 +337,14 @@ protected:
     }
 private:
 
+    void init() {
+        keywords_.insert(std::pair<std::string, keyword_type_ref>("das_id", das_id_));
+        keywords_.insert(std::pair<std::string, keyword_type_ref>("name", name_));
+        keywords_.insert(std::pair<std::string, keyword_type_ref>("version", version_));
+        keywords_.insert(std::pair<std::string, keyword_type_ref>("dbUserId", dbUserId_));
+        keywords_.insert(std::pair<std::string, keyword_type_ref>("creationDate", creationDate_));
+    }
+
     std::string get_name() const {
         return escape_string(name_);
     }
@@ -252,11 +355,11 @@ private:
 
     friend class odb::access;
     friend class das::tpl::Database;
-    friend class das::tpl::Transaction;
-    friend class das::tpl::TransactionBundle;
-    friend class das::tpl::DbBundle;
-    friend class das::tpl::StorageAccess;
-    friend class das::tpl::StorageTransaction;
+    friend class das::Transaction;
+    friend class das::TransactionBundle;
+    friend class das::DbBundle;
+    friend class das::StorageAccess;
+    friend class das::StorageTransaction;
     template <typename T> friend class das::tpl::result_iterator;
     friend class QLVisitor;
     //  template <typename T> friend class DasVector;
@@ -269,7 +372,7 @@ private:
     long long creationDate_;
 
 #pragma db transient
-    std::auto_ptr<das::tpl::StorageAccess> sa_;
+    std::auto_ptr<das::StorageAccess> sa_;
 
 protected:
     short version_;

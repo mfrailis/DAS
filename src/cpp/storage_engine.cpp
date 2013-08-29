@@ -1,10 +1,9 @@
-#include "../../../include/internal/storage_engine.ipp"
-#include "../../../include/das_object.hpp"
+#include "internal/storage_engine.ipp"
+#include "das_object.hpp"
 
-#include "../../../include/internal/storage_engine_raw.hpp"
+#include "internal/storage_engine_raw.hpp"
 
 namespace das {
-    namespace tpl {
 
         shared_ptr<StorageTransaction>
         StorageTransaction::create(const std::string &db_alias, TransactionBundle &tb) {
@@ -15,8 +14,5 @@ namespace das {
         StorageAccess::create(const std::string &db_alias, DasObject *obj) {
             return new RawStorageAccess(obj,DatabaseConfig::database(db_alias));
         }
-
-    }
-
 }
 

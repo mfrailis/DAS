@@ -1,7 +1,7 @@
-#include "tpl/transaction.hpp"
+#include "transaction.hpp"
 #include "tpl/database.hpp"
 
-using namespace das::tpl;
+using namespace das;
 
 Transaction::Transaction(const shared_ptr<TransactionBundle> &tb) : tb_(tb){}
 
@@ -25,7 +25,6 @@ Transaction::commit() {
 }
 
 void
-inline
 Transaction::rollback() {
     if (!tb_ || !tb_->transaction_)
         throw das::invalid_transaction();

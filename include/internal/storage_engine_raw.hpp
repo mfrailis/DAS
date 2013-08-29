@@ -7,7 +7,6 @@
 
 
 namespace das {
-    namespace tpl {
         typedef std::pair<std::string, int> Extension;
 
         class RawStorageTransaction : public StorageTransaction {
@@ -143,7 +142,7 @@ namespace das {
         };
 
 
-    }
+    
 }
 
 

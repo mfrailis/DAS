@@ -14,7 +14,6 @@
 
 
 namespace das {
-    namespace tpl {
 
         template<typename T>
         class ArrayDeleter {
@@ -574,12 +573,11 @@ namespace das {
         }
 
         inline
-        das::tpl::StorageAccess*
+        das::StorageAccess*
         StorageTransaction::storage_access(DasObject *ptr) {
             return ptr->storage_access();
         }
-
-    }
+    
 }
 
 #endif

@@ -66,9 +66,9 @@ set(DAS_QL_SRC
 )
 set(DAS_SRC
   ${CPP_SOURCE_DIR}/info.cpp
-  ${CPP_SOURCE_DIR}/tpl/transaction.cpp
-  ${CPP_SOURCE_DIR}/tpl/db_bundle.cpp
-  ${CPP_SOURCE_DIR}/tpl/storage_engine.cpp
+  ${CPP_SOURCE_DIR}/transaction.cpp
+  ${CPP_SOURCE_DIR}/db_bundle.cpp
+  ${CPP_SOURCE_DIR}/storage_engine.cpp
   ${CPP_SOURCE_DIR}/database_config.cpp
   ${CPP_SOURCE_DIR}/column_buffer.cpp
   ${CPP_SOURCE_DIR}/image_buffer.cpp

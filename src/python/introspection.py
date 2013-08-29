@@ -91,6 +91,31 @@ class DdlInfoGenerator(_odb.DdlVisitor):
         f.writelines('  ddl_map_["'+db+'"] = '+ddl+'::get_instance();\n' for (db,ddl) in self._db_map.items())
         f.writelines(['}\n'])
         f.close()
+
+        f = open(_os.path.join(self._src_dir, 'database_plf.cpp'), 'w')
+        f.writelines(['''
+#include "plf/database.hpp"
+#include "ddl/types.hpp"
+
+boost::unordered_map< std::string, shared_ptr<das::plf::Functor> > das::plf::Database::f_;
+
+namespace das{
+  namespace plf{
+
+    void Database::init()
+    {
+      if(!f_.empty()) return;
+'''])
+        for t in self._type_list.type_map.keys():
+            if t != "essentialMetadata":
+                f.writelines(['      f_.insert(std::pair< std::string, shared_ptr<Functor> >("'+t+'",shared_ptr<Functor>(new FunctorImp<'+t+'>)));\n']) 
+
+        f.writelines(['''
+    }
+  }
+}
+'''])
+        f.close()
  
         for ddl_name in self._DdlInfo_children.keys():
             f = open(_os.path.join(self._src_dir, ddl_name+'.hpp'), 'w')

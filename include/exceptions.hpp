@@ -49,6 +49,17 @@ namespace das
     
   };
   
+  class object_corrupt : public std::exception
+  {
+  public :
+    virtual const char*
+    what() const throw()
+    {
+      return "the object contains corrupted data";
+    }
+    
+  };
+  
   class wrong_database : public std::exception
   {
   public :
