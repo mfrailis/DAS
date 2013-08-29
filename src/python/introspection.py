@@ -28,6 +28,7 @@ class DdlInfoGenerator(_odb.DdlVisitor):
         self._src_dir = source_dir
         self._init_keywords = []
         self._init_columns = []
+        self._init_images = []
         self._init_associations = []
         self._DdlInfo_children = {}
 
@@ -46,23 +47,25 @@ class DdlInfoGenerator(_odb.DdlVisitor):
         self._get_columns(data_type.name)
         self._get_associations(data_type.name)
 
-        self._init_keywords.append('all_keywords_["'+data_type.name+'"]["das_id"] = KeywordInfo("das_id","int64","none","object id");')
+        self._init_keywords.append('all_keywords_["'+data_type.name+'"].insert(std::pair<std::string,KeywordInfo>("das_id",KeywordInfo("das_id","int64","none","object id")));')
         for k in self._keywords:
             if k.description is None:
                 d = ""
             else:
                 d = k.description
-            self._init_keywords.append('all_keywords_["'+data_type.name+'"]["'+k.name+'"] = KeywordInfo("'+k.name+'","'+k.ktype+'","'+k.unit+'","'+d+'");')
+            self._init_keywords.append('all_keywords_["'+data_type.name+'"].insert(std::pair<std::string,KeywordInfo>("'+k.name+'",KeywordInfo("'+k.name+'","'+k.ktype+'","'+k.unit+'","'+d+'")));')
 
         for c in self._columns:
             if c.description is None:
                 d = ""
             else:
                 d = c.description
-            self._init_columns.append('all_columns_["'+data_type.name+'"]["'+c.name+'"] = ColumnInfo("'+c.name+'","'+c.ctype+'","'+c.unit+'","'+d+'",'+c.max_string_length+');')
+            self._init_columns.append('all_columns_["'+data_type.name+'"].insert(std::pair<std::string,ColumnInfo>("'+c.name+'",ColumnInfo("'+c.name+'","'+c.ctype+'","'+c.unit+'","'+d+'",'+c.max_string_length+')));')
 
         for (ass_name,association) in self._associations:
-            self._init_associations.append('all_associations_["'+data_type.name+'"]["'+ass_name+'"] = '+_association_info_gen(data_type.name,ass_name,association)+';')
+            self._init_associations.append('all_associations_["'+data_type.name+'"].insert(std::pair<std::string,AssociationInfo>("'+ass_name+'",'+_association_info_gen(data_type.name,ass_name,association)+'));')
+        if data_type.data is not None and data_type.data.isImage():
+            self._init_images.append('all_images_.insert(std::pair<std::string,ImageInfo>("'+data_type.name+'",ImageInfo("'+data_type.data.data_obj.pix_type+'",'+data_type.data.data_obj.dimensions+')));')
 
         ddl_list = self._ddl_map.get_ddl_list(data_type.name)
         for ddl in ddl_list:
@@ -73,18 +76,46 @@ class DdlInfoGenerator(_odb.DdlVisitor):
                 self._DdlInfo_children[ddl].append('columns_["'+data_type.name+'"] = &all_columns_["'+data_type.name+'"];')
             if self._associations:
                 self._DdlInfo_children[ddl].append('associations_["'+data_type.name+'"] = &all_associations_["'+data_type.name+'"];')
-
+            if data_type.data is not None and data_type.data.isImage():
+                self._DdlInfo_children[ddl].append('images_["'+data_type.name+'"] = &all_images_.at("'+data_type.name+'");')
     def visit_type_list(self,_):
 
         f = open(_os.path.join(self._src_dir, 'ddl_info.cpp'), 'w')
         f.writelines('#include "'+ddl+'.hpp"\n' for ddl in set(self._db_map.values()))
+        f.writelines(['#include "ddl/types/ddl_types.hpp"'])
         f.writelines(['\nvoid\n','DdlInfo::init()\n','{\n'])
+        f.writelines("  "+l + "\n" for l in self._init_images)
         f.writelines("  "+l + "\n" for l in self._init_columns)
         f.writelines("  "+l + "\n" for l in self._init_keywords)
         f.writelines("  "+l + "\n" for l in self._init_associations)
         f.writelines(['\n'])
         f.writelines('  ddl_map_["'+db+'"] = '+ddl+'::get_instance();\n' for (db,ddl) in self._db_map.items())
         f.writelines(['}\n'])
+        f.close()
+
+        f = open(_os.path.join(self._src_dir, 'database_plf.cpp'), 'w')
+        f.writelines(['''
+#include "plf/database.hpp"
+#include "ddl/types.hpp"
+
+boost::unordered_map< std::string, shared_ptr<das::plf::Functor> > das::plf::Database::f_;
+
+namespace das{
+  namespace plf{
+
+    void Database::init()
+    {
+      if(!f_.empty()) return;
+'''])
+        for t in self._type_list.type_map.keys():
+            if t != "essentialMetadata":
+                f.writelines(['      f_.insert(std::pair< std::string, shared_ptr<Functor> >("'+t+'",shared_ptr<Functor>(new FunctorImp<'+t+'>)));\n']) 
+
+        f.writelines(['''
+    }
+  }
+}
+'''])
         f.close()
  
         for ddl_name in self._DdlInfo_children.keys():
@@ -163,9 +194,26 @@ public:
     return associations_.at(type_name)->at(association_name);
   }
 
+  virtual
+  bool
+  is_table(const std::string &type_name)
+  const throw (std::out_of_range){
+    keywords_.at(type_name); // throw if not exists;
+    return columns_.find(type_name) != columns_.end();
+  }
+
+  virtual
+  bool
+  is_image(const std::string &type_name)
+  const throw (std::out_of_range){
+    keywords_.at(type_name); // throw if not exists;
+    return images_.find(type_name) != images_.end();
+  }
+
 private:
   boost::unordered_map<std::string, DdlInfo::Keyword_map* > keywords_;
   boost::unordered_map<std::string, DdlInfo::Column_map* > columns_;
+  boost::unordered_map<std::string, ImageInfo* > images_;
   boost::unordered_map<std::string, DdlInfo::Association_map* > associations_;
   static '''+ddl_name+'''* instance_;
 ''']
@@ -182,14 +230,14 @@ private:
 def _association_info_gen(base_name,ass_name,association):
     if association.multiplicity == 'many' :
         if association.relation == 'shared':
-            return 'AssociationInfo("'+association.atype+'","'+base_name+'_'+ass_name+'","value","object_id")'
+            return 'AssociationInfo("'+association.atype+'","'+base_name+'_'+ass_name+'","value","object_id",new AssociationAccessImp_many<'+base_name+','+association.atype+'>(&'+base_name+'::'+ass_name+',&'+base_name+'::'+ass_name+'))'
         else:
-            return 'AssociationInfo("'+association.atype+'","'+association.atype+'","","'+base_name+'_'+ass_name+'")'
+            return 'AssociationInfo("'+association.atype+'","'+association.atype+'","","'+base_name+'_'+ass_name+'",new AssociationAccessImp_many<'+base_name+','+association.atype+'>(&'+base_name+'::'+ass_name+',&'+base_name+'::'+ass_name+'))'
     else:
         if association.relation == 'shared':
-            return 'AssociationInfo("'+association.atype+'","'+base_name+'","'+ass_name+'","")'
+            return 'AssociationInfo("'+association.atype+'","'+base_name+'","'+ass_name+'","",new AssociationAccessImp_one<'+base_name+','+association.atype+'>(&'+base_name+'::'+ass_name+',&'+base_name+'::'+ass_name+'))'
         else:
-            return 'AssociationInfo("'+association.atype+'","'+association.atype+'","","'+base_name+'_'+ass_name+'")'
+            return 'AssociationInfo("'+association.atype+'","'+association.atype+'","","'+base_name+'_'+ass_name+'",new AssociationAccessImp_one<'+base_name+','+association.atype+'>(&'+base_name+'::'+ass_name+',&'+base_name+'::'+ass_name+'))'
             
     
             

@@ -51,11 +51,10 @@ def update(association, priv_type):
   {
     if('''+association.name+'''_temp->is_new())
     {
-      //das::tpl::DbBundle bundle = bundle_.lock();
-      bundle.persist<'''+association.atype+'''> ('''+association.name+'''_temp);
+      tb.persist<'''+association.atype+'''> ('''+association.name+'''_temp);
     }
     // call update anyways because of the nested associated objects
-    '''+association.name+'''_temp->update();
+    '''+association.name+'''_temp->update(tb);
   }
 ''' 
 ###############################################################################################################################################
@@ -67,7 +66,7 @@ def persist(association, priv_type):
     return '''
   shared_ptr<'''+association.atype+'''> '''+association.name+'''_temp = '''+association.name+'''_.get_eager();
   if('''+association.name+'''_temp) // the association may not be setted
-    db.persist<'''+association.atype+'''> ('''+association.name+'''_temp);
+    tb.persist<'''+association.atype+'''> ('''+association.name+'''_temp);
 
 '''
 ###############################################################################################################################################

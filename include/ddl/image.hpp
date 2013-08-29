@@ -3,120 +3,204 @@
 #include <odb/core.hxx>
 #include <vector>
 #include <string>
+#include <odb/tr1/memory.hxx>
+#include <odb/tr1/lazy-ptr.hxx>
+#include "../internal/image_buffer.hpp"
+#include "../exceptions.hpp"
+#include "../internal/array.hpp"
 
-#pragma db value
-class Image
-{
+#pragma db object abstract
 
- public:
-  Image(const unsigned int &size1,const unsigned int &size2,const std::string &pixel_type)
-    : size1_(size1), size2_(size2), pixel_type_(pixel_type)
-  {}
+class ImageFromFile {
+public:
 
-  Image(const std::string &pixel_type)
-    : size1_(0), size2_(0), pixel_type_(pixel_type)
-  {}
+    ImageFromFile(const std::string &pixel_type,
+            const std::string &fname)
+    : pixel_type_(pixel_type), fname_(fname), id_(0),
+    buff_(pixel_type, this) {
+    }
 
-  const std::string&
-  pixel_type() const
-  {
-    return pixel_type_;
-  }
+    ImageFromFile(const std::string &pixel_type)
+    : pixel_type_(pixel_type), id_(0),
+    buff_(pixel_type, this) {
+    }
 
-  void
-  pixel_type(const std::string &type)
-  {
-    pixel_type_ = type;
-  }
+    ImageFromFile(const ImageFromFile &rhs)
+    :
+    id_(0),
+    pixel_type_(rhs.pixel_type_),
+    buff_(rhs.pixel_type_, this),
+    fname_(rhs.fname_),
+    temp_path_(rhs.temp_path_) {
+    }
 
-  unsigned long
-  size1()
-  {
-    return size1_;
-  }
+    const std::string&
+    pixel_type() const {
+        return pixel_type_;
+    }
 
-  void
-  size1(const unsigned int &size)
-  {
-    size1_ = size;
-  }
+    virtual
+    unsigned int
+    extent(size_t rank) const {
+        return 0;
+    }
 
-  unsigned int
-  size2()
-  {
-    return size2_;
-  }
+    virtual
+    unsigned int
+    file_tiles() const {
+        return 0;
+    }
+    
+    virtual
+    void
+    file_tiles(const unsigned int& tiles){
+    }
+    
+    virtual
+    void
+    extent(const size_t &rank, size_t value) {
+    }
 
-  void
-  size2(const unsigned int& size)
-  {
-    size2_ = size;
-  }
+    virtual
+    unsigned int
+    rank() const {
+        return 0;
+    }
 
- protected:
-  unsigned int size1_;
-  unsigned int size2_;
-  std::string pixel_type_;
-  Image() {}
- private:
-  friend class odb::access;
+    virtual
+    unsigned int
+    num_elements() const {
+        return 0;
+    }
+
+    const std::string&
+    fname() {
+        return fname_;
+    }
+    
+    void
+    fname(const std::string &fname){
+        fname_ = fname;
+    }
+
+    const std::string&
+    temp_path() {
+        return temp_path_;
+    }
+
+    void
+    temp_path(const std::string &fname) {
+        temp_path_ = fname;
+    }
+
+    ImageBuffer&
+    buffer() {
+        return buff_;
+    }
+
+    const long long&
+    id(){
+        return id_;
+    }
+    
+    virtual
+    void
+    persist(odb::database &db){
+        throw das::abstract_das_object();
+    }
+    
+protected:
+
+
+#pragma db access(pixel_type)
+    std::string pixel_type_;
+    std::string fname_;
+
+#pragma db transient
+    ImageBuffer buff_;
+
+    // implemented for odb library pourposes
+
+    ImageFromFile() : id_(0),
+    buff_(this) {
+    }
+
+    void
+    pixel_type(const std::string &pixel_type) {
+        pixel_type_ = pixel_type;
+        buff_.init(pixel_type);
+    }
+private:
+
+    friend class odb::access;
+    friend class ImageBuffer;
+#pragma db id auto
+    long long id_;
+#pragma db transient
+    std::string temp_path_;
+
 };
 
 #pragma db value
-class ImageFile: public Image
-{
+
+class ImageBlob {
 public:
-  ImageFile(const unsigned int &size1,
-	    const unsigned int &size2,
-	    const std::string &pixel_type,
-	    const std::string &fname)
-    : Image(size1, size2, pixel_type), fname_(fname)
-  {}
-  ImageFile(const std::string &type)
-    : Image(type)
-  {}
-  const std::string&
-  fname()
-  {
-    return fname_;
-  }
 
-  void
-  fname(const std::string &fname)
-  {
-    fname_ = fname;
-  }
+    ImageBlob(const unsigned int &size1,
+            const unsigned int &size2,
+            const std::string &pixel_type)
+    : size1_(size1), size2_(size2), pixel_type_(pixel_type) {
+    }
 
- private:
-  friend class odb::access;
-  void save();
-  ImageFile()  {}
-  std::string fname_;
-};
+    ImageBlob(const std::string &pixel_type)
+    : size1_(0), size2_(0), pixel_type_(pixel_type) {
+    }
 
-#pragma db value
-class ImageBlob: public Image
-{
-public:
-  ImageBlob(const unsigned int &size1,
-	    const unsigned int &size2,
-	    const std::string &pixel_type,
-	    const std::string &fname)
-    : Image(size1, size2, pixel_type)
-  {}
-  ImageBlob(std::string type)
-    : Image(type)
-  {}
+    //FIXME: this should be private, pixel_type_ needs to be initialized
 
-  //TODO methods for streaming in and out the buffer
+    ImageBlob() {
+    }
 
- private:
-  friend class odb::access;
+    const std::string&
+    pixel_type() const {
+        return pixel_type_;
+    }
 
-  ImageBlob()  {}
+    void
+    pixel_type(const std::string &type) {
+        pixel_type_ = type;
+    }
 
-  #pragma db mysql:type("MEDIUMBLOB") oracle:type("BLOB") pgsql:type("BYTEA") sqlite:type("BLOB") mssql:type("varbinary")
-  std::vector<char> buffer_;
-  //FIXME is this vector<char> suitable?
+    unsigned long
+    size1() {
+        return size1_;
+    }
+
+    void
+    size1(const unsigned int &size) {
+        size1_ = size;
+    }
+
+    unsigned int
+    size2() {
+        return size2_;
+    }
+
+    void
+    size2(const unsigned int& size) {
+        size2_ = size;
+    }
+
+private:
+    friend class odb::access;
+
+
+    unsigned int size1_;
+    unsigned int size2_;
+    std::string pixel_type_;
+
+#pragma db mysql:type("MEDIUMBLOB") oracle:type("BLOB") pgsql:type("BYTEA") sqlite:type("BLOB") mssql:type("varbinary")
+    std::vector<char> buffer_;
+    //FIXME is this vector<char> suitable?
 };
 #endif

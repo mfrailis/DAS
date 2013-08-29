@@ -14,6 +14,7 @@ find_python_module(collections)
 if(NOT PY_COLLECTIONS_FOUND) 
   find_python_module(ordereddict)
 endif()
+find_package(Blitz REQUIRED)
 
 set(CMAKE_BUILD_TYPE debug)
 set(CMAKE_CXX_FLAGS_DEBUG "-g -DVDBG")
@@ -65,16 +66,22 @@ set(DAS_QL_SRC
 )
 set(DAS_SRC
   ${CPP_SOURCE_DIR}/info.cpp
-  ${CPP_SOURCE_DIR}/tpl/transaction.cpp
-  ${CPP_SOURCE_DIR}/tpl/db_bundle.cpp
+  ${CPP_SOURCE_DIR}/transaction.cpp
+  ${CPP_SOURCE_DIR}/db_bundle.cpp
+  ${CPP_SOURCE_DIR}/storage_engine.cpp
   ${CPP_SOURCE_DIR}/database_config.cpp
-#  ${CPP_SOURCE_DIR}/das_io.cpp
+  ${CPP_SOURCE_DIR}/column_buffer.cpp
+  ${CPP_SOURCE_DIR}/image_buffer.cpp
+#remove from now on
+${CPP_SOURCE_DIR}/storage_engine_raw.cpp
+
 )
 
 include_directories(${CPP_INCLUDE_DIR})
 include_directories(${CMAKE_INCLUDE_PATH})
 include_directories(${Boost_INCLUDE_DIR})
 include_directories(${ODB_INCLUDE_DIR})
+include_directories(${BLITZ_INCLUDE_DIR})
 #include_directories(${ODB_SOURCE_DIR})
 
 set(ODB_COMMON_TYPES ${ODB_SOURCE_DIR}/ddl_types.hpp)

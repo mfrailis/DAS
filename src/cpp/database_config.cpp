@@ -1,4 +1,5 @@
 #include "internal/database_config.hpp"
+#include "internal/log.hpp"
 #include "exceptions.hpp"
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
@@ -21,9 +22,7 @@ namespace das {
                 info.user = v.second.get<std::string>("user");
                 info.password = v.second.get<std::string>("password", "");
             }catch(std::out_of_range &e){
-#ifdef VDBG
-      std::cout << "DAS warning: database '"<<  v.second.get<std::string>("alias") <<"' is not present in confi.json file" << std::endl;       
-#endif
+                DAS_LOG_DBG("DAS warning: database '"<<  v.second.get<std::string>("alias") <<"' is not present in confi.json file" );       
             }
         }
 
@@ -45,9 +44,7 @@ namespace das {
         home = getenv ("HOME");
         if (!home)
         {
-#ifdef VDBG
-            std::cout << "unable to read HOME environment variable" << std::endl;      
-#endif
+            DAS_LOG_DBG("unable to read HOME environment variable");      
             throw bad_path();
         }
         std::string access(home);

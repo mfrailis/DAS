@@ -69,13 +69,13 @@ class DdlOdbGenerator(DdlVisitor):
     self._private_section = []
     self._init_list = []
     self._default_init = []
-    self._init = []
-    self._friends = ["friend class odb::access;","friend class das::tpl::Transaction;","friend class das::tpl::DbBundle;"]
+    self._friends = ["friend class odb::access;","friend class das::Transaction;","friend class das::TransactionBundle;","friend class das::DbBundle;","friend class das::tpl::Database;"]
     self._has_associations = False
     self._store_as = None
     self._keyword_touples = []
     self._assoc_touples = []
-    self._column_type = []
+    self._data_types = []
+    self._src_body = []
 
   def name(self,name):
     self._class_name=name
@@ -131,6 +131,7 @@ class DdlOdbGenerator(DdlVisitor):
       
     if datatype.data is not None:
       self._header.append('#include "../column.hpp"')
+      self._header.append('#include "../../internal/column_config.hpp"')
     
     intro.append("#pragma db object\nclass " + datatype.name)
     if self._inherit != "":
@@ -168,18 +169,18 @@ class DdlOdbGenerator(DdlVisitor):
     h.writelines(['using std::tr1::shared_ptr;\n'])
     h.writelines(['using std::tr1::weak_ptr;\n'])
     h.writelines(l + "\n" for l in self._forward_section)
-    h.writelines(l + "\n" for l in self._column_type)
+    h.writelines(l + "\n" for l in self._data_types)
     h.writelines(l + "\n" for l in intro)
 # public section
     h.writelines([" public:\n"])
     
     #factory method
-    h.writelines(["  static","  shared_ptr<"+self._class_name+"> create(const std::string &name);\n"])
-    h.writelines(["  static const\n","  shared_ptr<"+self._class_name+">& get_null_ptr();\n"])
+    h.writelines(["  static","  shared_ptr<"+self._class_name+"> create(const std::string &name, const std::string &db_alias);\n"])
+#    h.writelines(["  static const\n","  shared_ptr<"+self._class_name+">& get_null_ptr();\n"])
     h.writelines("  "+l + "\n" for l in self._type_defs)
     h.writelines("  "+l + "\n" for l in self._public_section)
 
-#    if datatype.data and datatype.data.store_as == 'file' and datatype.data.isTable():
+#    if datatype.data and datatype.data.store_as == 'File' and datatype.data.isTable():
 #      h.writelines(['''
 #  template<typename T>
 #  blitz::Array<T,1>
@@ -192,13 +193,14 @@ class DdlOdbGenerator(DdlVisitor):
     h.writelines("  "+l + "\n" for l in self._protected_section)
     # default constructor.
     h.writelines(["  "+self._class_name+" ();\n"])
-    h.writelines(["  virtual\n"])
-    h.writelines(["  void\n"])
-    h.writelines(["  update();\n"])
+    h.writelines(["  virtual void  update(das::TransactionBundle &tb);\n"])
+    if self._keyword_touples:
+      h.writelines(["  virtual void get_keywords(std::map<std::string, keyword_type> &map);\n"])
+
 # private section
     h.writelines([" private:\n"])
-    h.writelines(["  static void attach(const shared_ptr<"+self._class_name+"> &ptr, das::tpl::DbBundle &bundle);\n"])
-    h.writelines(["  "+self._class_name+" (const std::string &name);\n"])
+    h.writelines(["  static void attach(const shared_ptr<"+self._class_name+"> &ptr, das::DbBundle &bundle);\n"])
+    h.writelines(["  "+self._class_name+" (const std::string &name, const std::string &db_alias);\n"])
     h.writelines("  "+l + "\n" for l in self._private_section)
     for t in self._assoc_touples:
       if (t[0].multiplicity == 'many' and t[0].relation != 'shared') or (t[0].multiplicity == 'one' and t[0].relation != 'shared'):
@@ -220,6 +222,8 @@ class DdlOdbGenerator(DdlVisitor):
 
     i = open(_os.path.join(self._hdr_dir, idr_name), 'w')
     i.writelines([_def_factory_method(self._class_name)])
+
+
     for j in self._keyword_touples:
       i.writelines(l+'\n' for l in _def_getter(j[0],j[1],self._class_name))
       i.writelines(l+'\n' for l in _def_setter(j[0],j[1],self._class_name))
@@ -231,43 +235,7 @@ struct das_traits<'''+self._class_name+'''>
     static const std::string name;
 };
 ''')
-#    if datatype.data and datatype.data.store_as == 'file' and datatype.data.isTable():
-#      i.writelines(['''
-#template<typename T>
-#blitz::Array<T,1>
-#'''+self._class_name+'''::get_column(const std::string &column, long long start, long long length)
-#{
-#  const ColumnInfo &info = get_column_info(column);
-#  shared_ptr<'''+self._class_name+'''_column> &cl = this->*columns_.at(column);
-#
-#  if(!cl)
-#  {
-#    throw das::no_data_column();
-#  }
-#
-#  if(start < 0 || start > cl->size())
-#  {
-#    throw das::bad_param();
-#  }
-#  long long len = length == -1 ? cl->size()-start : length;
-#
-#  DasDataIn<T> io(cl);
-#  return io.get(info,start,len);
-#
-#}
-#'''])
-    #null pointer getter
-    i.writelines(['''
-inline const shared_ptr<'''+self._class_name+'''>&
-'''+self._class_name+'''::get_null_ptr()
-{
-  if(!'''+self._class_name+'''::null_ptr_)
-  {
-    '''+self._class_name+'''::null_ptr_.reset(new '''+self._class_name+'''("I am a null object. If you see me, libdas has a bug: the developers apologize"));
-  }
-  return '''+self._class_name+'''::null_ptr_;
-}
-'''])
+
     i.close()
 
     self._src_header.append('#include "tpl/database.hpp"')
@@ -282,11 +250,14 @@ inline const shared_ptr<'''+self._class_name+'''>&
     # type traits static inizialization
     s.writelines(['const std::string das_traits<'+self._class_name+'>::name = "'+self._class_name+'";\n'])
     # public constructor with name argument
-    s.writelines([self._class_name+"::"+self._class_name+" (const std::string &name)\n"])
-    s.writelines("  "+l + "\n" for l in self._init_list)
+    s.writelines([self._class_name+"::"+self._class_name+" (const std::string &name, const std::string &db_alias)\n"])
+    if self._init_list:
+      s.writelines(self._init_list)
+      s.writelines([", DasObject(name,db_alias)\n"])
+    else:
+      s.writelines([" : DasObject(name,db_alias)\n"])
     s.writelines(["{\n"])
     s.writelines(["  init();\n"])
-    s.writelines(['  name_ = name;\n'])
     s.writelines(["}\n"])
     # default constructor.
     s.writelines([self._class_name+"::"+self._class_name+" ()\n"])
@@ -301,13 +272,20 @@ inline const shared_ptr<'''+self._class_name+'''>&
     s.writelines("  "+l + "\n" for l in self._default_init)
     s.writelines(["}\n"])
 
+    if self._keyword_touples:
+      s.writelines(['void\n'+self._class_name+'::get_keywords(std::map<std::string, keyword_type> &map)\n{\n'])
+      s.writelines(['  '+self._inherit+'::get_keywords(map);\n'])
+      for j in self._keyword_touples:
+        s.writelines(['  map.insert(std::pair<std::string,keyword_type>("'+j[0]+'",'+j[0]+'_));\n'])
+      s.writelines(['}\n'])
+
     if self._has_associations:
       for i in self._assoc_touples:
         s.writelines(l+'\n' for l in _def_getter_assoc(i[0],i[1],i[2],self._class_name))
         s.writelines(l+'\n' for l in _def_setter_assoc(i[0],i[1],i[2],self._class_name))
       
       # persist pre
-      s.writelines(['void\n',self._class_name+'::persist_associated_pre(das::tpl::DbBundle &db)\n{\n'])
+      s.writelines(['void\n',self._class_name+'::persist_associated_pre(das::TransactionBundle &tb)\n{\n'])
       if self._inherit != 'DasObject':
         s.writelines(['  '+self._inherit+'::persist_associated_pre(db);\n'])
       for i in self._assoc_touples:
@@ -316,7 +294,7 @@ inline const shared_ptr<'''+self._class_name+'''>&
       s.writelines(['}\n'])
       
       #persist post
-      s.writelines(['void\n',self._class_name+'::persist_associated_post(das::tpl::DbBundle &db)\n{\n'])
+      s.writelines(['void\n',self._class_name+'::persist_associated_post(das::TransactionBundle &tb)\n{\n'])
       if self._inherit != 'DasObject':
         s.writelines(['  '+self._inherit+'::persist_associated_post(db);\n'])
       for i in self._assoc_touples:
@@ -324,34 +302,45 @@ inline const shared_ptr<'''+self._class_name+'''>&
           s.writelines([_def_persist_assoc(i[0],i[2])])
       s.writelines(['}\n'])
 
-      s.writelines(['void\n',self._class_name+'::update()\n{\n'])
+      s.writelines(['void\n',self._class_name+'::update(das::TransactionBundle &tb)\n{\n'])
       s.writelines(['''  if(is_dirty_ && !is_new())
   {
     DAS_LOG_DBG("DAS debug INFO: UPD name:'" << name() << "' version:" << version() <<"...");
-    bundle_.lock_db(true)->update(*this);
+    
+    if(bundle_.transaction_expired())
+      set_dirty_columns();
+
+    //TODO save data
+
+    tb.db()->update(*this);
     is_dirty_ = false;
     DAS_LOG_DBG("done.");
   }
 '''])      
       if self._inherit != 'DasObject':
-        s.writelines(['  '+self._inherit+'::update();\n'])
+        s.writelines(['  '+self._inherit+'::update(tb);\n'])
       if self._assoc_touples:
-        s.writelines(['  das::tpl::DbBundle bundle = bundle_.lock();\n'])
+        #s.writelines(['  das::DbBundle bundle = bundle_.lock();\n'])
         for i in self._assoc_touples:
           s.writelines([_def_update_assoc(i[0],i[2])])
       s.writelines(['}\n'])
     else:
       s.writelines(['''
 void
-'''+self._class_name+'''::update()
+'''+self._class_name+'''::update(das::TransactionBundle &tb)
 {
-  if(is_dirty_)
-    bundle_.lock_db(true)->update(*this);
+  if(is_dirty_){
+    
+    if(bundle_.transaction_expired())
+      set_dirty_columns();
+
+    tb.db()->update(*this);
+  }
 }
 '''])
     s.writelines(['''
 void
-'''+self._class_name+'''::attach(const shared_ptr<'''+self._class_name+'''> &ptr,das::tpl::DbBundle &bundle)
+'''+self._class_name+'''::attach(const shared_ptr<'''+self._class_name+'''> &ptr,das::DbBundle &bundle)
 {
   bundle.attach(ptr);
 '''])
@@ -360,6 +349,9 @@ void
     s.writelines(['}\n'])
 
 
+    # write other body methods
+    s.writelines(self._src_body)
+    
     s.writelines(['shared_ptr<'+self._class_name+'> '+self._class_name+'::null_ptr_;\n'])
     s.close()
 
@@ -374,9 +366,8 @@ void
       self._header.append("using odb::tr1::lazy_weak_ptr;")
       self._header.append("using odb::tr1::lazy_shared_ptr;")
       self._header.append("using std::tr1::shared_ptr;")
-      self._friends.append("friend class das::tpl::Database;")
-      self._protected_section.extend(['virtual void','persist_associated_pre (das::tpl::DbBundle &db);'])
-      self._protected_section.extend(['virtual void','persist_associated_post(das::tpl::DbBundle &db);'])
+      self._protected_section.extend(['virtual void persist_associated_pre (das::TransactionBundle &tb);'])
+      self._protected_section.extend(['virtual void persist_associated_post(das::TransactionBundle &tb);'])
       self._has_associations = True 
 	
     self._forward_section.append("class " + associated.atype + ";")
@@ -403,9 +394,14 @@ void
  
   def visit_keyword(self,keyword):
     k_type = self.KTYPE_MAP[keyword.ktype]
-
+    self._default_init.append('keywords_.insert(std::pair<std::string, keyword_type_ref>("'+keyword.name+'",'+keyword.name+'_));')
     if keyword.ktype == 'string':
-      self._private_section.append('#pragma db type("VARCHAR(256)")')
+      self._private_section.append('')
+      self._private_section.append('std::string get_'+keyword.name+'() const {return escape_string('+keyword.name+'_);}')
+      self._private_section.append('void set_'+keyword.name+'(const std::string &'+keyword.name+'){'+keyword.name+'_ = unescape_string('+keyword.name+');}')
+      self._private_section.append('')
+      self._private_section.append('#pragma db type("VARCHAR(256)") set(set_'+keyword.name+') get(get_'+keyword.name+')')
+
     if keyword.index is not None and keyword.index == "yes":
       self._private_section.append("#pragma db index")
     if keyword.default is not None:
@@ -422,48 +418,157 @@ void
 
    
   def visit_binary_table(self,_):
-    if self._inherit != "":
-      if not self.has_inherit_column(self._inherit):
-        self._header.append("#include <boost/unordered_map.hpp>")
+    
+    self._protected_section.append("virtual void set_dirty_columns();")
 #        self._header.append('#include "../../internal/das_io.hpp"')
-#        self._header.append('#include <blitz/array.h>')
-        self._protected_section.append("#pragma db transient")
-        self._protected_section.append("boost::unordered_map<std::string, shared_ptr<Column"+self._store_as+"> "+self._class_name+"::* > columns_;")
-    else:
-      self._header.append("#include <boost/unordered_map.hpp>")
-#      self._header.append('#include "../../internal/das_io.hpp"')
-#      self._header.append('#include <blitz/array.h>')
-      self._protected_section.append("#pragma db transient")
-      if self._store_as == 'File':
-        self._protected_section.append("boost::unordered_map<std::string, shared_ptr<"+self._class_name+"_column> "+self._class_name+"::* > columns_;")
-        self._column_type = ['''
-#pragma db object
-class '''+self._class_name+'''_column : public ColumnFile
+    self._header.append('#include <odb/vector.hxx>')
+    
+    self._public_section.append('virtual bool is_table() const { return true; }')
+
+    if self._store_as == 'File':
+      self._protected_section.append('virtual ColumnFromFile* column_from_file(const std::string &col_name);')
+      self._protected_section.append('virtual void column_from_file(const std::string &col_name, const ColumnFromFile &cf);')
+      self._protected_section.append('virtual void get_columns_from_file(std::map<std::string,ColumnFromFile*> &map);')
+      self._protected_section.append('virtual void save_data(const std::string &path, das::TransactionBundle &tb);')
+      self._protected_section.append('virtual void save_data(das::TransactionBundle &tb);')
+      self._src_body.append('''
+void
+'''+self._class_name+'''::get_columns_from_file(std::map<std::string,ColumnFromFile*> &map){''')
+      for col in self._get_all_columns(self._class_name,[]):
+        self._src_body.append('\n  map.insert(std::pair<std::string,ColumnFromFile*>("'+col+'",NULL));')
+      self._src_body.append('''
+
+  for(odb::vector<'''+self._class_name+'''_config>::iterator i = columns_.begin(); i != columns_.end(); ++i)
+    map[i->column_name()] = i->column_from_file();
+}
+
+void
+'''+self._class_name+'''::save_data(const std::string &path, das::TransactionBundle &tb){
+  shared_ptr<das::StorageTransaction> e = das::StorageTransaction::create(bundle_.alias(),tb);
+  e->add(this);
+  e->save(path);
+  tb.add(e);
+}
+
+void
+'''+self._class_name+'''::save_data(das::TransactionBundle &tb){
+  shared_ptr<das::StorageTransaction> e = das::StorageTransaction::create(bundle_.alias(),tb);
+  e->add(this);
+  e->save();
+  tb.add(e);
+}
+
+
+ColumnFromFile*
+'''+self._class_name+'''::column_from_file(const std::string &col_name){
+  get_column_info(col_name); // will throw if not present
+  
+  for(odb::vector<'''+self._class_name+'''_config>::iterator i = columns_.begin(); i != columns_.end(); ++i){
+    if(i->column_name() == col_name)
+      return i->column_from_file();
+  }
+  return NULL;
+}
+
+void
+'''+self._class_name+'''::column_from_file(const std::string &col_name, const ColumnFromFile &cf){
+  get_column_info(col_name); // will throw if not present
+  for(odb::vector<'''+self._class_name+'''_config>::iterator i = columns_.begin(); i != columns_.end(); ++i){
+    if(i->column_name() == col_name){
+      i.modify().column_from_file(cf);
+      return;
+    }
+  }
+  '''+self._class_name+'''_config conf(col_name);
+  conf.column_from_file(cf);
+  columns_.push_back(conf);
+}
+
+void
+'''+self._class_name+'''::set_dirty_columns()
+{
+  for(odb::vector<'''+self._class_name+'''_config>::iterator i = columns_.begin(); i != columns_.end(); ++i)
+    i.modify();
+}
+''')
+      self._private_section.append("odb::vector<"+self._class_name+"_config> columns_;")
+      self._data_types = ['''
+#pragma db object session(false)
+class ColumnFromFile_'''+self._class_name+''' : public ColumnFromFile
 {
 public:
-  '''+self._class_name+'''_column(const long long &size,
+  ColumnFromFile_'''+self._class_name+'''(const long long &size,
 	     const std::string &type,
 	     const std::string &fname)
-  : ColumnFile(size,type,fname) {}
+  : ColumnFromFile(size,type,fname) {}
 
-  '''+self._class_name+'''_column(const std::string &type)
-  : ColumnFile(type) {}
+  ColumnFromFile_'''+self._class_name+'''(const std::string &type)
+  : ColumnFromFile(type) {}
+
+  ColumnFromFile_'''+self._class_name+'''(const ColumnFromFile &cff)
+  : ColumnFromFile(cff){}
+
+  virtual
+  void
+  persist(odb::database &db);
 private:
-  '''+self._class_name+'''_column(){}
+  ColumnFromFile_'''+self._class_name+'''(){}
   friend class odb::access;
 };
+
+#pragma db value
+class '''+self._class_name+'''_config : public ColumnConfig
+{
+public:
+  '''+self._class_name+'''_config(const std::string &col_name)
+    : col_name_(col_name) {}
+
+  virtual
+  ColumnFromFile *
+  column_from_file() const{
+    // null if there's no data in this column
+    return cff_.get();
+  }
+
+  virtual
+  void
+  column_from_file(const ColumnFromFile &cff){
+    cff_.reset(new ColumnFromFile_'''+self._class_name+'''(cff));
+  }
+
+  virtual
+  const std::string&
+  column_name() const {
+    return col_name_;
+  }
+
+private:
+  friend class odb::access;
+  std::string col_name_;
+  // might become lazy
+  shared_ptr<ColumnFromFile_'''+self._class_name+'''> cff_;
+  '''+self._class_name+'''_config(){}
+
+
+};
+
 ''']
-
-
-      else:
-        self._protected_section.append("boost::unordered_map<std::string, shared_ptr<Column"+self._store_as+"> "+self._class_name+"::* > columns_;")
+      self._src_body.append('''
+void
+ColumnFromFile_'''+self._class_name+'''::persist(odb::database &db){
+  db.persist(*this);
+}
+''')
+    else:   
+      self._private_section.append("odb::vector<ColumnFromBlob> columns_;")
     
-  def visit_column(self,column):
-    self._default_init.append('columns_["'+column.name+'"] = &'+self._class_name+'::column_'+column.name+'_;')
-    if self._store_as == 'File':
-      self._protected_section.append('shared_ptr<'+self._class_name+'_column> column_'+column.name+'_;')
-    else:
-      self._protected_section.append('shared_ptr<Column'+self._store_as+'> column_'+column.name+'_;')
+# if we prepare the vector, this will be stored in th db even without data reference
+#  def visit_column(self,column):
+#    if self._store_as == 'File':
+#      self._default_init.append('columns_.push_back('+self._class_name+'_config("'+column.name+'"));')
+#    else:
+#      self._default_init.append('columns_.push_back(ColumnBlob("'+column.name+'"));')
+
 
   def visit_data(self,data):
     if data.store_as == 'blob':
@@ -471,13 +576,140 @@ private:
     else:
       self._store_as = 'File'
 
-  def visit_image(self,_):
-    self._protected_section.append("Image"+self._store_as+" image_;")
-    self._header.append('#include "../image.hpp"')
-    if self._init_list: # if is not empty
-      self._init_list.append(', image_("")')
+  def visit_image(self,image):
+    self._public_section.append('virtual bool is_image() const { return true; }')
+    dim = int(image.dimensions) + 1
+    if  self._store_as == 'File':
+      self._protected_section.append("shared_ptr<ImageFromFile_"+self._class_name+"> image_;")
+      self._protected_section.append("virtual ImageFromFile* image_from_file();")
+      self._protected_section.append("virtual void image_from_file(const ImageFromFile &iff);")
+      self._protected_section.append('virtual void save_data(const std::string &path, das::TransactionBundle &tb);')
+      self._protected_section.append('virtual void save_data(das::TransactionBundle &tb);')
+      self._data_types = ['''
+#pragma db object session(false)
+class ImageFromFile_'''+self._class_name+''' : public ImageFromFile
+{
+public:
+  ImageFromFile_'''+self._class_name+'''(const std::string &pixel_type,
+            const std::string &fname)
+  : ImageFromFile(pixel_type,fname),
+    size0_(0),''']
+      for i in range(2,(dim-1)):
+        self._data_types.extend(['    size'+str(i-1)+'_(1),'])            
+      self._data_types.extend(['    size'+str(dim-2)+'''_(1)  {}
+
+  ImageFromFile_'''+self._class_name+'''(const std::string &pixel_type)
+  : ImageFromFile(pixel_type),
+    size0_(0),'''])
+      for i in range(2,(dim-1)):
+        self._data_types.extend(['    size'+str(i-1)+'_(1),'])            
+      self._data_types.extend(['    size'+str(dim-2)+'''_(1) {}
+
+  ImageFromFile_'''+self._class_name+'''(const ImageFromFile &iff)
+  : ImageFromFile(iff)
+  {'''])
+      for i in range(1,(dim)):
+        self._data_types.extend(['    size'+str(i-1)+'_ = iff.extent('+str(i-1)+');'])           
+      self._data_types.extend(['''
+
+  }
+
+  virtual unsigned int rank() const { return '''+str(dim-1)+''';}
+
+  virtual 
+  unsigned int
+  extent(size_t rank) const
+  {
+    switch(rank){
+      case 0: return size0_ + buff_.tiles();'''])
+      for i in range(2,dim):
+        self._data_types.extend(['      case '+str(i-1)+': return size'+str(i-1)+'_;'])            
+      self._data_types.extend(['''      default: return 0;
+    }
+  }
+  
+  virtual
+  unsigned int
+  file_tiles() const {
+    return size0_;
+  }
+
+  virtual
+  void
+  file_tiles(const unsigned int& tiles){
+    size0_ = tiles;
+  }
+
+  virtual void
+  extent(const size_t &rank, size_t value){
+    switch(rank){'''])
+      for i in range(2,dim):
+        self._data_types.extend(['      case '+str(i-1)+': size'+str(i-1)+'_ = value;'])            
+      self._data_types.extend(['''      default: return;
+    }
+  }
+
+  virtual
+  unsigned int
+  num_elements() const
+  {
+    return buff_.num_elements() + '''])
+      for i in range(1,(dim-1)):
+        self._data_types.extend(['    size'+str(i-1)+'_ *'])            
+      self._data_types.extend(['    size'+str(dim-2)+'''_;
+  }
+
+  virtual
+  void
+  persist(odb::database &db);
+
+private:'''])
+      for i in range(1,dim):
+        self._data_types.extend(['  int size'+str(i-1)+'_;'])            
+      self._data_types.extend(['''  ImageFromFile_'''+self._class_name+'''(){}
+  friend class odb::access;
+};
+
+'''])
+      self._src_body.extend(['''
+ImageFromFile*
+'''+self._class_name+'''::image_from_file(){
+  return image_.get();
+}
+
+void
+'''+self._class_name+'''::image_from_file(const ImageFromFile &iff){
+  image_.reset(new ImageFromFile_'''+self._class_name+'''(iff));
+}
+'''])
+      self._src_body.append('''
+void
+ImageFromFile_'''+self._class_name+'''::persist(odb::database &db){
+  db.persist(*this);
+}
+
+void
+'''+self._class_name+'''::save_data(const std::string &path, das::TransactionBundle &tb){
+  shared_ptr<das::StorageTransaction> e = das::StorageTransaction::create(bundle_.alias(),tb);
+  e->add(this);
+  e->save(path);
+  tb.add(e);
+}
+
+void
+'''+self._class_name+'''::save_data(das::TransactionBundle &tb){
+  shared_ptr<das::StorageTransaction> e = das::StorageTransaction::create(bundle_.alias(),tb);
+  e->add(this);
+  e->save();
+  tb.add(e);
+}
+
+
+''')
     else:
-      self._init_list.append('  :image_("")')
+      self._protected_section.append("ImageBlob image_;")
+
+    self._header.append('#include "../image.hpp"')
 
 
   def has_inherit_column(self,key):
@@ -489,6 +721,24 @@ private:
         return self.has_inherit_column(obj.ancestor)
       else:
         return False
+
+  def _get_all_columns(self,name,l):
+    obj = self._instance.type_map[name]
+    if obj.data is not None:
+      if obj.data.isTable():
+        l1 = obj.data.data_obj.columns.keys()
+        l1.extend(l)
+        if obj.ancestor != "essentialMetadata":
+          return self._get_all_columns(obj.ancestor,l1)
+        else:
+          return l1
+      else:
+        return l
+    else:
+      if obj.ancestor != "essentialMetadata":
+        return self._get_all_columns(obj.ancestor,l)
+      else:
+        return l
 
   def _get_exclusive_associations(self,type_name):
     exc_assoc = []
@@ -511,9 +761,12 @@ private:
 def _def_factory_method(class_name):
   return '''
 inline shared_ptr<'''+class_name+'''>
-'''+class_name+'''::create(const std::string &name)
+'''+class_name+'''::create(const std::string &name,const std::string &db_alias)
 {
-  shared_ptr<'''+class_name+'''> ptr(new '''+class_name+'''(name));
+// verify that the database exists and the tipe can be stored in that database
+  DdlInfo::get_instance(db_alias)->get_keyword_info("'''+class_name+'''","das_id");
+
+  shared_ptr<'''+class_name+'''> ptr(new '''+class_name+'''(name,db_alias));
   ptr->self_ = ptr;
   return ptr;
 }
@@ -706,7 +959,6 @@ class DdlInheritanceValidator:
     return False
 
   def _association_loop(self,type_,assoc_,stack):
-#    print type_.name,assoc_.atype
     if type_.name == assoc_.atype:
       print "Error: found associations loop:"
       for i in stack:

@@ -1,5 +1,5 @@
-#include "../internal/log.hpp"
-#include "db_bundle.hpp"
+#include "../log.hpp"
+#include "../db_bundle.hpp"
 namespace das {
     namespace tpl {
 
@@ -21,12 +21,21 @@ namespace das {
         inline
         Transaction
         Database::begin() {
+            shared_ptr<odb::transaction> t = bundle_.transaction();
+            if (t) {
+                throw das::already_in_transaction();
+            }
             shared_ptr<odb::session> s = bundle_.lock_session(false);
             if (!s) {
                 s.reset(new odb::session());
                 bundle_.reset_session(s);
             }
-            return Transaction(bundle_,s);
+            t.reset(new odb::transaction(bundle_.db()->begin()));
+            bundle_.transaction(t);
+            
+            shared_ptr<TransactionBundle> tb(new TransactionBundle(bundle_.alias(), bundle_.db(), s, t));
+            tb_ = tb;
+            return Transaction(tb);
         }
 
         template<typename T>
@@ -76,7 +85,11 @@ namespace das {
         inline
         long long
         Database::persist(const shared_ptr<T> &obj, std::string path) {
-            return bundle_.persist<T>(obj, path);
+            shared_ptr<TransactionBundle> tb = tb_.lock();
+            if (!tb)
+                throw das::not_in_transaction();
+
+            return tb->persist<T>(obj, path);
         }
 
         template<typename T>
@@ -84,19 +97,23 @@ namespace das {
         Result<T>
         Database::query(const std::string& expression, const std::string& ordering) {
             shared_ptr<odb::session> s = bundle_.lock_session(true);
+            shared_ptr<TransactionBundle> tb = tb_.lock();
+            if (!tb)
+                throw das::not_in_transaction();
+
             odb::session::current(*s);
             QLVisitor exp_visitor(das_traits<T>::name, info_);
             std::string clause = exp_visitor.parse_exp(expression);
             std::string order = exp_visitor.parse_ord(ordering);
-            
+
             //FIXME: update olny query types, not all the cache
-            bundle_.flush_session();
+            tb->flush_session();
             DAS_LOG_DBG("DAS debug INFO: WHERE" << std::endl << clause + order);
 
             odb::result<T> odb_r(bundle_.db()->query<T>(clause + order));
             //result<T> r = static_cast<result<T> > (bundle_.db()->query<T>(clause + order));
             //return static_cast<Result<T> > (odb_r);
-            
+
             return Result<T>(odb_r, bundle_);
         }
 
@@ -106,7 +123,7 @@ namespace das {
         Database::query_id(const std::string& expression, const std::string& ordering) {
 
             std::vector<long long> ids;
-            Result<T> r = query<T>(expression, ordering);          
+            Result<T> r = query<T>(expression, ordering);
             for (typename Result<T>::iterator i(r.begin()); i != r.end(); ++i) {
                 ids.push_back(i.id());
             }
@@ -149,20 +166,23 @@ namespace das {
         void
         Database::attach(const shared_ptr<T> &obj) {
             //bundle_.attach<T>(obj);
-            T::attach(obj,bundle_);
+            T::attach(obj, bundle_);
         }
 
         inline
         void
         Database::flush() {
-/*            if (odb::transaction::has_current()) {
-                DAS_LOG_DBG("DAS info: WARNING: calling db flush() while another transaction was open.");
-                return;
-            }
-            Transaction t = begin();
-            t.commit();
-*/
-            bundle_.flush_session();
+            /*            if (odb::transaction::has_current()) {
+                            DAS_LOG_DBG("DAS info: WARNING: calling db flush() while another transaction was open.");
+                            return;
+                        }
+                        Transaction t = begin();
+                        t.commit();
+             */
+            shared_ptr<TransactionBundle> tb = tb_.lock();
+            if (!tb)
+                throw das::not_in_transaction();
+            tb->flush_session();
         }
 
         template<typename T>
@@ -183,22 +203,20 @@ namespace das {
         void
         Database::begin_session() {
             shared_ptr<odb::session> s = bundle_.lock_session(false);
-            if (s.unique() || !s){
+            if (s.unique() || !s) {
                 s.reset(new odb::session());
                 bundle_.reset_session(s);
                 extended_ = s;
-            }
-            else
+            } else
                 throw already_in_session();
         }
 
         inline
         void
         Database::end_session() {
-            if (extended_){
+            if (extended_) {
                 extended_.reset();
-            }
-            else
+            } else
                 throw not_in_session();
         }
     }

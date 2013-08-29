@@ -4,19 +4,19 @@
 #include <boost/unordered_map.hpp>
 #include <memory>
 #include <odb/tr1/memory.hxx>
+#include <boost/property_tree/ptree.hpp>
 using std::tr1::shared_ptr;
 namespace das {
 
-    struct DatabaseInfo {
-
-        DatabaseInfo() : port(0) {
+    class DatabaseInfo {
+    public:
+        DatabaseInfo() : port(0), buffered_(true) {
         }
-
+        
         bool valid() const {
-            return host != "" && db_type != "" && db_name != "" &&
-                    data_root_dir != "" && time_interval != "";
+            return host != "" && db_type != "" && db_name != "";
         }
-
+        
         bool accessible() const {
             return valid() && user != "";
         }
@@ -25,10 +25,22 @@ namespace das {
         unsigned int port;
         std::string db_type;
         std::string db_name;
-        std::string data_root_dir;
-        std::string time_interval;
         std::string user;
         std::string password;
+        boost::property_tree::ptree storage_engine;
+        
+        const bool&
+        buffered_data() const{
+            return buffered_;
+        }
+        
+        void
+        buffered_data(const bool& value) const{
+            buffered_ = value;
+        }
+        
+    private:
+        mutable bool buffered_;
     };
 
     class DatabaseConfig {
@@ -42,7 +54,6 @@ namespace das {
         cend() const {return db_map_.cend();}  
         
         static const DatabaseInfo&  database(const std::string &alias);
-        static const std::string&  temp_dir(); 
     private:
         DatabaseConfig() : ready(false){}
         bool ready;
@@ -54,7 +65,6 @@ namespace das {
         boost::unordered_map<std::string, DatabaseInfo> db_map_;
         
         static DatabaseConfig database_config;
-        static std::string temp_;
     };
 }
 #endif	/* DATABASE_CONFIG_HPP */

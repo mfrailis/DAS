@@ -1,5 +1,5 @@
-#ifndef DAS_DATABASE_HPP
-#define DAS_DATABASE_HPP
+#ifndef DAS_TPL_DATABASE_HPP
+#define DAS_TPL_DATABASE_HPP
 /* WARNING: this class is not the database-indipendent interface
  * but the mysql related one
  */
@@ -18,17 +18,21 @@
 #include "../internal/aux_query.hpp"
 #include "../internal/qlvisitor.hpp"
 #include "../das_object.hpp"
-#include "transaction.hpp"
+#include "../transaction.hpp"
 #include "../internal/db_bundle.ipp"
 #include "../internal/database_config.hpp"
-#include "../internal/result.hpp"
+#include "result.hpp"
 
 #include <odb/mysql/database.hxx>
 using std::tr1::shared_ptr;
 using std::tr1::weak_ptr;
 
+
+
 namespace das {
     namespace tpl {
+        
+        typedef das::Transaction Transaction;
 
         class Database {
         public:
@@ -53,7 +57,7 @@ namespace das {
 
             template<typename T>
             void
-            erase(const shared_ptr<T> &obj); //TODO
+            erase(const shared_ptr<T> &obj);
 
             template<typename T>
             Result<T>
@@ -90,17 +94,18 @@ namespace das {
                     const shared_ptr<odb::database> &db)
             : bundle_(db_alias, db) {
             }
+            DdlInfo *info_;            
         private:
-            friend class Transaction;
+            friend class das::Transaction;
             
+            weak_ptr<TransactionBundle> tb_;
             shared_ptr<odb::session> extended_;
             DbBundle bundle_;
-            DdlInfo *info_;
         };
 
 
     }//namespace tpl
 }//namespace das
 
-#include "../internal/database.ipp"
+#include "../internal/tpl/database.ipp"
 #endif
