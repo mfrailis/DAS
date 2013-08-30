@@ -30,6 +30,7 @@ class DdlInfoGenerator(_odb.DdlVisitor):
         self._init_columns = []
         self._init_images = []
         self._init_associations = []
+        self._init_types = []
         self._DdlInfo_children = {}
 
         self._keywords = []
@@ -46,6 +47,9 @@ class DdlInfoGenerator(_odb.DdlVisitor):
         self._get_keywords(data_type.name)
         self._get_columns(data_type.name)
         self._get_associations(data_type.name)
+        
+        if data_type.name != "essentialMetadata":
+            self._init_types.append('all_types_["'+data_type.name+'"].ctor.reset(new TypeCtorImp<'+data_type.name+'>);')
 
         self._init_keywords.append('all_keywords_["'+data_type.name+'"].insert(std::pair<std::string,KeywordInfo>("das_id",KeywordInfo("das_id","int64","none","object id")));')
         for k in self._keywords:
@@ -84,6 +88,7 @@ class DdlInfoGenerator(_odb.DdlVisitor):
         f.writelines('#include "'+ddl+'.hpp"\n' for ddl in set(self._db_map.values()))
         f.writelines(['#include "ddl/types/ddl_types.hpp"'])
         f.writelines(['\nvoid\n','DdlInfo::init()\n','{\n'])
+        f.writelines("  "+l + "\n" for l in self._init_types)
         f.writelines("  "+l + "\n" for l in self._init_images)
         f.writelines("  "+l + "\n" for l in self._init_columns)
         f.writelines("  "+l + "\n" for l in self._init_keywords)

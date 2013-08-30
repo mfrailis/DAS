@@ -133,6 +133,11 @@ public:
     bool is_new() const {
         return das_id_ == 0;
     }
+    
+    long long
+    das_id() const{
+        return das_id_;
+    }
 
     const std::string&
     dbUserId() const {
@@ -211,6 +216,11 @@ public:
     }
 
     //polimorphic interface
+    static
+    shared_ptr<DasObject>
+    create(const std::string &type_name, const std::string &name, const std::string &db_alias){
+        return DdlInfo::get_instance()->get_type_info(type_name).ctor->create(name,db_alias);
+    }
 
     virtual bool is_table() const {
         return false;
@@ -218,6 +228,31 @@ public:
 
     virtual bool is_image() const {
         return false;
+    }
+
+    template<typename T>
+    void
+    set_key(const std::string &keyword_name, const T& value) {
+        if (keyword_name == "name" || keyword_name == "version" || keyword_name == "dbUserId")
+            throw das::read_only_keyword();
+
+        keyword_type val = value;
+        boost::apply_visitor(Key_set(), keywords_.at(keyword_name), val);
+    }
+
+    void
+    set_key(const std::string &keyword_name, const char* value) {
+        if (keyword_name == "name" || keyword_name == "version" || keyword_name == "dbUserId")
+            throw das::read_only_keyword();
+
+        keyword_type val = std::string(value);
+        boost::apply_visitor(Key_set(), keywords_.at(keyword_name), val);
+    }
+
+    template<typename T>
+    T
+    get_key(const std::string &keyword_name) {
+        return boost::apply_visitor(Key_get<T>(), keywords_.at(keyword_name));
     }
 
     shared_ptr<DasObject>

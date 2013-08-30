@@ -250,6 +250,25 @@ private:
     AssociationInfo();
 };
 
+class TypeCtor{
+public:
+    virtual ~TypeCtor(){}
+    virtual shared_ptr<DasObject> create(const std::string& name, const std::string &db_alias) = 0;
+};
+
+template<class Das_type>
+class TypeCtorImp : public TypeCtor {
+public:
+    virtual shared_ptr<DasObject> create(const std::string& name, const std::string &db_alias){
+        return Das_type::create(name,db_alias);
+    }
+};
+
+class TypeInfo{
+public: 
+    shared_ptr<TypeCtor> ctor;
+};
+
 class DdlInfo {
 public:
 
@@ -272,6 +291,13 @@ public:
     get_image_info(const std::string &type_name)
     const throw (std::out_of_range) {
         return all_images_.at(type_name);
+    }
+    
+    virtual
+    const TypeInfo&
+    get_type_info(const std::string &type_name)
+    const throw (std::out_of_range) {
+        return all_types_.at(type_name);
     }
 
     static DdlInfo*
@@ -305,6 +331,7 @@ protected:
     static boost::unordered_map< std::string, Column_map > all_columns_;
     static boost::unordered_map< std::string, ImageInfo > all_images_;
     static boost::unordered_map< std::string, Association_map > all_associations_;
+    static boost::unordered_map< std::string, TypeInfo > all_types_;
 
     DdlInfo() {
     };
