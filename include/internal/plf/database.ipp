@@ -24,15 +24,15 @@ namespace das {
 
             virtual
             Result
-            query(tpl::Database *db, const std::string& expression, const std::string& ordering = "") = 0;
+            query(tpl::Database *db, const std::string& expression, const std::string& ordering = "", bool only_last_version = false) = 0;
 
             virtual
             std::vector<long long>
-            query_id(tpl::Database *db, const std::string& expression, const std::string& ordering = "") = 0;
+            query_id(tpl::Database *db, const std::string& expression, const std::string& ordering = "", bool only_last_version = false) = 0;
 
             virtual
             std::vector< std::pair<std::string, short> >
-            query_name(tpl::Database *db, const std::string& expression, const std::string& ordering) = 0;
+            query_name(tpl::Database *db, const std::string& expression, const std::string& ordering = "", bool only_last_version = false) = 0;
 
             virtual
             bool
@@ -76,21 +76,21 @@ namespace das {
 
             virtual
             Result
-            query(tpl::Database *db, const std::string& expression, const std::string& ordering = "") {
-                ResultWrapper *rw = new ResultWrapperImp<Das_type>(db->query<Das_type>(expression,ordering));
+            query(tpl::Database *db, const std::string& expression, const std::string& ordering = "", bool only_last_version = false) {
+                ResultWrapper *rw = new ResultWrapperImp<Das_type>(db->query<Das_type>(expression,ordering,only_last_version));
                 return Result(rw);
             }
 
             virtual
             std::vector<long long>
-            query_id(tpl::Database *db, const std::string& expression, const std::string& ordering = "") {
-                return db->query_id<Das_type> (expression, ordering);
+            query_id(tpl::Database *db, const std::string& expression, const std::string& ordering = "", bool only_last_version = false) {
+                return db->query_id<Das_type> (expression, ordering,only_last_version);
             }
 
             virtual
             std::vector< std::pair<std::string, short> >
-            query_name(tpl::Database *db, const std::string& expression, const std::string& ordering) {
-                return db->query_name<Das_type> (expression, ordering);
+            query_name(tpl::Database *db, const std::string& expression, const std::string& ordering = "", bool only_last_version = false) {
+                return db->query_name<Das_type> (expression, ordering,only_last_version);
             }
 
             virtual
@@ -149,20 +149,20 @@ namespace das {
 
         inline
         Result
-        Database::query(const std::string& type_name, const std::string& expression, const std::string& ordering) {
-            return f_.at(type_name)->query(this, expression, ordering);
+        Database::query(const std::string& type_name, const std::string& expression, const std::string& ordering, bool only_last_version) {
+            return f_.at(type_name)->query(this, expression, ordering, only_last_version);
         }
 
         inline
         std::vector<long long>
-        Database::query_id(const std::string& type_name, const std::string& expression, const std::string& ordering) {
-            return f_.at(type_name)->query_id(this, expression, ordering);
+        Database::query_id(const std::string& type_name, const std::string& expression, const std::string& ordering, bool only_last_version) {
+            return f_.at(type_name)->query_id(this, expression, ordering, only_last_version);
         }
 
         inline
         std::vector< std::pair<std::string, short> >
-        Database::query_name(const std::string& type_name, const std::string& expression, const std::string& ordering) {
-            return f_.at(type_name)->query_name(this, expression, ordering);
+        Database::query_name(const std::string& type_name, const std::string& expression, const std::string& ordering, bool only_last_version) {
+            return f_.at(type_name)->query_name(this, expression, ordering, only_last_version);
         }
 
         inline

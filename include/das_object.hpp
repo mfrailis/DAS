@@ -219,7 +219,7 @@ public:
     static
     shared_ptr<DasObject>
     create(const std::string &type_name, const std::string &name, const std::string &db_alias){
-        return DdlInfo::get_instance()->get_type_info(type_name).ctor->create(name,db_alias);
+        return DdlInfo::get_instance()->get_type_info(type_name)(name,db_alias);
     }
 
     virtual bool is_table() const {

@@ -61,15 +61,15 @@ namespace das {
 
             template<typename T>
             Result<T>
-            query(const std::string& expression, const std::string& ordering = "");
+            query(const std::string& expression, const std::string& ordering = "", bool last_version_only = false);
 
             template<typename T>
             std::vector<long long>
-            query_id(const std::string& expression, const std::string& ordering = "");
+            query_id(const std::string& expression, const std::string& ordering = "", bool last_version_only = false);
 
             template<typename T>
             std::vector< std::pair<std::string, short> >
-            query_name(const std::string& expression, const std::string& ordering);
+            query_name(const std::string& expression, const std::string& ordering, bool last_version_only = false);
 
             template<typename T>
             bool

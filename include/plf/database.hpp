@@ -44,15 +44,15 @@ namespace das {
 
 
             Result
-            query(const std::string& type_name, const std::string& expression, const std::string& ordering = "");
+            query(const std::string& type_name, const std::string& expression, const std::string& ordering = "", bool only_last_version = false);
 
 
             std::vector<long long>
-            query_id(const std::string& type_name, const std::string& expression, const std::string& ordering = "");
+            query_id(const std::string& type_name, const std::string& expression, const std::string& ordering = "", bool only_last_version = false);
 
 
             std::vector< std::pair<std::string, short> >
-            query_name(const std::string& type_name, const std::string& expression, const std::string& ordering);
+            query_name(const std::string& type_name, const std::string& expression, const std::string& ordering, bool only_last_version = false);
 
 
             bool

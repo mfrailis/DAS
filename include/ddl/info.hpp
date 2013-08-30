@@ -162,6 +162,7 @@ public:
     virtual std::vector<shared_ptr<DasObject> > get_many(DasObject* obj) {
         throw bad_multiplicity();
     }
+
     virtual void set_many(DasObject* obj, const std::vector<shared_ptr<DasObject> > &assoc) {
         throw bad_multiplicity();
     }
@@ -172,7 +173,7 @@ public:
 
 template<class Das_type, class Assoc_type>
 class AssociationAccessImp_one : public AssociationAccess {
-    typedef void (Das_type::*set_method_ptr)( shared_ptr<Assoc_type>&);
+    typedef void (Das_type::*set_method_ptr)(shared_ptr<Assoc_type>&);
     typedef shared_ptr<Assoc_type> (Das_type::*get_method_ptr)();
 public:
 
@@ -196,7 +197,7 @@ private:
 
 template<class Das_type, class Assoc_type>
 class AssociationAccessImp_many : public AssociationAccess {
-    typedef void (Das_type::*set_method_ptr)( std::vector<shared_ptr<Assoc_type> >&);
+    typedef void (Das_type::*set_method_ptr)(std::vector<shared_ptr<Assoc_type> >&);
     typedef std::vector<shared_ptr<Assoc_type> >(Das_type::*get_method_ptr)();
     typedef std::vector<shared_ptr<Assoc_type> > ass_vec;
     typedef std::vector<shared_ptr<DasObject > > das_vec;
@@ -209,14 +210,14 @@ public:
     virtual std::vector<shared_ptr<DasObject> > get_many(DasObject* obj) {
         ass_vec av = (dynamic_cast<Das_type*> (obj)->*get_method)();
         das_vec dv;
-        for(typename ass_vec::iterator it = av.begin(); it != av.end(); ++it)
+        for (typename ass_vec::iterator it = av.begin(); it != av.end(); ++it)
             dv.push_back(*it);
         return dv;
     }
 
     virtual void set_many(DasObject* obj, const std::vector<shared_ptr<DasObject> >&dv) {
         ass_vec av;
-        for(das_vec::const_iterator it = dv.begin(); it != dv.end(); ++it)
+        for (das_vec::const_iterator it = dv.begin(); it != dv.end(); ++it)
             av.push_back(std::tr1::dynamic_pointer_cast<Assoc_type>(*it));
         (dynamic_cast<Das_type*> (obj)->*set_method)(av);
     }
@@ -238,7 +239,7 @@ public:
     association_table(table_name),
     association_key(ass_key),
     object_key(obj_key),
-    access(acc){
+    access(acc) {
     }
     std::string association_type;
     std::string association_table;
@@ -250,23 +251,66 @@ private:
     AssociationInfo();
 };
 
-class TypeCtor{
+class TypeCtor {
 public:
-    virtual ~TypeCtor(){}
+
+    virtual ~TypeCtor() {
+    }
     virtual shared_ptr<DasObject> create(const std::string& name, const std::string &db_alias) = 0;
 };
 
 template<class Das_type>
 class TypeCtorImp : public TypeCtor {
 public:
-    virtual shared_ptr<DasObject> create(const std::string& name, const std::string &db_alias){
-        return Das_type::create(name,db_alias);
+
+    virtual shared_ptr<DasObject> create(const std::string& name, const std::string &db_alias) {
+        return Das_type::create(name, db_alias);
     }
 };
 
-class TypeInfo{
-public: 
-    shared_ptr<TypeCtor> ctor;
+class TypeInfo {
+public:
+
+    shared_ptr<DasObject>
+    operator() (const std::string& name, const std::string &db_alias) const {
+        return ctor_->create(name, db_alias);
+    }
+
+    const KeywordInfo&
+    get_keyword_info(const std::string &keyword_name)
+    const throw (std::out_of_range) {
+        return keywords_.at(keyword_name);
+    }
+
+    const ColumnInfo&
+    get_column_info(const std::string &column_name)
+    const throw (std::out_of_range) {
+        return columns_.at(column_name);
+    }
+
+    virtual
+    const ImageInfo&
+    get_image_info()
+    const throw (std::out_of_range) {
+        if (image_)
+            return *image_;
+        else
+            throw std::out_of_range("this type does not provide image data");
+    }
+
+    virtual
+    const AssociationInfo&
+    get_association_info(const std::string &association_name)
+    const throw (std::out_of_range) {
+        return associations_.at(association_name);
+    }
+private:
+    friend class DdlInfo;
+    shared_ptr<TypeCtor> ctor_;
+    shared_ptr<ImageInfo> image_;
+    boost::unordered_map< std::string, AssociationInfo > associations_;
+    boost::unordered_map< std::string, KeywordInfo > keywords_;
+    boost::unordered_map< std::string, ColumnInfo > columns_;
 };
 
 class DdlInfo {
@@ -276,23 +320,30 @@ public:
     const KeywordInfo&
     get_keyword_info(const std::string &type_name, const std::string &keyword_name)
     const throw (std::out_of_range) {
-        return all_keywords_.at(type_name).at(keyword_name);
+        return all_types_.at(type_name).get_keyword_info(keyword_name);
     }
 
     virtual
     const ColumnInfo&
     get_column_info(const std::string &type_name, const std::string &column_name)
     const throw (std::out_of_range) {
-        return all_columns_.at(type_name).at(column_name);
+        return all_types_.at(type_name).get_column_info(column_name);
     }
 
     virtual
     const ImageInfo&
     get_image_info(const std::string &type_name)
     const throw (std::out_of_range) {
-        return all_images_.at(type_name);
+        return all_types_.at(type_name).get_image_info();
     }
-    
+
+    virtual
+    const AssociationInfo&
+    get_association_info(const std::string &type_name, const std::string &association_name)
+    const throw (std::out_of_range) {
+        return all_types_.at(type_name).get_association_info(association_name);
+    }
+
     virtual
     const TypeInfo&
     get_type_info(const std::string &type_name)
@@ -315,22 +366,8 @@ public:
         return get_instance()->ddl_map_.at(ddl_name);
     }
 
-    virtual
-    const AssociationInfo&
-    get_association_info(const std::string &type_name, const std::string &association_name)
-    const throw (std::out_of_range) {
-        return all_associations_.at(type_name).at(association_name);
-    }
 
 protected:
-    typedef boost::unordered_map< std::string, AssociationInfo > Association_map;
-    typedef boost::unordered_map< std::string, KeywordInfo > Keyword_map;
-    typedef boost::unordered_map< std::string, ColumnInfo > Column_map;
-
-    static boost::unordered_map< std::string, Keyword_map > all_keywords_;
-    static boost::unordered_map< std::string, Column_map > all_columns_;
-    static boost::unordered_map< std::string, ImageInfo > all_images_;
-    static boost::unordered_map< std::string, Association_map > all_associations_;
     static boost::unordered_map< std::string, TypeInfo > all_types_;
 
     DdlInfo() {

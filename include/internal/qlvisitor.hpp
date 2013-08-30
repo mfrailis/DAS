@@ -107,7 +107,7 @@ public:
   }
 
 
-  std::string parse_exp(const std::string &expression);
+  std::string parse_exp(const std::string &expression, bool last_version_only);
   std::string parse_ord(const std::string &expression);
 private:
   std::string type_to_string(type_e t);

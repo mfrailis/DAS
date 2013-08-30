@@ -95,7 +95,7 @@ namespace das {
         template<typename T>
         inline
         Result<T>
-        Database::query(const std::string& expression, const std::string& ordering) {
+        Database::query(const std::string& expression, const std::string& ordering, bool last_version_only) {
             shared_ptr<odb::session> s = bundle_.lock_session(true);
             shared_ptr<TransactionBundle> tb = tb_.lock();
             if (!tb)
@@ -103,7 +103,7 @@ namespace das {
 
             odb::session::current(*s);
             QLVisitor exp_visitor(das_traits<T>::name, info_);
-            std::string clause = exp_visitor.parse_exp(expression);
+            std::string clause = exp_visitor.parse_exp(expression,last_version_only);
             std::string order = exp_visitor.parse_ord(ordering);
 
             //FIXME: update olny query types, not all the cache
@@ -120,11 +120,11 @@ namespace das {
         template<typename T>
         inline
         std::vector<long long>
-        Database::query_id(const std::string& expression, const std::string& ordering) {
+        Database::query_id(const std::string& expression, const std::string& ordering, bool last_version_only) {
 
             std::vector<long long> ids;
-            Result<T> r = query<T>(expression, ordering);
-            for (typename Result<T>::iterator i(r.begin()); i != r.end(); ++i) {
+            Result<T> r = query<T>(expression, ordering, last_version_only);
+            for (typename Result<T>::const_iterator i(r.cbegin()); i != r.cend(); ++i) {
                 ids.push_back(i.id());
             }
             return ids;
@@ -133,11 +133,11 @@ namespace das {
         template<typename T>
         inline
         std::vector< std::pair<std::string, short> >
-        Database::query_name(const std::string& expression, const std::string& ordering) {
+        Database::query_name(const std::string& expression, const std::string& ordering, bool last_version_only) {
             odb::session::reset_current(); //disable current session
             std::vector< std::pair<std::string, short> > pairs;
 
-            Result<T> r = query<T>(expression, ordering);
+            Result<T> r = query<T>(expression, ordering, last_version_only);
             for (typename Result<T>::iterator i(r.begin()); i != r.end(); ++i) {
                 std::pair<std::string, short> p((*i).name(), (*i).version());
                 pairs.push_back(p);

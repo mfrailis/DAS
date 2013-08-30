@@ -73,14 +73,23 @@ int main(int argc, char * argv[]) {
         t.commit();
 
         D::Transaction t2(db->begin());
+        cout << "QUERY 0" << endl;
+        D::Result<measure> r0 = db->query<measure>(
+                "measure_session.session_campaign.name == 'campaign_1'",
+                "startdate asc",false);
+        
+        cout << "QUERY 1" << endl;
+        
         D::Result<measure> r = db->query<measure>(
                 "measure_session.session_campaign.name == 'campaign_1'",
-                "startdate asc");
+                "startdate asc",true);
         
         cout << "QUERY RESULT" << endl;
         for (D::Result<measure>::const_iterator i = r.cbegin(); i != r.cend(); ++i) {
             cout << i->name() << " " << i->version() << endl;
         }
+        
+        
         
         t2.commit();
         db->end_session();
