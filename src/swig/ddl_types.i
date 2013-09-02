@@ -1,6 +1,12 @@
-
+// First call swig with
+// swig -Wall -python -c++ -I../../include/ -I/opt/boost_1.54/include pydas.i
+// Then compile with
+// g++ -c -g -fPIC -I../../include/ -I/opt/boost_1.54/include -I/usr/include/python2.7/ -I/opt/blitz/include/ pydas_wrap.cxx
+// Then create the pydas dynamic library with
+// g++ -shared pydas_wrap.o -o _pydas.so -L../../build/ -L/opt/odb-2.2.0/lib -ldas -lodb-mysql -lodb
 
 %{
+#define DAS_SWIG_BINDING
 #include "ddl/types/ddl_measure.hpp"
 #include "ddl/types/ddl_types.hpp"
 #include "tpl/database.hpp"
@@ -8,6 +14,7 @@
 
 %import "das_object.i"
 %import "database.i"
+%import "result.i"
 
 %include <std_string.i>
 
@@ -55,6 +62,9 @@ class measure: public DasObject
 
 };
 
+%template(Result_measure) das::tpl::Result<measure>;
+%template(Result_measure_iterator) das::result_iterator_wrapper<measure>;
+
 %extend measure {
 
   static 
@@ -72,6 +82,13 @@ class measure: public DasObject
   long long
     persist(std::tr1::shared_ptr<das::tpl::Database> db, std::string path = "") {
     return db->persist($self->get_shared_ptr(), path);
+  }
+
+  static 
+    das::tpl::Result<measure>
+    query(std::tr1::shared_ptr<das::tpl::Database> db, const std::string& expression, 
+          const std::string& ordering = "") {
+    return db->query<measure>(expression, ordering);
   }
 
   void
