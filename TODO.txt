@@ -3,3 +3,5 @@
 *  check das query-compiler with mysql strange float types behavior
 *  implement load_for_update method in order lock database table rows
 *  implement make clean target
+*  pre-query cache flush only for involved types
+*  StorageAccess::get_keywords should return internal keywords map as const

@@ -7,6 +7,12 @@
 namespace das {
     namespace tpl {
 
+        /**
+         * @brief Template container of a query result.
+         * 
+         * It provides const and non const access to the result of a database
+         * query through iterators.
+         */
         template<typename T>
         class Result : private odb::result<T> {
         public:

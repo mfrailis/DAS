@@ -6,6 +6,13 @@
 namespace das {
     namespace tpl {
 
+        /**
+         * @brief implement the stream-like iterator interface.
+         * 
+         * For convenience the id() method is provided which does not require
+         * any object loading. The load method allows the user to manually
+         * load an object from the Result container.
+         */
         template <typename T>
         class result_iterator : private odb::result_iterator<T, odb::class_object> {
         private:
@@ -24,11 +31,18 @@ namespace das {
                 *loaded_ = false;
             }
 
+            /**
+             * Retrieves the id of the current result-object without loading it
+             */
             long long
             id() {
                 return super::id();
             }
-
+            
+            /**
+             * Explicitly loads the object in the current session. If the object
+             * was already present in the session, the same shared_ptr is returned.
+             */
             const shared_ptr<T>&
             load() {
                 if (! *loaded_) {
@@ -41,13 +55,22 @@ namespace das {
                 }
                 return *entry_;
             }
-
+            
+            /**
+             * Implicitly loads the object in the current session if it wasn't.
+             * @return reference to the object stored in the current session.
+             */
             T&
             operator*() {
                 load();
                 return super::operator*();
             }
-
+            
+            
+            /**
+             * Implicitly loads the object in the current session if it wasn't.
+             * @return the shared_ptr stored in the current session.
+             */
             const shared_ptr<T>&
             operator-> () {
                 return load();
@@ -60,6 +83,12 @@ namespace das {
                 return *this;
             }
 
+            /**
+             * Due to the stream-like nature of the iterator, all the iterators
+             * must refer to the same object, so pre and post increment are
+             * semantically interchangeable, but pre-increment avoids iterator 
+             * copies.
+             */
             result_iterator
             operator++(int) {
                 // All non-end iterators for a result object move together.
@@ -82,16 +111,22 @@ namespace das {
 
         template <typename T>
         inline bool
-        operator!=(const result_iterator<T> &i,const result_iterator<T> &j) {
+        operator!=(const result_iterator<T> &i, const result_iterator<T> &j) {
             return !i.equal(j);
         }
 
         template <typename T>
         inline bool
-        operator==(const result_iterator<T> &i,const result_iterator<T> &j) {
+        operator==(const result_iterator<T> &i, const result_iterator<T> &j) {
             return i.equal(j);
         }
-
+        
+        /**
+         * @brief implement the stream-like const_iterator interface.
+         * 
+         * These methods avoid to load the objects in the session returning
+         * only const and temporary references.
+         */
         template <typename T>
         class result_const_iterator : private odb::result_iterator<T, odb::class_object> {
         private:
@@ -144,13 +179,13 @@ namespace das {
 
         template <typename T>
         inline bool
-        operator!=(const result_const_iterator<T> &i,const result_const_iterator<T> &j) {
+        operator!=(const result_const_iterator<T> &i, const result_const_iterator<T> &j) {
             return !i.equal(j);
         }
 
         template <typename T>
         inline bool
-        operator==(const result_const_iterator<T> &i,const result_const_iterator<T> &j) {
+        operator==(const result_const_iterator<T> &i, const result_const_iterator<T> &j) {
             return i.equal(j);
         }
     }

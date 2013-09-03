@@ -110,7 +110,7 @@ namespace das {
 
         inline
         shared_ptr<Database>
-        Database::create(const std::string& alias) {
+        Database::create(const std::string& alias)  throw (das::wrong_database){
             shared_ptr<odb::database> db;
             const das::DatabaseInfo &info = das::DatabaseConfig::database(alias);
             if (info.db_type != "mysql") {
@@ -125,7 +125,7 @@ namespace das {
 
         inline
         shared_ptr<DasObject>
-        Database::load(const std::string &type_name, const long long &id) {
+        Database::load(const std::string &type_name, const long long &id) throw (object_not_persistent){
             return f_.at(type_name)->load(this, id);
         }
 
@@ -137,7 +137,8 @@ namespace das {
 
         inline
         long long
-        Database::persist(const shared_ptr<DasObject> &obj, std::string path) {
+        Database::persist(const shared_ptr<DasObject> &obj, std::string path)
+        throw (das::not_in_transaction, das::wrong_database){
             return f_.at(obj->type_name())->persist(this, obj, path);
         }
 

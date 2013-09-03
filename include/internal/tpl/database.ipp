@@ -5,7 +5,7 @@ namespace das {
 
         inline
         shared_ptr<Database>
-        Database::create(const std::string& alias) {
+        Database::create(const std::string& alias) throw (das::wrong_database){
             shared_ptr<odb::database> db;
             const das::DatabaseInfo &info = das::DatabaseConfig::database(alias);
             if (info.db_type != "mysql") {
@@ -20,7 +20,7 @@ namespace das {
 
         inline
         Transaction
-        Database::begin() {
+        Database::begin() throw (das::already_in_transaction) {
             shared_ptr<odb::transaction> t = bundle_.transaction();
             if (t) {
                 throw das::already_in_transaction();
@@ -40,7 +40,7 @@ namespace das {
 
         template<typename T>
         shared_ptr<T>
-        Database::load(const long long &id) {
+        Database::load(const long long &id) throw (object_not_persistent){
             shared_ptr<odb::session> s = bundle_.lock_session(true);
             odb::session::current(*s);
             shared_ptr<T> pobj;
@@ -52,7 +52,7 @@ namespace das {
 
         template<typename T>
         shared_ptr<T>
-        Database::load(const std::string& name, int version) {
+        Database::load(const std::string& name, int version) throw (object_not_persistent) {
             shared_ptr<odb::session> s = bundle_.lock_session(true);
             odb::session::current(*s);
             typedef odb::query<T> query;
@@ -84,7 +84,7 @@ namespace das {
         template<typename T>
         inline
         long long
-        Database::persist(const shared_ptr<T> &obj, std::string path) {
+        Database::persist(const shared_ptr<T> &obj, std::string path)  throw (das::not_in_transaction,das::wrong_database){
             shared_ptr<TransactionBundle> tb = tb_.lock();
             if (!tb)
                 throw das::not_in_transaction();

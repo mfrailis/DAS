@@ -4,7 +4,12 @@
 namespace das {
     namespace plf {
         class ResultWrapper;
-        
+        /**
+         * @brief Polymorphic container of a query result.
+         * 
+         * It provides const and non const access to the result of a database
+         * query through iterators.
+         */
         class Result{
         public:
             typedef das::plf::result_iterator iterator;
