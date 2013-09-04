@@ -357,14 +357,12 @@ protected:
         return sa_.get();
     }
 
-    virtual void get_keywords(std::map<std::string, keyword_type> &map) {
-        map.insert(std::pair<std::string, keyword_type>("das_id", das_id_));
-        map.insert(std::pair<std::string, keyword_type>("name", name_));
-        map.insert(std::pair<std::string, keyword_type>("version", version_));
-        map.insert(std::pair<std::string, keyword_type>("dbUserId", dbUserId_));
-        map.insert(std::pair<std::string, keyword_type>("creationDate", creationDate_));
+    const 
+    boost::unordered_map<std::string, keyword_type_ref>&
+    get_keywords(){
+        return keywords_;
     }
-
+    
     static inline
     std::string
     escape_string(const std::string &str) {

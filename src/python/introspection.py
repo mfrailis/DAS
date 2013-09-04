@@ -50,6 +50,7 @@ class DdlInfoGenerator(_odb.DdlVisitor):
         
         if data_type.name != "essentialMetadata":
             self._init_types.append('all_types_["'+data_type.name+'"].ctor_.reset(new TypeCtorImp<'+data_type.name+'>);')
+            self._init_types.append('all_types_["'+data_type.name+'"].type_ = &typeid('+data_type.name+');')
 
         self._init_keywords.append('all_types_["'+data_type.name+'"].keywords_.insert(std::pair<std::string,KeywordInfo>("das_id",KeywordInfo("das_id","int64","none","object id")));')
         for k in self._keywords:

@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <exception>
+#include <typeinfo>
 #include <odb/tr1/memory.hxx>
 #include "../exceptions.hpp"
 
@@ -288,7 +289,6 @@ public:
         return columns_.at(column_name);
     }
 
-    virtual
     const ImageInfo&
     get_image_info()
     const throw (std::out_of_range) {
@@ -298,12 +298,18 @@ public:
             throw std::out_of_range("this type does not provide image data");
     }
 
-    virtual
     const AssociationInfo&
     get_association_info(const std::string &association_name)
     const throw (std::out_of_range) {
         return associations_.at(association_name);
     }
+    
+    
+    const std::type_info*
+    get_type() const{
+        return type_;
+    }
+    
 private:
     friend class DdlInfo;
     shared_ptr<TypeCtor> ctor_;
@@ -311,6 +317,7 @@ private:
     boost::unordered_map< std::string, AssociationInfo > associations_;
     boost::unordered_map< std::string, KeywordInfo > keywords_;
     boost::unordered_map< std::string, ColumnInfo > columns_;
+    const std::type_info* type_;
 };
 
 class DdlInfo {

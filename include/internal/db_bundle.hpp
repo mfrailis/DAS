@@ -5,6 +5,8 @@
 #include <odb/transaction.hxx>
 #include <memory>
 #include <vector>
+#include <typeinfo>
+#include <set>
 #include <odb/traits.hxx>
 #include <odb/tr1/memory.hxx>
 #include "../exceptions.hpp"
@@ -37,6 +39,9 @@ namespace das {
 
         void
         flush_session();
+        
+        void
+        flush_session(const std::set<const std::type_info*> &types);       
 
         void
         flush_data();

@@ -5,7 +5,7 @@ namespace das {
 
         inline
         shared_ptr<Database>
-        Database::create(const std::string& alias) throw (das::wrong_database){
+        Database::create(const std::string& alias) throw (das::wrong_database) {
             shared_ptr<odb::database> db;
             const das::DatabaseInfo &info = das::DatabaseConfig::database(alias);
             if (info.db_type != "mysql") {
@@ -32,7 +32,7 @@ namespace das {
             }
             t.reset(new odb::transaction(bundle_.db()->begin()));
             bundle_.transaction(t);
-            
+
             shared_ptr<TransactionBundle> tb(new TransactionBundle(bundle_.alias(), bundle_.db(), s, t));
             tb_ = tb;
             return Transaction(tb);
@@ -40,7 +40,7 @@ namespace das {
 
         template<typename T>
         shared_ptr<T>
-        Database::load(const long long &id) throw (object_not_persistent){
+        Database::load(const long long &id) throw (object_not_persistent) {
             shared_ptr<odb::session> s = bundle_.lock_session(true);
             odb::session::current(*s);
             shared_ptr<T> pobj;
@@ -84,7 +84,7 @@ namespace das {
         template<typename T>
         inline
         long long
-        Database::persist(const shared_ptr<T> &obj, std::string path)  throw (das::not_in_transaction,das::wrong_database){
+        Database::persist(const shared_ptr<T> &obj, std::string path) throw (das::not_in_transaction, das::wrong_database) {
             shared_ptr<TransactionBundle> tb = tb_.lock();
             if (!tb)
                 throw das::not_in_transaction();
@@ -103,11 +103,17 @@ namespace das {
 
             odb::session::current(*s);
             QLVisitor exp_visitor(das_traits<T>::name, info_);
-            std::string clause = exp_visitor.parse_exp(expression,last_version_only);
+            std::string clause = exp_visitor.parse_exp(expression, last_version_only);
             std::string order = exp_visitor.parse_ord(ordering);
 
-            //FIXME: update olny query types, not all the cache
-            tb->flush_session();
+            tb->flush_session(exp_visitor.get_involved_types());
+            DAS_DBG(
+                    typedef std::set<const std::type_info*> set;
+                    const set& s = exp_visitor.get_involved_types();
+            for (set::const_iterator it = s.begin(); it != s.end(); ++it) {
+                DAS_LOG_DBG("DAS debug INFO: query type involved = " << (*it)->name());
+            }
+            )
             DAS_LOG_DBG("DAS debug INFO: WHERE" << std::endl << clause + order);
 
             odb::result<T> odb_r(bundle_.db()->query<T>(clause + order));

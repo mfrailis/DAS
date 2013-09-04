@@ -28,6 +28,19 @@ namespace das {
 
     class StorageAccess {
     public:
+
+        typedef boost::variant<
+        signed char&,
+        char&,
+        short&,
+        int&,
+        long long&,
+        float&,
+        double&,
+        bool&,
+        std::string&
+        > keyword_type_ref;
+
         typedef boost::variant<
         char*,
         short*,
@@ -118,9 +131,8 @@ namespace das {
         }
 
         static
-        void
-        get_keywords(DasObject *ptr,
-                std::map<std::string, keyword_type> &m);
+        const boost::unordered_map<std::string, keyword_type_ref>&
+        get_keywords(DasObject *ptr);
 
         static
         void
@@ -183,10 +195,9 @@ namespace das {
         storage_access(DasObject *ptr);
 
         static
-        void
-        get_keywords(DasObject *ptr,
-                std::map<std::string, keyword_type> &m) {
-            StorageAccess::get_keywords(ptr, m);
+        const boost::unordered_map<std::string, StorageAccess::keyword_type_ref>&
+        get_keywords(DasObject *ptr) {
+            StorageAccess::get_keywords(ptr);
         }
 
         static

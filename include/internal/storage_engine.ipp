@@ -6,6 +6,7 @@
 #include "column_buffer.ipp"
 #include "image_buffer.ipp"
 #include "log.hpp"
+#include "../das_object.hpp"
 #include <boost/variant.hpp>
 #include <boost/interprocess/smart_ptr/unique_ptr.hpp>
 
@@ -520,10 +521,9 @@ namespace das {
         }
 
         inline
-        void
-        StorageAccess::get_keywords(DasObject *ptr,
-                std::map<std::string, keyword_type> &m) {
-            ptr->get_keywords(m);
+        const boost::unordered_map<std::string, StorageAccess::keyword_type_ref>&
+        StorageAccess::get_keywords(DasObject *ptr){
+            ptr->get_keywords();
         }
 
         inline

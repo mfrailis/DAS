@@ -180,12 +180,6 @@ class DdlOdbGenerator(DdlVisitor):
     h.writelines("  "+l + "\n" for l in self._type_defs)
     h.writelines("  "+l + "\n" for l in self._public_section)
 
-#    if datatype.data and datatype.data.store_as == 'File' and datatype.data.isTable():
-#      h.writelines(['''
-#  template<typename T>
-#  blitz::Array<T,1>
-#  get_column(const std::string &column, long long start = 0LL, long long length = -1LL);
-#'''])
 
 # protected section
     h.writelines([" protected:\n"])
@@ -194,8 +188,6 @@ class DdlOdbGenerator(DdlVisitor):
     # default constructor.
     h.writelines(["  "+self._class_name+" ();\n"])
     h.writelines(["  virtual void  update(das::TransactionBundle &tb);\n"])
-    if self._keyword_touples:
-      h.writelines(["  virtual void get_keywords(std::map<std::string, keyword_type> &map);\n"])
 
 # private section
     h.writelines([" private:\n"])
@@ -279,12 +271,6 @@ struct das_traits<'''+self._class_name+'''>
     s.writelines("  "+l + "\n" for l in self._default_init)
     s.writelines(["}\n"])
 
-    if self._keyword_touples:
-      s.writelines(['void\n'+self._class_name+'::get_keywords(std::map<std::string, keyword_type> &map)\n{\n'])
-      s.writelines(['  '+self._inherit+'::get_keywords(map);\n'])
-      for j in self._keyword_touples:
-        s.writelines(['  map.insert(std::pair<std::string,keyword_type>("'+j[0]+'",'+j[0]+'_));\n'])
-      s.writelines(['}\n'])
 
     if self._has_associations:
       for i in self._assoc_touples:

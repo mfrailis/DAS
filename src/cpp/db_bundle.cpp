@@ -26,7 +26,37 @@ namespace das {
             }
         }
     }
+    
+        void
+    TransactionBundle::flush_session(const std::set<const std::type_info*> &types) {
+        typedef odb::session::database_map database_map;
+        typedef odb::session::type_map type_map;
+        typedef odb::session::object_map<DasObject> object_map;
 
+        database_map::iterator db_it(session_->map().find(db_.get()));
+
+        if (db_it == session_->map().end()) {
+            DAS_LOG_DBG("DAS debug INFO: session empty");
+        } else {
+            for (type_map::iterator type_it = db_it->second.begin();
+                    type_it != db_it->second.end();
+                    type_it++) {
+                // if the current type is not in the set, skip it
+                if(types.find(type_it->first) == types.end())
+                    continue;
+                
+                DAS_LOG_DBG("DAS debug INFO: flushing type "<< type_it->first->name());
+                
+                object_map & obj_map(static_cast<object_map&> (*type_it->second));
+                for (object_map::iterator obj_it = obj_map.begin();
+                        obj_it != obj_map.end();
+                        obj_it++) {
+                    obj_it->second->update(*this);
+                }
+            }
+        }
+    }
+    
     void
     TransactionBundle::flush_data() {
         typedef odb::session::database_map database_map;

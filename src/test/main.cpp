@@ -106,6 +106,13 @@ int main(int argc, char * argv[]) {
             cout << i->name() << " " << i->version() << endl;
             
         }
+        
+        cout << "QUERY2 RESULT" << endl;
+        r2 = db->query<measure>("das_id > 0", "startdate asc");
+                for (D::Result<measure>::iterator i = r2.begin(); i != r2.end(); ++i) {
+            cout << i->name() << " " << i->version() << endl;
+            
+        }
         t3.commit();
         
     }

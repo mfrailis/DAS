@@ -4,6 +4,7 @@
 #include "../ddl/info.hpp"
 #include <stack>
 #include <set>
+#include <typeinfo>
 #include <sstream>
 
 enum type_e {
@@ -56,6 +57,11 @@ public:
 class QLVisitor: public Visitor
 {
 public:
+    const std::set<const std::type_info*>&
+    get_involved_types(){
+        return types_;
+    }
+    
   virtual void visitBoolExp(BoolExp *p)    {};
   virtual void visitStrExp(StrExp *p)      {};
   virtual void visitCompExp(CompExp *p)    {};
@@ -104,6 +110,7 @@ public:
   {
     info_ = info;
     base_type_ = query_type;
+    types_.insert(info_->get_type_info(query_type).get_type());
   }
 
 
@@ -123,6 +130,7 @@ private:
   DdlInfo *info_;
   std::string base_type_;
   std::stack<Env> stack;
+  std::set<const std::type_info* > types_;
 };
 
 #endif

@@ -133,6 +133,7 @@ void QLVisitor::visitListName(ListName *p) {
             stack.top().assoc_tables_.insert(info.association_table);
             stack.top().assoc_tables_.insert(info.association_type);
             stack.top().current_type_ = info.association_type;
+            types_.insert(info_->get_type_info(info.association_type).get_type());
         }
     } catch (std::out_of_range &e) {
         throw das::association_not_present();
