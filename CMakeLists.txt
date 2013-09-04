@@ -31,6 +31,8 @@ set(TYPE_PREFIX ddl_)
 
 set(DAS_BUILD_DIR ${PROJECT_SOURCE_DIR}/build)
 
+set(SWIG_SOURCE_DIR ${CMAKE_SOURCE_DIR}/src/swig)
+set(SWIG_BUILD_DIR ${DAS_BUILD_DIR}/swig)
 
 
 set(DDL_INSTANCE_DIR ${CMAKE_SOURCE_DIR}/ddl)
@@ -90,6 +92,7 @@ file(MAKE_DIRECTORY ${ODB_OUTPUT_DIR})
 file(MAKE_DIRECTORY ${DB_TARGETS_DIR})
 file(MAKE_DIRECTORY ${DDL_HEADERS_DIR})
 file(MAKE_DIRECTORY ${DDL_SOURCE_DIR})
+file(MAKE_DIRECTORY ${SWIG_BUILD_DIR})
 
 execute_process(
   COMMAND python configure.py
@@ -97,6 +100,7 @@ execute_process(
 	  ${DAS_BUILD_DIR}
 	  ${DDL_HEADERS_DIR}
 	  ${DDL_SOURCE_DIR}
+	  ${SWIG_BUILD_DIR}
           ${CONF_JSON_SCHEMA}
           ${CONF_JSON}
           ${DDL_SCHEMA}
@@ -115,15 +119,33 @@ add_subdirectory(${DAS_BUILD_DIR})
 # add a target to generate API documentation with Doxygen
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
-#configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
-add_custom_target(doc
-${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile
-WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-COMMENT "Generating API documentation with Doxygen" VERBATIM
-)
+  #configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
+  add_custom_target(doc
+    ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Generating API documentation with Doxygen" VERBATIM
+    )
 endif(DOXYGEN_FOUND)
 
+find_package(SWIG)
+if(SWIG_FOUND)
+  INCLUDE(${SWIG_USE_FILE})
+  FIND_PACKAGE(PythonLibs)
+  INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
+  
+  INCLUDE_DIRECTORIES(${SWIG_BUILD_DIR})
+  
+  SET(CMAKE_SWIG_FLAGS "-Wall")
+  
+  SET_SOURCE_FILES_PROPERTIES(${SWIG_SOURCE_DIR}/pydas.i PROPERTIES CPLUSPLUS ON)
+  SET_SOURCE_FILES_PROPERTIES(${SWIG_SOURCE_DIR}/pydas.i PROPERTIES SWIG_FLAGS "-includeall")
+  SWIG_ADD_MODULE(pydas python ${SWIG_SOURCE_DIR}/pydas.i)
+  SWIG_LINK_LIBRARIES(pydas ${PYTHON_LIBRARIES} das odb odb-mysql)
+
+endif(SWIG_FOUND)
+
 install(DIRECTORY include/ DESTINATION include/das)
+
 
 #add_library(das ${DAS_QL_SRC} ${DAS_SRC} ${TYPES_SRC} ${ODB_SRC})
 

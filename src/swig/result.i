@@ -1,7 +1,7 @@
 
 %{
-#include "internal/result_iterator.hpp"
-#include "internal/result.hpp"
+#include "tpl/result_iterator.hpp"
+#include "tpl/result.hpp"
 #include "result_iterator_wrapper.hpp"
 %}
 

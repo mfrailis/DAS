@@ -53,11 +53,6 @@ private:
 
 struct AssociationInfo {
 
-    AssociationInfo(const std::string& ass_type,
-                    const std::string& table_name,
-                    const std::string& ass_key,
-                    const std::string& obj_key);
-
     std::string association_type;
     std::string association_table;
     std::string association_key;
@@ -96,7 +91,7 @@ public:
 
     virtual
     const AssociationInfo&
-    get_association_type(const std::string &type_name, const std::string &association_name)
+    get_association_info(const std::string &type_name, const std::string &association_name)
       const throw (std::out_of_range);
 
 protected:

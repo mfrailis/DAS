@@ -3,7 +3,7 @@
 #ifndef RESULT_ITERATOR_WRAPPER_H
 #define RESULT_ITERATOR_WRAPPER_H
 
-#include "internal/result_iterator.hpp"
+#include "tpl/result_iterator.hpp"
 
 namespace das {
 

@@ -214,6 +214,13 @@ class DdlOdbGenerator(DdlVisitor):
     h.writelines(['  weak_ptr<'+self._class_name+'> self_;\n'])
 #    h.writelines(['  #pragma db transient\n'])
     h.writelines(['  static shared_ptr<'+self._class_name+'> null_ptr_;\n'])
+    h.writelines(['''
+#ifdef DAS_SWIG_BINDING
+public:
+  shared_ptr<'''+self._class_name+'''>
+  get_shared_ptr() { return self_.lock();}
+#endif
+'''])
     h.writelines(["};\n"])
     
     h.writelines(['#include "'+idr_name+'"\n'])

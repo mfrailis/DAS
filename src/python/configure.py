@@ -1,4 +1,5 @@
 import odb as _odb
+import swig as _swig
 import introspection as _info
 import ddl as _ddl
 import json as _j
@@ -65,8 +66,6 @@ class JsonConfigParser:
         db_vendors = {};
         for db in self._config:
             db_dir =  _os.path.join(db_dir_,db['db_type'])
-            if not _os.path.exists(db_dir):
-                _os.mkdir(db_dir)        
             db_vendors[db['db_type']] = db_dir
 
 
@@ -465,15 +464,16 @@ def storage_engine_list_visit(tree,path):
     
 if __name__ == '__main__':
     import sys
-    db_dir          = sys.argv[1]
-    cmake_dir       = sys.argv[2]
-    ddl_headers_dir = sys.argv[3]
-    ddl_source_dir  = sys.argv[4]
-    conf_schema     = sys.argv[5]
-    conf            = sys.argv[6]
-    ddl_schema      = sys.argv[7]
-    ddl_dir         = sys.argv[8]
-    target_prefix   = sys.argv[9]
+    db_dir          = sys.argv[ 1]
+    cmake_dir       = sys.argv[ 2]
+    ddl_headers_dir = sys.argv[ 3]
+    ddl_source_dir  = sys.argv[ 4]
+    swig_dir        = sys.argv[ 5]
+    conf_schema     = sys.argv[ 6]
+    conf            = sys.argv[ 7]
+    ddl_schema      = sys.argv[ 8]
+    ddl_dir         = sys.argv[ 9]
+    target_prefix   = sys.argv[10]
 
     parser = _ddl.DdlParser(ddl_schema)
     c = JsonConfigParser(conf_schema)
@@ -516,6 +516,10 @@ if __name__ == '__main__':
 
     #generate database config method
     generate_database_config(c._config,ddl_source_dir+"/database_config.cpp")
+
+    #generate swig sources
+    swig_generator = _swig.DdlSwigGenerator(swig_dir,type_list)
+    swig_generator.generate()
 
     #generate per database header
     #c.generate_db_headers(ddl_source_dir)

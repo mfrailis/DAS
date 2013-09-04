@@ -1,15 +1,14 @@
 
 %{
-#include "tpl/transaction.hpp"
+#include "transaction.hpp"
 %}
 
-%nodefaultctor das::tpl::Transaction;
-%copyctor das::tpl::Transaction;
-%feature("valuewrapper") das::tpl::Transaction;
+%nodefaultctor das::Transaction;
+%copyctor das::Transaction;
+%feature("valuewrapper") das::Transaction;
 namespace das
 {
-namespace tpl
-{
+
   class Transaction
   {
   public:
@@ -18,5 +17,4 @@ namespace tpl
 
   };  
 
-}
 }
