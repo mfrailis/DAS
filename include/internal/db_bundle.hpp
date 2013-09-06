@@ -135,7 +135,7 @@ namespace das {
 
         template<typename T>
         void
-        attach(const shared_ptr<T>& obj);
+        attach(const shared_ptr<T>& obj, bool log_bad_entries = true);
 
 
 

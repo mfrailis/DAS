@@ -128,21 +128,21 @@ if(DOXYGEN_FOUND)
 endif(DOXYGEN_FOUND)
 
 find_package(SWIG)
-if(SWIG_FOUND)
-  INCLUDE(${SWIG_USE_FILE})
-  FIND_PACKAGE(PythonLibs)
-  INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
+find_package(PythonLibs)
+if(SWIG_FOUND AND PYTHONLIBS)
+  include(${SWIG_USE_FILE})
+  include_directories(${PYTHON_INCLUDE_PATH})
   
-  INCLUDE_DIRECTORIES(${SWIG_BUILD_DIR})
+  include_directories(${SWIG_BUILD_DIR})
   
-  SET(CMAKE_SWIG_FLAGS "-Wall")
+  set(CMAKE_SWIG_FLAGS "-Wall")
   
-  SET_SOURCE_FILES_PROPERTIES(${SWIG_SOURCE_DIR}/pydas.i PROPERTIES CPLUSPLUS ON)
-  SET_SOURCE_FILES_PROPERTIES(${SWIG_SOURCE_DIR}/pydas.i PROPERTIES SWIG_FLAGS "-includeall")
-  SWIG_ADD_MODULE(pydas python ${SWIG_SOURCE_DIR}/pydas.i)
-  SWIG_LINK_LIBRARIES(pydas ${PYTHON_LIBRARIES} das odb odb-mysql)
+  set_source_files_properties(${SWIG_SOURCE_DIR}/pydas.i PROPERTIES CPLUSPLUS ON)
+  set_source_files_properties(${SWIG_SOURCE_DIR}/pydas.i PROPERTIES SWIG_FLAGS "-includeall")
+  swig_add_module(pydas python ${SWIG_SOURCE_DIR}/pydas.i)
+  swig_link_libraries(pydas ${PYTHON_LIBRARIES} das odb odb-mysql)
 
-endif(SWIG_FOUND)
+endif()
 
 install(DIRECTORY include/ DESTINATION include/das)
 

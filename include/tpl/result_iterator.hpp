@@ -50,7 +50,7 @@ namespace das {
                     shared_ptr<odb::session> s = db.lock_session(true);
                     odb::session::current(*s);
                     *entry_ = super::load();
-                    db.attach(*entry_);
+                    db.attach(*entry_,false);
                     *loaded_ = true;
                 }
                 return *entry_;

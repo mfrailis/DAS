@@ -11,7 +11,7 @@ namespace das {
     template<typename T>
     inline
     void
-    DbBundle::attach(const shared_ptr<T> &obj) {
+    DbBundle::attach(const shared_ptr<T> &obj, bool log_bad_entries) {
 
         if (obj->is_new()) {
             DAS_LOG_DBG("DAS info: trying to attach an object without persisting firts");
@@ -33,7 +33,9 @@ namespace das {
                 DAS_LOG_DBG("DAS info: ERROR: another copy of this object found in cache");
                 throw das::object_not_unique();
             } else {
-                DAS_LOG_DBG("DAS info: obj found cache but not attached to db: if you are loading from a query result ignore this message");
+                if(log_bad_entries){
+                    DAS_LOG_DBG("DAS WARNING: obj found cache but not attached to db");
+                }
                 cache_hit->bundle_ = *this;
             }
         } else {
