@@ -2,7 +2,7 @@
 #include <vector>
 
 #include "tpl/database.hpp"
-#include "tpl/transaction.hpp"
+#include "transaction.hpp"
 #include "ddl/types.hpp"
 
 using namespace std;
@@ -10,7 +10,7 @@ namespace D = das::tpl;
 
 int main(int argc, char** argv) {
     // create a ddl-object. His state is new
-    shared_ptr<measure> m(measure::create("measure_name"));
+    shared_ptr<measure> m(measure::create("measure_name","test_level1"));
     // set a keyword
     m->startdate(1372319348);
 

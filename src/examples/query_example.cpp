@@ -3,7 +3,7 @@
 #include <typeinfo>
 
 #include "tpl/database.hpp"
-#include "tpl/transaction.hpp"
+#include "transaction.hpp"
 #include "ddl/types.hpp"
 
 using namespace std;

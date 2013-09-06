@@ -2,7 +2,7 @@
 #include <vector>
 
 #include "tpl/database.hpp"
-#include "tpl/transaction.hpp"
+#include "transaction.hpp"
 #include "ddl/types.hpp"
 
 using namespace std;
@@ -11,12 +11,12 @@ namespace D = das::tpl;
 int main(int argc, char** argv) {
     
     // first we create some ddl-objects
-    shared_ptr<campaign> camp = campaign::create("campaign_1");
-    shared_ptr<session> ss = session::create("session_1");
+    shared_ptr<campaign> camp = campaign::create("campaign_1","test_level1");
+    shared_ptr<session> ss = session::create("session_1","test_level1");
 
-    shared_ptr<measure> m0 = measure::create("measure_0");
-    shared_ptr<measure> m1 = measure::create("measure_1");
-    shared_ptr<measure> m2 = measure::create("measure_2");
+    shared_ptr<measure> m0 = measure::create("measure_0","test_level1");
+    shared_ptr<measure> m1 = measure::create("measure_1","test_level1");
+    shared_ptr<measure> m2 = measure::create("measure_2","test_level1");
     
     /* now we can create the following association tree using the appropriate 
      * setter methods
