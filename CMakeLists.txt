@@ -129,7 +129,7 @@ endif(DOXYGEN_FOUND)
 
 find_package(SWIG)
 find_package(PythonLibs)
-if(SWIG_FOUND AND PYTHONLIBS)
+if(SWIG_FOUND AND PYTHONLIBS_FOUND)
   include(${SWIG_USE_FILE})
   include_directories(${PYTHON_INCLUDE_PATH})
   
