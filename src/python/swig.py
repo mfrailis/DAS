@@ -77,7 +77,7 @@ class DdlSwigGenerator(DdlVisitor):
     intro = ['''
 %{
 #define DAS_SWIG_BINDING
-#include "ddl/types/ddl_types.hpp"
+#include "ddl/types.hpp"
 #include "tpl/database.hpp"
 %}
 
