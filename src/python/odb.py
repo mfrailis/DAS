@@ -185,14 +185,14 @@ class DdlOdbGenerator(DdlVisitor):
     h.writelines([" protected:\n"])
     h.writelines("  "+l + "\n" for l in self._friends)
     h.writelines("  "+l + "\n" for l in self._protected_section)
-    # default constructor.
+    # constructors.
     h.writelines(["  "+self._class_name+" ();\n"])
+    h.writelines(["  "+self._class_name+" (const std::string &name, const std::string &db_alias);\n"])
     h.writelines(["  virtual void  update(das::TransactionBundle &tb);\n"])
 
 # private section
     h.writelines([" private:\n"])
     h.writelines(["  static void attach(const shared_ptr<"+self._class_name+"> &ptr, das::DbBundle &bundle);\n"])
-    h.writelines(["  "+self._class_name+" (const std::string &name, const std::string &db_alias);\n"])
     h.writelines("  "+l + "\n" for l in self._private_section)
     for t in self._assoc_touples:
       if (t[0].multiplicity == 'many' and t[0].relation != 'shared') or (t[0].multiplicity == 'one' and t[0].relation != 'shared'):
@@ -252,9 +252,9 @@ struct das_traits<'''+self._class_name+'''>
     s.writelines([self._class_name+"::"+self._class_name+" (const std::string &name, const std::string &db_alias)\n"])
     if self._init_list:
       s.writelines(self._init_list)
-      s.writelines([", DasObject(name,db_alias)\n"])
+      s.writelines([", "+self._inherit+"(name,db_alias)\n"])
     else:
-      s.writelines([" : DasObject(name,db_alias)\n"])
+      s.writelines([" : "+self._inherit+"(name,db_alias)\n"])
     s.writelines(["{\n"])
     s.writelines(["  init();\n"])
     s.writelines(["}\n"])

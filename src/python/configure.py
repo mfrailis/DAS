@@ -302,11 +302,15 @@ target_link_libraries(query_example das ${ODB_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
 add_executable(associations_example EXCLUDE_FROM_ALL ${EXAMPLES_SOURCE_DIR}/associations_example.cpp)
 target_link_libraries(associations_example das ${ODB_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
 
+add_executable(data_example EXCLUDE_FROM_ALL ${EXAMPLES_SOURCE_DIR}/data_example.cpp)
+target_link_libraries(data_example das ${ODB_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+
 add_custom_target(examples 
   DEPENDS 
     persistence_example
     query_example
     associations_example
+    data_example
 )
 '''
 )

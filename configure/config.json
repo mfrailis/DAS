@@ -19,8 +19,8 @@
 	"port"          : 3306,
 	"db_type"  	: "mysql",
 	"alias"         : "test_level2",
-	"db_name"  	: "odb_test",
-	"ddl"	     	: "ddl_level1_types.xml",
+	"db_name"  	: "test_level2",
+	"ddl"	     	: "ddl_test_types.xml",
 	"storage_engine": {
 	    "name"          : "Raw",
 	    "root_dir"      : "/mnt/DBs/data/test_level2",
