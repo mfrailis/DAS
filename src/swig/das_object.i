@@ -1,6 +1,7 @@
 
 %{
 #include "das_object.hpp"
+#include "data_array.hpp"
 %}
 
 %import "ddl_info.i"
@@ -53,3 +54,18 @@ protected:
 
 };
 
+
+%extend DasObject {
+  PyObject* get_column(const std::string &col_name, size_t start, size_t length)
+  {
+    std::string col_type = self->get_column_info(col_name).type;
+    return das::map_das_object_methods[col_type].get_column(self, col_name, 
+                                                            start, length);
+  }
+
+}
+
+%init %{
+  import_array();
+  das::initialize_das();
+%}
