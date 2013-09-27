@@ -133,9 +133,9 @@ public:
     bool is_new() const {
         return das_id_ == 0;
     }
-    
+
     long long
-    das_id() const{
+    das_id() const {
         return das_id_;
     }
 
@@ -176,6 +176,11 @@ public:
             sa_.reset(das::StorageAccess::create(bundle_.alias(), this));
         return sa_->get_column<T>(col_name, start, length);
     }
+    
+    long long
+    get_column_size(const std::string &col_name){
+        return column_from_file(col_name)->size();
+    }
 
     template <typename T>
     void append_column(const std::string &col_name, das::Array<T> &a) {
@@ -184,14 +189,38 @@ public:
         sa_->append_column<T>(col_name, a);
     }
 
-    template <typename T, int Rank>
+/*    template <typename T, int Rank>
     das::Array<T, Rank> get_image() {
         if (sa_.get() == NULL)
             sa_.reset(das::StorageAccess::create(bundle_.alias(), this));
         return sa_->get_image<T, Rank>();
     }
-
+*/
     template <typename T, int Rank>
+    das::Array<T, Rank> get_image(
+            das::Range r0 = das::Range::all(),
+            das::Range r1 = das::Range::all(),
+            das::Range r2 = das::Range::all(),
+            das::Range r3 = das::Range::all(),
+            das::Range r4 = das::Range::all(),
+            das::Range r5 = das::Range::all(),
+            das::Range r6 = das::Range::all(),
+            das::Range r7 = das::Range::all(),
+            das::Range r8 = das::Range::all(),
+            das::Range r9 = das::Range::all(),
+            das::Range r10 = das::Range::all()
+            ) {
+        if (sa_.get() == NULL)
+            sa_.reset(das::StorageAccess::create(bundle_.alias(), this));
+        return sa_->get_image<T, Rank>(r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10);
+    }
+    
+    unsigned int
+    get_image_extent(int extent){
+        return image_from_file()->extent(extent);
+    }
+
+    /*template <typename T, int Rank>
     das::Array<T, Rank> get_image(
             const das::TinyVector<int, Rank> &offset,
             const das::TinyVector<int, Rank> &count,
@@ -199,7 +228,7 @@ public:
         if (sa_.get() == NULL)
             sa_.reset(das::StorageAccess::create(bundle_.alias(), this));
         return sa_->get_image<T, Rank>(offset, count, stride);
-    }
+    }*/
 
     template <typename T, int Rank>
     void set_image(das::Array<T, Rank> &i) {
@@ -216,10 +245,11 @@ public:
     }
 
     //polimorphic interface
+
     static
     shared_ptr<DasObject>
-    create(const std::string &type_name, const std::string &name, const std::string &db_alias){
-        return DdlInfo::get_instance()->get_type_info(type_name)(name,db_alias);
+    create(const std::string &type_name, const std::string &name, const std::string &db_alias) {
+        return DdlInfo::get_instance()->get_type_info(type_name)(name, db_alias);
     }
 
     virtual bool is_table() const {
@@ -357,12 +387,12 @@ protected:
         return sa_.get();
     }
 
-    const 
+    const
     boost::unordered_map<std::string, keyword_type_ref>&
-    get_keywords(){
+    get_keywords() {
         return keywords_;
     }
-    
+
     static inline
     std::string
     escape_string(const std::string &str) {
@@ -382,7 +412,7 @@ protected:
         std::string s;
         size_t len = str.length();
         for (size_t i = 0; i < len; ++i) {
-            if (str[i] == '\'' && i + 1 < len && str[i + 1] == '\'')
+            if (str[i] == '\\' && i + 1 < len && str[i + 1] == '\'')
                 continue;
             s.push_back(str[i]);
         }

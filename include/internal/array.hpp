@@ -1,6 +1,7 @@
 #ifndef ARRAY_HPP
 #define	ARRAY_HPP
 #include <blitz/array.h>
+#include <exception>
 
 namespace das {
 
@@ -73,6 +74,40 @@ namespace das {
         }
 
 
+    };
+    
+    class bad_range : public std::exception {
+    public:
+
+        virtual const char*
+        what() const throw () {
+            return "bad range values";
+        }
+
+    };
+    
+    class Range : public blitz::Range {
+        typedef blitz::Range super;
+    public:
+        Range() : super(){}
+        Range(int slicePosition) : super(slicePosition){}
+        Range (int first, int last, int stride=1) : super(first,last,stride){
+            if(stride < 1) throw bad_range();
+            if(last < first) throw bad_range();
+            if(first < 0) throw bad_range();
+        }
+        size_t length() const{          
+            size_t len = last() - first();
+            int div = len / stride();
+            if(len % stride() != 0)
+                return div+1;
+            else
+                return div;
+        }
+        
+        static Range all(){
+            return Range();
+        }
     };
 
     template<typename P_numtype, int N_Rank = 1 >

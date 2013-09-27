@@ -103,16 +103,31 @@ namespace das {
         template <typename T>
         void append_column(const string &col_name, Array<T> &a);
 
+        /*template <typename T, int Rank>
+        Array<T, Rank> get_image();*/
+        
         template <typename T, int Rank>
-        Array<T, Rank> get_image();
+        Array<T, Rank> get_image(
+            const das::Range &r0,
+            const das::Range &r1,
+            const das::Range &r2,
+            const das::Range &r3,
+            const das::Range &r4,
+            const das::Range &r5,
+            const das::Range &r6,
+            const das::Range &r7,
+            const das::Range &r8,
+            const das::Range &r9,
+            const das::Range &r10
+        );
 
-        template <typename T, int Rank>
+        /*template <typename T, int Rank>
         Array<T, Rank>
         get_image(
                 const TinyVector<int, Rank> &offset,
                 const TinyVector<int, Rank> &count,
                 const TinyVector<int, Rank> &stride
-                );
+                );*/
 
         template <typename T, int Rank>
         void set_image(Array<T, Rank> &i);
