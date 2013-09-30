@@ -58,11 +58,9 @@ def update(association, priv_type):
     if('''+association.name+'''_temp)
     {
       if('''+association.name+'''_temp->is_new())
-      {
         tb.persist<'''+association.atype+'''> ('''+association.name+'''_temp);
-      }
-      // call update anyways because of the nested associated objects
-      '''+association.name+'''_temp->update(tb);
+      else
+        '''+association.name+'''_temp->update(tb);
     }
   }
 '''

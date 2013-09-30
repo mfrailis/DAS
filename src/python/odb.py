@@ -69,7 +69,7 @@ class DdlOdbGenerator(DdlVisitor):
     self._private_section = []
     self._init_list = []
     self._default_init = []
-    self._friends = ["friend class odb::access;","friend class das::Transaction;","friend class das::TransactionBundle;","friend class das::DbBundle;","friend class das::tpl::Database;"]
+    self._friends = ["friend class odb::access;","friend class das::Transaction;","friend class das::TransactionBundle;","friend class das::DbBundle;","friend class das::tpl::Database;","template<typename T>","friend class das::tpl::result_iterator;"]
     self._has_associations = False
     self._store_as = None
     self._keyword_touples = []
@@ -295,11 +295,18 @@ struct das_traits<'''+self._class_name+'''>
           s.writelines([_def_persist_assoc(i[0],i[2])])
       s.writelines(['}\n'])
 
-      s.writelines(['void\n',self._class_name+'::update(das::TransactionBundle &tb)\n{\n'])
-      s.writelines(['''  if(is_dirty_ && !is_new())
+      s.writelines(['void\n',self._class_name+'::update(das::TransactionBundle &tb)\n{'])
+      s.writelines(['''
+  if(is_new())
+    tb.persist<'''+self._class_name+'''>(self_.lock());
+'''])
+      if self._assoc_touples:
+        for i in self._assoc_touples:
+          s.writelines([_def_update_assoc(i[0],i[2])])
+      s.writelines(['''
+  if(is_dirty_)
   {
     DAS_LOG_DBG("DAS debug INFO: UPD name:'" << name() << "' version:" << version() <<"...");
-    
     if(bundle_.transaction_expired())
       set_dirty_columns();
 
@@ -312,10 +319,6 @@ struct das_traits<'''+self._class_name+'''>
 '''])      
       if self._inherit != 'DasObject':
         s.writelines(['  '+self._inherit+'::update(tb);\n'])
-      if self._assoc_touples:
-        #s.writelines(['  das::DbBundle bundle = bundle_.lock();\n'])
-        for i in self._assoc_touples:
-          s.writelines([_def_update_assoc(i[0],i[2])])
       s.writelines(['}\n'])
     else:
       s.writelines(['''

@@ -3,208 +3,355 @@
 #include <das/tpl/database.hpp>
 #include <das/transaction.hpp>
 #include <das/ddl/types.hpp>
-
+#include <vector>
+#include <algorithm>
 #include "tpl/database.hpp"
+#include "ddl/types/ddl_test_associated_one_exclusive.hpp"
 
 using namespace std;
 namespace D = das::tpl;
 
-long long create_one_shared(const shared_ptr<D::Database> &db,
-        long long &assoc_id) {
-    shared_ptr<test_association_one_shared> ptr =
-            test_association_one_shared::create("test_0", "test_level2");
 
-    shared_ptr<test_associated_one_shared> assoc =
-            test_associated_one_shared::create("test_assoc_0", "test_level2");
-
-    ptr->one_shared(assoc);
-    long long id;
-    try {
-        D::Transaction t = db->begin();
-        cout << "Persisting association one shared... ";
-        id = db->persist(ptr);
-        t.commit();
-        cout << "done." << endl;
-
-        shared_ptr<test_associated_one_shared> assoc2 =
-                ptr->one_shared();
-
-        if (assoc2->das_id() == 0) {
-            cout << "Failed to persist associated object" << endl;
-            return 0;
-        }
-        assoc_id = assoc->das_id();
-        if (assoc != assoc2) {
-            cout << "Failed: multiple copies of the associated object" << endl;
-            return 0;
-        }
-    } catch (const exception &e) {
-        cout << "exception:" << endl << e.what() << endl;
-        return 0;
-    }
-    return id;
+template<typename T>
+bool persist_check(const shared_ptr<T> &obj) {
+    return obj->das_id() != 0;
 }
 
-long long read_update_one_shared(const shared_ptr<D::Database> &db,
-        long long id,
-        long long assoc_id) {
-    shared_ptr<test_association_one_shared> ptr;
-    shared_ptr<test_associated_one_shared> assoc, assoc2, assoc_new;
-    bool throws = false;
+template<typename T>
+bool persist_check(const vector<shared_ptr<T> > &vec) {
+    for (typename vector < shared_ptr<T> >::const_iterator it = vec.begin(); it != vec.end(); ++it)
+        if ((*it)->das_id() == 0)
+            return false;
+
+    return true;
+}
+
+template<typename T>
+bool compare(const shared_ptr<T> &obj1, const shared_ptr<T> &obj2) {
+    return obj1 == obj2;
+}
+
+template<typename T>
+bool compare(const vector<shared_ptr<T> > &v1, const vector<shared_ptr<T> >&v2) {
+    if (v1.size() != v2.size())
+        return false;
+
+    for (typename vector < shared_ptr<T> >::const_iterator it = v1.begin(); it != v1.end(); ++it)
+        if (find(v2.begin(), v2.end(), *it) == v2.end())
+            return false;
+
+    return true;
+}
+
+template<typename T>
+T
+find_id(T first, T last, long long id) {
+    T it = first;
+    while (it != last) {
+        if ((*it)->das_id() == id)
+            break;
+        else
+            ++it;
+    }
+    return it;
+}
+
+template<typename T>
+bool compare_id(const shared_ptr<T> &obj1, const shared_ptr<T> &obj2) {
+    return obj1->das_id() == obj2->das_id();
+}
+
+template<typename T>
+bool compare_id(const vector<shared_ptr<T> > &v1, const vector<shared_ptr<T> >&v2) {
+    if (v1.size() != v2.size())
+        return false;
+
+    for (typename vector < shared_ptr<T> >::const_iterator it = v1.begin(); it != v1.end(); ++it)
+        if (find_id(v2.begin(), v2.end(), (*it)->das_id()) == v2.end())
+            return false;
+
+    return true;
+}
+
+template<typename T>
+shared_ptr<T>
+retrive(const shared_ptr<D::Database> &db, long long id) {
+    shared_ptr<T> ptr;
     try {
         D::Transaction t = db->begin();
-        cout << "Retriving association object... ";
-        ptr = db->load<test_association_one_shared>(id);
+        ptr = db->load<T>(id);
         t.commit();
-        cout << "done." << endl;
+    } catch (const exception &e) {
+        cout << "exception:" << endl << e.what() << endl;
+        ptr.reset();
+    }
+    return ptr;
+}
+
+template<typename T, typename Y>
+int create_association(const shared_ptr<D::Database> &db,
+        shared_ptr<T> &ptr,
+        Y &assoc) {
+
+    ptr->association(assoc);
+    try {
+        D::Transaction t = db->begin();
+        cout << "Persisting association... ";
+        db->persist(ptr);
+        t.commit();
+        cout << "ok." << endl;
+
+        Y assoc2 = ptr->association();
+
+        if (!persist_check(ptr)) return 1;
+        if (!persist_check(assoc)) return 2;
+        if (!compare(assoc, assoc2)) return 3;
 
     } catch (const exception &e) {
         cout << "exception:" << endl << e.what() << endl;
-        return 0;
+        return 4;
     }
+    return 0;
+}
+
+template<typename T, typename Y>
+int read_update_association(const shared_ptr<D::Database> &db,
+        shared_ptr<T> &ptr,
+        Y &old_assoc,
+        Y &new_assoc) {
+    Y assoc, assoc2;
+    bool throws = false;
 
     try {
         cout << "Testing exception while retriving associated object... ";
-        assoc = ptr->one_shared();
+        assoc = ptr->association();
     } catch (const das::not_in_managed_context &e) {
         throws = true;
-        cout << "done." << endl;
+        cout << "ok." << endl;
     }
 
-    if (!throws) return 0;
+    if (!throws) return 1;
 
     try {
         D::Transaction t = db->begin();
         cout << "Retriving associated object... ";
-        assoc = ptr->one_shared();
+        assoc = ptr->association();
         t.commit();
-        cout << "done." << endl;
+        cout << "ok." << endl;
     } catch (const exception &e) {
         cout << "exception:" << endl << e.what() << endl;
-        return 0;
+        return 2;
     }
-    
-    if(assoc->das_id() != assoc_id){
-        cout << "Failed: associated id mismatch" << endl;
-        return 0;  
+
+    cout << "Comparing ids... ";
+    if (!compare_id(old_assoc, assoc)) {
+        cout << "fail." << endl;
+        return 3;
     }
+    cout << "ok." << endl;
 
     try {
         cout << "Testing exception while re-retriving associated object... ";
-        assoc2 = ptr->one_shared();
-        cout << "done." << endl;
+        assoc2 = ptr->association();
+        cout << "ok." << endl;
     } catch (const exception &e) {
         cout << "exception:" << endl << e.what() << endl;
-        return 0;
+        return 4;
     }
 
-    if (assoc != assoc2) {
-        cout << "Failed: multiple copies of the associated object" << endl;
-        return 0;
+    cout << "Looking for multiple copies... ";
+    if (!compare_id(assoc, assoc2)) {
+        cout << "fail" << endl;
+        return 5;
     }
-    
-    assoc_new = test_associated_one_shared::create("test_assoc_1", "test_level2");
-    
-    try{
-        ptr->one_shared(assoc_new);
+    cout << "ok." << endl;
+
+    try {
         D::Transaction t = db->begin();
         cout << "Updating association... ";
         db->attach(ptr);
+        ptr->association(new_assoc);
         t.commit();
-        cout << "done. " << endl;
+        cout << "ok. " << endl;
     } catch (const exception &e) {
         cout << "exception:" << endl << e.what() << endl;
-        return 0;
+        return 6;
     }
 
-    return assoc_new->das_id();
+    cout << "Cheking new association persistance... ";
+
+    if (!persist_check(new_assoc)) {
+        cout << "fail." << endl;
+        return 7;
+    }
+    cout << "ok." << endl;
+    return 0;
 }
 
-int check_update_one_shared(const shared_ptr<D::Database> &db,
-        long long id,
-        long long assoc_id,
-        long long assoc_new_id){
-    shared_ptr<test_association_one_shared> ptr;
-    shared_ptr<test_associated_one_shared> assoc, assoc2, assoc_new;
+template<typename T, typename Y>
+int check_update(const shared_ptr<D::Database> &db,
+        shared_ptr<T> &ptr,
+        Y &old_assoc,
+        Y &new_assoc) {
+    Y assoc,assoc2;
     bool throws = false;
-    try {
-        D::Transaction t = db->begin();
-        cout << "Retriving association object... ";
-        ptr = db->load<test_association_one_shared>(id);
-        t.commit();
-        cout << "done." << endl;
-
-    } catch (const exception &e) {
-        cout << "exception:" << endl << e.what() << endl;
-        return 1;
-    }
 
     try {
         cout << "Testing exception while retriving associated object... ";
-        assoc = ptr->one_shared();
+        assoc = ptr->association();
     } catch (const das::not_in_managed_context &e) {
         throws = true;
-        cout << "done." << endl;
+        cout << "ok." << endl;
     }
 
-    if (!throws) return 2;
+    if (!throws) {
+        cout << "fail." << endl;
+        return 2;
+    }
 
     try {
         D::Transaction t = db->begin();
         cout << "Retriving associated object... ";
-        assoc = ptr->one_shared();
+        assoc = ptr->association();
         t.commit();
-        cout << "done." << endl;
+        cout << "ok." << endl;
     } catch (const exception &e) {
         cout << "exception:" << endl << e.what() << endl;
         return 3;
     }
-    
-    if(assoc->das_id() == assoc_id){
-        cout << "Failed: old association retrived" << endl;
+
+
+    cout << "Comparing associated objects... ";
+    if (compare_id(assoc, old_assoc)) {
+        cout << "fail." << endl;
         return 7;
     }
-    
-    if(assoc->das_id() != assoc_new_id){
-        cout << "Failed: wrong association retrived" << endl;
+    if (!compare_id(assoc, new_assoc)) {
+        cout << "fail." << endl;
         return 8;
     }
-    
-    if(assoc->das_id() != assoc_id){
-        cout << "Failed: associated id mismatch" << endl;
-        return 4;  
-    }
+    cout << "ok." << endl;
 
     try {
         cout << "Testing exception while re-retriving associated object... ";
-        assoc2 = ptr->one_shared();
-        cout << "done." << endl;
+        assoc2 = ptr->association();
+        cout << "ok." << endl;
     } catch (const exception &e) {
         cout << "exception:" << endl << e.what() << endl;
-        return 5;
+        return 9;
     }
 
-    if (assoc != assoc2) {
-        cout << "Failed: multiple copies of the associated object" << endl;
-        return 6;
+    cout << "Comparing associated objects... ";
+    if (!compare(assoc, assoc2)) {
+        cout << "fail." << endl;
+        return 10;
     }
-    
+    cout << "ok." << endl;
     return 0;
-        
 }
 
 int main() {
     shared_ptr<D::Database> db = D::Database::create("test_level2");
-    long long assoc_id = 0;
-    cout << "CREATING ASSOCIATION" << endl;
-    long long id = create_one_shared(db, assoc_id);
+    cout<< endl << "ONE SHARED"<< endl;
+    {
+        shared_ptr<test_association_one_shared> ptr =
+                test_association_one_shared::create("test_00", "test_level2");
 
-    if (id == 0) return 1;
-    cout << "READING/UPDATING ASSOCIATION" << endl;
-    long long assoc_new_id = read_update_one_shared(db, id, assoc_id);
-    if (assoc_new_id == 0) return 1;
-    cout << assoc_new_id << endl;
-    
-    cout << "CHECKING UPDATED ASSOCIATION" << endl;
-    return check_update_one_shared(db,id,assoc_id,assoc_new_id);
+        shared_ptr<test_associated_one_shared> assoc =
+                test_associated_one_shared::create("test_assoc_A", "test_level2");
+
+        shared_ptr<test_associated_one_shared> assoc2 =
+                test_associated_one_shared::create("test_assoc_B", "test_level2");
+
+        if (create_association(db, ptr, assoc))
+            return 1;
+
+        shared_ptr<test_association_one_shared> ptr1 = retrive<test_association_one_shared>(db,ptr->das_id());  
+        
+        if(!ptr1) return 2;
+        if (read_update_association(db, ptr1, assoc, assoc2))
+            return 3;
+        
+        shared_ptr<test_association_one_shared> ptr2 = retrive<test_association_one_shared>(db,ptr->das_id());
+        if(!ptr2) return 2;
+        if (check_update(db, ptr2, assoc, assoc2))
+            return 4;
+    }
+    cout<< endl << "ONE EXCLUSIVE"<< endl;
+    {
+        shared_ptr<test_association_one_exclusive> ptr =
+                test_association_one_exclusive::create("test_00", "test_level2");
+
+        shared_ptr<test_associated_one_exclusive> assoc =
+                test_associated_one_exclusive::create("test_assoc_A", "test_level2");
+
+        shared_ptr<test_associated_one_exclusive> assoc2 =
+                test_associated_one_exclusive::create("test_assoc_B", "test_level2");
+
+        if (create_association(db, ptr, assoc))
+            return 1;
+
+        shared_ptr<test_association_one_exclusive> ptr1 = retrive<test_association_one_exclusive>(db,ptr->das_id());
+        if(!ptr1) return 2;
+        if (read_update_association(db, ptr1, assoc, assoc2))
+            return 3;
+        
+        shared_ptr<test_association_one_exclusive> ptr2 = retrive<test_association_one_exclusive>(db,ptr->das_id());
+        if(!ptr2) return 2;
+        if (check_update(db, ptr2, assoc, assoc2))
+            return 4;
+    }
+    cout<< endl << "MANY EXCLUSIVE"<< endl;
+    {
+        shared_ptr<test_association_many_exclusive> ptr =
+                test_association_many_exclusive::create("test_00", "test_level2");
+
+        vector< shared_ptr<test_associated_many_exclusive> > assoc;
+        for(int i=0; i < 5; ++i)
+            assoc.push_back(test_associated_many_exclusive::create("test_assoc_A", "test_level2"));
+
+        vector<shared_ptr<test_associated_many_exclusive> > assoc2;
+        for(int i=0; i < 3; ++i)
+                assoc2.push_back(test_associated_many_exclusive::create("test_assoc_B", "test_level2"));
+
+        if (create_association(db, ptr, assoc))
+            return 1;
+
+        shared_ptr<test_association_many_exclusive> ptr1 = retrive<test_association_many_exclusive>(db,ptr->das_id());
+        if(!ptr1) return 2;
+        if (read_update_association(db, ptr1, assoc, assoc2))
+            return 3;
+        
+        shared_ptr<test_association_many_exclusive> ptr2 = retrive<test_association_many_exclusive>(db,ptr->das_id());
+        if(!ptr2) return 2;
+        if (check_update(db, ptr2, assoc, assoc2))
+            return 4;
+    }
+    cout<< endl << "MANY SHARED"<< endl;
+    {
+        shared_ptr<test_association_many_shared> ptr =
+                test_association_many_shared::create("test_00", "test_level2");
+
+        vector< shared_ptr<test_associated_many_shared> > assoc;
+        for(int i=0; i < 5; ++i)
+            assoc.push_back(test_associated_many_shared::create("test_assoc_A", "test_level2"));
+
+        vector<shared_ptr<test_associated_many_shared> > assoc2;
+        for(int i=0; i < 3; ++i)
+                assoc2.push_back(test_associated_many_shared::create("test_assoc_B", "test_level2"));
+
+        if (create_association(db, ptr, assoc))
+            return 1;
+
+        shared_ptr<test_association_many_shared> ptr1 = retrive<test_association_many_shared>(db,ptr->das_id());
+        if(!ptr1) return 2;
+        if (read_update_association(db, ptr1, assoc, assoc2))
+            return 3;
+        
+        shared_ptr<test_association_many_shared> ptr2 = retrive<test_association_many_shared>(db,ptr->das_id());
+        if(!ptr2) return 2;
+        if (check_update(db, ptr2, assoc, assoc2))
+            return 4;
+    }
+    return 0;
 }

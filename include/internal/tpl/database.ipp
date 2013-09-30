@@ -43,8 +43,8 @@ namespace das {
         Database::load(const long long &id) throw (object_not_persistent) {
             shared_ptr<odb::session> s = bundle_.lock_session(true);
             odb::session::current(*s);
-            shared_ptr<T> pobj;
-            pobj = bundle_.db()->load<T>(id);
+            shared_ptr<T> pobj = bundle_.db()->load<T>(id);
+            pobj->self_ = pobj;
             // bind loaded object with this database
             pobj->bundle_ = bundle_;
             return pobj;
