@@ -38,7 +38,7 @@ long long create_metadata(const shared_ptr<D::Database> &db) {
         cout << "Persisting metadata object... ";
         id = db->persist(ptr);
         t.commit();
-        cout << "done." << endl;
+        cout << "ok." << endl;
     } catch (const exception &e) {
         cout << "exception:" << endl << e.what() << endl;
     }
@@ -52,7 +52,7 @@ int read_update_metadata(const shared_ptr<D::Database> &db, long long id) {
         cout << "Retriving metadata object... ";
         ptr = db->load<test_keywords>(id);
         t.commit();
-        cout << "done." << endl;
+        cout << "ok." << endl;
     } catch (const exception &e) {
         cout << "exception:" << endl << e.what() << endl;
         return 1;
@@ -99,7 +99,7 @@ int read_update_metadata(const shared_ptr<D::Database> &db, long long id) {
         cout << "text keyword mismatch: " << ptr->key_text() << " " << key_text_<< endl;
         return 2;
     }
-    cout << "done." << endl;
+    cout << "ok." << endl;
 
     key_byte_  = 100;
     key_int16_ = 100;
@@ -129,7 +129,7 @@ int read_update_metadata(const shared_ptr<D::Database> &db, long long id) {
         cout << "Updating metadata object... ";
         db->attach(ptr);
         t.commit();
-        cout << "done." << endl;
+        cout << "ok." << endl;
     } catch (const exception &e) {
         cout << "exception:" << endl << e.what() << endl;
         return 3;
@@ -146,7 +146,7 @@ int check_metadata(const shared_ptr<D::Database> &db, long long id) {
         cout << "Retriving metadata object... ";
         ptr = db->load<test_keywords>(id);
         t.commit();
-        cout << "done." << endl;
+        cout << "ok." << endl;
     } catch (const exception &e) {
         cout << "exception:" << endl << e.what() << endl;
         return 1;
@@ -193,7 +193,7 @@ int check_metadata(const shared_ptr<D::Database> &db, long long id) {
         cout << "text keyword mismatch: " << ptr->key_text() << " " << key_text_<< endl;
         return 2;
     }
-    cout << "done." << endl;
+    cout << "ok." << endl;
 
     cout << "Checking polimorphic interface... ";
     if (ptr->key_byte() != ptr->get_key<signed char>("key_byte")){
@@ -236,7 +236,7 @@ int check_metadata(const shared_ptr<D::Database> &db, long long id) {
         cout << "text keyword mismatch: " << ptr->key_text() << " " << ptr->get_key<string>("key_text") << endl;
         return 2;
     }
-    cout << "done." << endl;
+    cout << "ok." << endl;
     
     return 0;
 }

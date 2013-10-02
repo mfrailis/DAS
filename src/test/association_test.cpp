@@ -1,4 +1,5 @@
 #include <iostream>
+#include <sstream>
 #include <exception>
 #include <das/tpl/database.hpp>
 #include <das/transaction.hpp>
@@ -10,7 +11,6 @@
 
 using namespace std;
 namespace D = das::tpl;
-
 
 template<typename T>
 bool persist_check(const shared_ptr<T> &obj) {
@@ -193,7 +193,7 @@ int check_update(const shared_ptr<D::Database> &db,
         shared_ptr<T> &ptr,
         Y &old_assoc,
         Y &new_assoc) {
-    Y assoc,assoc2;
+    Y assoc, assoc2;
     bool throws = false;
 
     try {
@@ -250,9 +250,70 @@ int check_update(const shared_ptr<D::Database> &db,
     return 0;
 }
 
+template<typename T, typename Y>
+int restore_old(const shared_ptr<D::Database> &db,
+        shared_ptr<T> &ptr) {
+    Y old_assoc, new_assoc;
+    try {
+        D::Transaction t = db->begin();
+        cout << "Restoring association... ";
+        db->attach(ptr);
+        t.commit();
+        cout << "ok." << endl;
+        old_assoc = ptr->association();
+
+        t = db->begin();
+        cout << "Reloading association... ";
+        shared_ptr<T> ptr1 = db->load<T>(ptr->das_id());
+        new_assoc = ptr1->association();
+        t.commit();
+        cout << "ok." << endl;
+    } catch (const exception &e) {
+        cout << "exception:" << endl << e.what() << endl;
+        return 9;
+    }
+
+    cout << "Comparing associated objects... ";
+    if (!compare_id(old_assoc, new_assoc)) {
+        cout << "fail." << endl;
+        return 7;
+    }
+    cout << "ok." << endl;
+
+    return 0;
+}
+
+template<typename T>
+bool same_n(size_t size, shared_ptr<T> &assoc) {
+    return size == 1;
+}
+
+template<typename T>
+bool same_n(size_t size, vector<shared_ptr<T> > &assoc) {
+    return size == assoc.size();
+}
+
+template<typename T, typename Y>
+bool reverse_check(const shared_ptr<D::Database> &db, shared_ptr<T> &ptr, Y &assoc) {
+    cout << "Checking reverse association... ";
+    stringstream query;
+    query << "association.das_id > 0 && das_id == " << ptr->das_id();
+    D::Transaction t = db->begin();
+    D::Result<T> r = db->query<T>(query.str());
+    size_t size = r.size();
+    t.commit();
+
+    bool res = same_n(size, assoc);
+    if (res)
+        cout << "ok." << endl;
+    else
+        cout << "fail." << endl;
+    return res;
+}
+
 int main() {
     shared_ptr<D::Database> db = D::Database::create("test_level2");
-    cout<< endl << "ONE SHARED"<< endl;
+    cout << endl << "ONE SHARED" << endl;
     {
         shared_ptr<test_association_one_shared> ptr =
                 test_association_one_shared::create("test_00", "test_level2");
@@ -266,18 +327,25 @@ int main() {
         if (create_association(db, ptr, assoc))
             return 1;
 
-        shared_ptr<test_association_one_shared> ptr1 = retrive<test_association_one_shared>(db,ptr->das_id());  
-        
-        if(!ptr1) return 2;
+        shared_ptr<test_association_one_shared> ptr1 = retrive<test_association_one_shared>(db, ptr->das_id());
+
+        if (!ptr1) return 2;
         if (read_update_association(db, ptr1, assoc, assoc2))
             return 3;
-        
-        shared_ptr<test_association_one_shared> ptr2 = retrive<test_association_one_shared>(db,ptr->das_id());
-        if(!ptr2) return 2;
+
+        shared_ptr<test_association_one_shared> ptr2 = retrive<test_association_one_shared>(db, ptr->das_id());
+        if (!ptr2) return 2;
         if (check_update(db, ptr2, assoc, assoc2))
             return 4;
+
+        if (restore_old<test_association_one_shared, shared_ptr<test_associated_one_shared> >(db, ptr))
+            return 5;
+
+        if (!reverse_check(db, ptr, assoc))
+            return 6;
+
     }
-    cout<< endl << "ONE EXCLUSIVE"<< endl;
+    cout << endl << "ONE EXCLUSIVE" << endl;
     {
         shared_ptr<test_association_one_exclusive> ptr =
                 test_association_one_exclusive::create("test_00", "test_level2");
@@ -291,67 +359,93 @@ int main() {
         if (create_association(db, ptr, assoc))
             return 1;
 
-        shared_ptr<test_association_one_exclusive> ptr1 = retrive<test_association_one_exclusive>(db,ptr->das_id());
-        if(!ptr1) return 2;
+        shared_ptr<test_association_one_exclusive> ptr1 = retrive<test_association_one_exclusive>(db, ptr->das_id());
+        if (!ptr1) return 2;
         if (read_update_association(db, ptr1, assoc, assoc2))
             return 3;
-        
-        shared_ptr<test_association_one_exclusive> ptr2 = retrive<test_association_one_exclusive>(db,ptr->das_id());
-        if(!ptr2) return 2;
+
+        shared_ptr<test_association_one_exclusive> ptr2 = retrive<test_association_one_exclusive>(db, ptr->das_id());
+        if (!ptr2) return 2;
         if (check_update(db, ptr2, assoc, assoc2))
             return 4;
+
+        if (restore_old<test_association_one_exclusive, shared_ptr<test_associated_one_exclusive> >(db, ptr))
+            return 5;
+
+        if (!reverse_check(db, ptr, assoc))
+            return 6;
+
     }
-    cout<< endl << "MANY EXCLUSIVE"<< endl;
-    {
-        shared_ptr<test_association_many_exclusive> ptr =
-                test_association_many_exclusive::create("test_00", "test_level2");
-
-        vector< shared_ptr<test_associated_many_exclusive> > assoc;
-        for(int i=0; i < 5; ++i)
-            assoc.push_back(test_associated_many_exclusive::create("test_assoc_A", "test_level2"));
-
-        vector<shared_ptr<test_associated_many_exclusive> > assoc2;
-        for(int i=0; i < 3; ++i)
-                assoc2.push_back(test_associated_many_exclusive::create("test_assoc_B", "test_level2"));
-
-        if (create_association(db, ptr, assoc))
-            return 1;
-
-        shared_ptr<test_association_many_exclusive> ptr1 = retrive<test_association_many_exclusive>(db,ptr->das_id());
-        if(!ptr1) return 2;
-        if (read_update_association(db, ptr1, assoc, assoc2))
-            return 3;
-        
-        shared_ptr<test_association_many_exclusive> ptr2 = retrive<test_association_many_exclusive>(db,ptr->das_id());
-        if(!ptr2) return 2;
-        if (check_update(db, ptr2, assoc, assoc2))
-            return 4;
-    }
-    cout<< endl << "MANY SHARED"<< endl;
+    cout << endl << "MANY SHARED" << endl;
     {
         shared_ptr<test_association_many_shared> ptr =
                 test_association_many_shared::create("test_00", "test_level2");
 
         vector< shared_ptr<test_associated_many_shared> > assoc;
-        for(int i=0; i < 5; ++i)
+        for (int i = 0; i < 5; ++i)
             assoc.push_back(test_associated_many_shared::create("test_assoc_A", "test_level2"));
 
         vector<shared_ptr<test_associated_many_shared> > assoc2;
-        for(int i=0; i < 3; ++i)
-                assoc2.push_back(test_associated_many_shared::create("test_assoc_B", "test_level2"));
+        for (int i = 0; i < 3; ++i)
+            assoc2.push_back(test_associated_many_shared::create("test_assoc_B", "test_level2"));
 
         if (create_association(db, ptr, assoc))
             return 1;
 
-        shared_ptr<test_association_many_shared> ptr1 = retrive<test_association_many_shared>(db,ptr->das_id());
-        if(!ptr1) return 2;
+        shared_ptr<test_association_many_shared> ptr1 = retrive<test_association_many_shared>(db, ptr->das_id());
+        if (!ptr1) return 2;
         if (read_update_association(db, ptr1, assoc, assoc2))
             return 3;
-        
-        shared_ptr<test_association_many_shared> ptr2 = retrive<test_association_many_shared>(db,ptr->das_id());
-        if(!ptr2) return 2;
+
+        shared_ptr<test_association_many_shared> ptr2 = retrive<test_association_many_shared>(db, ptr->das_id());
+        if (!ptr2) return 2;
         if (check_update(db, ptr2, assoc, assoc2))
             return 4;
+
+        if (restore_old<test_association_many_shared, vector<shared_ptr<test_associated_many_shared> > >(db, ptr))
+            return 5;
+
+        if (!reverse_check(db, ptr, assoc))
+            return 6;
     }
+
+    cout << endl << "MANY EXCLUSIVE" << endl;
+    {
+        shared_ptr<test_association_many_exclusive> ptr =
+                test_association_many_exclusive::create("test_00", "test_level2");
+
+        vector< shared_ptr<test_associated_many_exclusive> > assoc;
+        for (int i = 0; i < 5; ++i)
+            assoc.push_back(test_associated_many_exclusive::create("test_assoc_A", "test_level2"));
+
+        vector<shared_ptr<test_associated_many_exclusive> > assoc2;
+        for (int i = 0; i < 3; ++i)
+            assoc2.push_back(test_associated_many_exclusive::create("test_assoc_B", "test_level2"));
+
+        if (create_association(db, ptr, assoc))
+            return 1;
+
+        shared_ptr<test_association_many_exclusive> ptr1 = retrive<test_association_many_exclusive>(db, ptr->das_id());
+        if (!ptr1) return 2;
+        if (read_update_association(db, ptr1, assoc, assoc2))
+            return 3;
+
+        shared_ptr<test_association_many_exclusive> ptr2 = retrive<test_association_many_exclusive>(db, ptr->das_id());
+        if (!ptr2) return 2;
+        if (check_update(db, ptr2, assoc, assoc2))
+            return 4;
+        {
+            D::Transaction t = db->begin();
+            db->attach(ptr);
+            t.commit();
+        }
+        if (restore_old<test_association_many_exclusive, vector<shared_ptr<test_associated_many_exclusive> > >(db, ptr))
+            return 5;
+
+        if (!reverse_check(db, ptr, assoc))
+            return 6;
+
+    }
+
     return 0;
 }

@@ -34,13 +34,23 @@ namespace das {
             }
 
             const_iterator
-            cbegin() {
+            cbegin(){
                 return const_iterator(super::begin());
             }
 
             const_iterator
-            cend() {
+            cend(){
                 return const_iterator(super::end());
+            }
+
+            bool
+            empty() const{
+                return super::empty();
+            }
+
+            size_t
+            size() const{
+                return super::size();
             }
 
         private:
