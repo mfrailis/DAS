@@ -176,10 +176,14 @@ public:
             sa_.reset(das::StorageAccess::create(bundle_.alias(), this));
         return sa_->get_column<T>(col_name, start, length);
     }
-    
+
     long long
-    get_column_size(const std::string &col_name){
-        return column_from_file(col_name)->size();
+    get_column_size(const std::string &col_name) {
+        ColumnFromFile *cff = column_from_file(col_name);
+        if (cff)
+            return cff->size();
+        else
+            return 0;
     }
 
     template <typename T>
@@ -189,13 +193,13 @@ public:
         sa_->append_column<T>(col_name, a);
     }
 
-/*    template <typename T, int Rank>
-    das::Array<T, Rank> get_image() {
-        if (sa_.get() == NULL)
-            sa_.reset(das::StorageAccess::create(bundle_.alias(), this));
-        return sa_->get_image<T, Rank>();
-    }
-*/
+        /*    template <typename T, int Rank>
+        das::Array<T, Rank> get_image() {
+            if (sa_.get() == NULL)
+                sa_.reset(das::StorageAccess::create(bundle_.alias(), this));
+            return sa_->get_image<T, Rank>();
+        }
+     */
     template <typename T, int Rank>
     das::Array<T, Rank> get_image(
             das::Range r0 = das::Range::all(),
@@ -212,12 +216,16 @@ public:
             ) {
         if (sa_.get() == NULL)
             sa_.reset(das::StorageAccess::create(bundle_.alias(), this));
-        return sa_->get_image<T, Rank>(r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10);
+        return sa_->get_image<T, Rank>(r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10);
     }
-    
+
     unsigned int
-    get_image_extent(int extent){
-        return image_from_file()->extent(extent);
+    get_image_extent(int extent) {
+        ImageFromFile *iff = image_from_file();
+        if (iff)
+            image_from_file()->extent(extent);
+        else
+            return 0;
     }
 
     /*template <typename T, int Rank>

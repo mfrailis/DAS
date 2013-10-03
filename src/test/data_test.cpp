@@ -8,15 +8,20 @@
 
 #include <limits>
 #include <sstream>
+#include <typeinfo>
 #include <boost/thread/thread.hpp>
 #include <boost/random/lagged_fibonacci.hpp>
 #include <boost/random/uniform_int_distribution.hpp>
 #include <boost/random/random_device.hpp>
 
+#define N_ITERATIONS 2
+#define N_POOLS 1
+
 using namespace std;
 namespace D = das::tpl;
 
 boost::mutex log_mtx;
+boost::mutex tr_mtx;
 boost::lagged_fibonacci3217 r;
 
 
@@ -64,7 +69,7 @@ template<typename T>
 das::Array<T>
 gen_rand_array() {
     das::Array<T> array;
-    boost::random::uniform_int_distribution<> dim(0, 50);
+    boost::random::uniform_int_distribution<> dim(1, 50);
     boost::random::random_device rng;
     array.resize(dim(rng));
 
@@ -164,6 +169,54 @@ void append_column(das::Array<unsigned int> &array, shared_ptr<test_columns> &pt
     ptr->dim_uint32(ptr->dim_uint32() + array.size());
 }
 
+string print_stats(const shared_ptr<test_columns> &ptr) {
+    stringstream ss;
+    //ss.width(10);
+    int pad = 4;
+
+    ss << " | ";
+    /*ss << "column_string";
+    ss.width(pad);
+    ss << ptr->get_column_size("column_string")
+            << " | " << "column_byte";
+    ss.width(pad);
+    ss << ptr->get_column_size("column_byte")
+            << " | " << "column_int16";
+    ss.width(pad);*/
+    ss << ptr->get_column_size("column_int16")
+            << " | " << "column_int32";
+    ss.width(pad);
+    ss << ptr->get_column_size("column_int32")
+            << " | " << "column_int64";
+    ss.width(pad);
+    ss << ptr->get_column_size("column_int64")
+            << " | " << "column_float32";
+    ss.width(pad);
+    ss << ptr->get_column_size("column_float32")
+            << " | " << "column_float64";
+    ss.width(pad);
+    ss << ptr->get_column_size("column_float64")
+            << " | " << "column_boolean";
+    ss.width(pad);
+    ss << ptr->get_column_size("column_boolean")
+            << " | " << "column_char";
+    ss.width(pad);
+    ss << ptr->get_column_size("column_char")
+            << " | " << "column_uint8";
+    ss.width(pad);
+    ss << ptr->get_column_size("column_uint8")
+            << " | " << "column_uin16";
+    ss.width(pad);
+    ss << ptr->get_column_size("column_uin16")
+            << " | " << "column_uint32";
+    ss.width(pad);
+    ss << ptr->get_column_size("column_uint32")
+            << " | ";
+
+    return ss.str();
+
+}
+
 /*
 char,
 short,
@@ -183,38 +236,45 @@ std::string
 template<typename T>
 void iteraction(const shared_ptr<D::Database> &db, long long id) {
     shared_ptr<test_columns> ptr;
-    
-    try{
+
+    tr_mtx.lock();
+    try {
         D::Transaction t = db->begin();
         ptr = db->load<test_columns>(id);
         t.commit();
-        LOG(boost::this_thread::get_id()<<":object loaded" << endl);        
-    }catch(const exception &e){
-     LOG(boost::this_thread::get_id()<<": exception while loading object: "
-             << e.what() << endl);
-     return;
+        LOG(boost::this_thread::get_id() << " " << typeid (T).name() << ":L" << print_stats(ptr) << endl);
+    } catch (const exception &e) {
+        LOG(boost::this_thread::get_id() << " " << typeid (T).name() << ": exception while loading object: "
+                << e.what() << endl);
+        tr_mtx.unlock();
+        return;
     }
+    tr_mtx.unlock();
 
-    
     das::Array<T> array = gen_rand_array<T>();
     append_column(array, ptr);
-    try{
+
+    tr_mtx.lock();
+    LOG(boost::this_thread::get_id() << " " << typeid (T).name() << ":M" << print_stats(ptr) << endl);
+    try {
         D::Transaction t = db->begin();
         db->attach(ptr);
         t.commit();
-        LOG(boost::this_thread::get_id()<<":object saved" << endl);
-    }catch(const exception &e){
-     LOG(boost::this_thread::get_id()<<": exception while saving object: "
-             << e.what() << endl);
+        LOG(boost::this_thread::get_id() << " " << typeid (T).name() << ":S" << print_stats(ptr) << endl);
+    } catch (const exception &e) {
+        LOG(boost::this_thread::get_id() << " " << typeid (T).name() << ": exception while saving object: "
+                << e.what() << endl);
     }
+    tr_mtx.unlock();
 }
 
 template<typename T>
 int DataWorker(long long id) {
     shared_ptr<D::Database> db = D::Database::create("test_level2");
-    for (size_t i = 0; i < 1; ++i)
+    for (size_t i = 0; i < N_ITERATIONS; ++i)
         iteraction<T>(db, id);
 
+    LOG(boost::this_thread::get_id() << ": terminates" << endl);
     return 0;
 };
 
@@ -238,11 +298,6 @@ double sum(das::Array<double, 1> &array) {
     for (typename das::Array<double, 1>::iterator it = array.begin(); it != array.end(); ++it)
         sum += *it;
     return sum;
-}
-
-template<typename T>
-int save_column(das::Array<T, 1> &array, const string &col_name) {
-
 }
 
 class Pool {
@@ -280,23 +335,32 @@ public:
 };
 
 int main(int argc, char** argv) {
+    cout << "char           :" << typeid (char).name() << endl;
+    cout << "short          :" << typeid (short).name() << endl;
+    cout << "int            :" << typeid (int).name() << endl;
+    cout << "long long      :" << typeid (long long).name() << endl;
+    cout << "float          :" << typeid (float).name() << endl;
+    cout << "double         :" << typeid (double).name() << endl;
+    cout << "bool           :" << typeid (bool).name() << endl;
+    cout << "unsigned char  :" << typeid (unsigned char).name() << endl;
+    cout << "unsigned short :" << typeid (unsigned short).name() << endl;
+    cout << "unsigned int   :" << typeid (unsigned int).name() << endl;
+    cout << "std::string    :" << typeid (std::string).name() << endl;
+
+
+
     shared_ptr<D::Database> db = D::Database::create("test_level2");
-    shared_ptr<test_columns> ptr = test_columns::create("test_0", "test_level2");
+    shared_ptr<test_columns> ptr = test_columns::create("column_test_C", "test_level2");
     D::Transaction t = db->begin();
     long long id = db->persist(ptr);
     t.commit();
+    vector<Pool*> pool;
 
-    Pool p0(id);
-    Pool p1(id);
-    Pool p2(id);
-    Pool p3(id);
-
-
-    p0.join();
-    p1.join();
-    p2.join();
-    p3.join();
-
+    for (int i = 0; i < N_POOLS; ++i) {
+        pool.push_back(new Pool(id));
+    }
+    for (int i = 0; i < N_POOLS; ++i)
+        pool[i]->join();
 
     return 0;
 }
