@@ -434,12 +434,22 @@ void
         self._src_body.append('\n  map.insert(std::pair<std::string,ColumnFromFile*>("'+col+'",NULL));')
       self._src_body.append('''
 
-  for(odb::vector<'''+self._class_name+'''_config>::iterator i = columns_.begin(); i != columns_.end(); ++i)
+  for(std::vector<'''+self._class_name+'''_config>::iterator i = columns_.begin(); i != columns_.end(); ++i)
     map[i->column_name()] = i->column_from_file();
 }
 
 void
 '''+self._class_name+'''::save_data(const std::string &path, das::TransactionBundle &tb){
+  /* we need to remove empty columns in orded to avoid exceptions when odb will eventually
+   * try to load them. This also helps to keep the database clean
+   */ 
+  std::vector<'''+self._class_name+'''_config>::iterator it = columns_.begin();
+  while(it != columns_.end()){
+    if(it->column_from_file()->size() == 0)
+      it = columns_.erase(it);
+    else
+      ++it;
+  }
   shared_ptr<das::StorageTransaction> e = das::StorageTransaction::create(bundle_.alias(),tb);
   e->add(this);
   e->save(path);
@@ -448,6 +458,16 @@ void
 
 void
 '''+self._class_name+'''::save_data(das::TransactionBundle &tb){
+  /* we need to remove empty columns in orded to avoid exceptions when odb will eventually
+   * try to load them. This also helps to keep the database clean
+   */ 
+  std::vector<'''+self._class_name+'''_config>::iterator it = columns_.begin();
+  while(it != columns_.end()){
+    if(it->column_from_file()->size() == 0)
+      it = columns_.erase(it);
+    else
+      ++it;
+  }
   shared_ptr<das::StorageTransaction> e = das::StorageTransaction::create(bundle_.alias(),tb);
   e->add(this);
   e->save();
@@ -459,7 +479,7 @@ ColumnFromFile*
 '''+self._class_name+'''::column_from_file(const std::string &col_name){
   get_column_info(col_name); // will throw if not present
   
-  for(odb::vector<'''+self._class_name+'''_config>::iterator i = columns_.begin(); i != columns_.end(); ++i){
+  for(std::vector<'''+self._class_name+'''_config>::iterator i = columns_.begin(); i != columns_.end(); ++i){
     if(i->column_name() == col_name)
       return i->column_from_file();
   }
@@ -469,9 +489,10 @@ ColumnFromFile*
 void
 '''+self._class_name+'''::column_from_file(const std::string &col_name, const ColumnFromFile &cf){
   get_column_info(col_name); // will throw if not present
-  for(odb::vector<'''+self._class_name+'''_config>::iterator i = columns_.begin(); i != columns_.end(); ++i){
+  for(std::vector<'''+self._class_name+'''_config>::iterator i = columns_.begin(); i != columns_.end(); ++i){
     if(i->column_name() == col_name){
-      i.modify().column_from_file(cf);
+      //i.modify().column_from_file(cf);
+      i->column_from_file(cf);
       return;
     }
   }
@@ -482,12 +503,12 @@ void
 
 void
 '''+self._class_name+'''::set_dirty_columns()
-{
-  for(odb::vector<'''+self._class_name+'''_config>::iterator i = columns_.begin(); i != columns_.end(); ++i)
+{/*
+  for(std::vector<'''+self._class_name+'''_config>::iterator i = columns_.begin(); i != columns_.end(); ++i)
     i.modify();
-}
+*/}
 ''')
-      self._private_section.append("odb::vector<"+self._class_name+"_config> columns_;")
+      self._private_section.append("std::vector<"+self._class_name+"_config> columns_;")
       self._data_types = ['''
 #pragma db object session(false)
 class ColumnFromFile_'''+self._class_name+''' : public ColumnFromFile
@@ -556,7 +577,7 @@ ColumnFromFile_'''+self._class_name+'''::persist(odb::database &db){
 }
 ''')
     else:   
-      self._private_section.append("odb::vector<ColumnFromBlob> columns_;")
+      self._private_section.append("std::vector<ColumnFromBlob> columns_;")
     
 # if we prepare the vector, this will be stored in th db even without data reference
 #  def visit_column(self,column):

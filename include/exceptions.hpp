@@ -1,7 +1,8 @@
 #ifndef DAS_EXCEPTIONS_HPP
 #define DAS_EXCEPTIONS_HPP
 #include <odb/exceptions.hxx>
-
+#include <string.h>
+#include <errno.h>
 namespace das {
 
 
@@ -274,11 +275,16 @@ namespace das {
 
     class io_exception : public std::exception {
     public:
-
+        io_exception() : std::exception(),err_(0){}
+        io_exception(int err): std::exception(),err_(err){}
         virtual const char*
         what() const throw () {
-            return "io exception";
+            if(err_)
+                return strerror(err_);
+            else
+                return "io exception";
         }
+        int err_;
 
     }; //TODO
 
