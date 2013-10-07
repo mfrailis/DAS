@@ -22,6 +22,34 @@
 
 using namespace std;
 
+/* class for auto managing file descriptors.
+ * Avoids dangling opened files
+ */
+class AutoFile {
+public:
+
+    AutoFile(int fd) : fd_(fd){
+    }
+
+    operator int&() {
+        return fd_;
+    }
+    
+    ~AutoFile() {
+        if (fd_ > 0) {
+            close(fd_);
+        }
+    }
+    
+private:
+    AutoFile();
+    AutoFile(const AutoFile& rhs);
+    const AutoFile& operator=(const AutoFile& rhs);
+
+    int fd_;
+};
+
+
 namespace das {
 
     class RawStorageAccess_read_column : public boost::static_visitor<ssize_t> {
@@ -34,7 +62,7 @@ namespace das {
         ssize_t operator() (std::string* buff) const {
             char b[BUFF_SIZE];
             errno = 0;
-            int fd = open(path_, O_RDONLY);
+            AutoFile fd(open(path_, O_RDONLY));
             if (fd == -1)
                 throw io_exception(errno);
             size_t terms_ = 0;
@@ -44,7 +72,6 @@ namespace das {
             count = read(fd, b, BUFF_SIZE);
             if (count == -1) {
                 int err = errno;
-                close(fd);
                 throw io_exception(err);
             }
             while (terms_ < o_) {
@@ -58,7 +85,6 @@ namespace das {
                     count = read(fd, b, BUFF_SIZE);
                     if (count == -1) {
                         int err = errno;
-                        close(fd);
                         throw io_exception(err);
                     }
                     off = 0;
@@ -79,7 +105,6 @@ namespace das {
                     count = read(fd, b, BUFF_SIZE);
                     if (count == -1) {
                         int err = errno;
-                        close(fd);
                         throw io_exception(err);
                     }
                     off = 0;
@@ -92,25 +117,22 @@ namespace das {
         template<typename T>
         ssize_t operator() (T* buff) const {
             errno = 0;
-            int fd = open(path_, O_RDONLY);
+            AutoFile fd(open(path_, O_RDONLY));
             if (fd == -1)
                 throw io_exception(errno);
             errno = 0;
             off_t off = lseek(fd, o_ * sizeof (T), SEEK_SET);
             if (off == -1) {
                 int err = errno;
-                close(fd);
                 throw io_exception(err);
             }
             errno = 0;
             ssize_t count = read(fd, buff, c_ * sizeof (T));
             if (count == -1) {
                 int err = errno;
-                close(fd);
                 throw io_exception(err);
             }
 
-            close(fd);
             count /= sizeof (T);
             return count;
         }
@@ -239,7 +261,7 @@ namespace das {
             size_t size = 0;
 
             errno = 0;
-            int file_des = open(c_->temp_path().c_str(), O_WRONLY | O_APPEND);
+            AutoFile file_des(open(c_->temp_path().c_str(), O_WRONLY | O_APPEND));
             if (file_des == -1)
                 throw io_exception(errno);
 
@@ -251,8 +273,6 @@ namespace das {
                         buffer);
                 size += it->second;
             }
-
-            close(file_des);
 
             size += c_->file_size();
             c_->file_size(size);
@@ -281,7 +301,7 @@ namespace das {
             size_t tiles = 0;
 
             errno = 0;
-            int file_des = open(i_->temp_path().c_str(), O_WRONLY | O_APPEND);
+            AutoFile file_des(open(i_->temp_path().c_str(), O_WRONLY | O_APPEND));
             if (file_des == -1)
                 throw io_exception(errno);
 
@@ -297,8 +317,6 @@ namespace das {
 
                 tiles += it->shape()[0];
             }
-
-            close(file_des);
 
             tiles += i_->file_tiles();
             i_->file_tiles(tiles);
@@ -477,7 +495,7 @@ namespace das {
                         cffnp->persist(*(tb_.db()));
 
                         ss << cffnp->id();
-                        errno=0;
+                        errno = 0;
                         if (rename(temp_path.c_str(), ss.str().c_str())) {
                             throw das::io_exception(errno);
                         }
@@ -541,7 +559,7 @@ namespace das {
                     iffnp->persist(*(tb_.db()));
 
                     ss << iffnp->id();
-                    errno=0;
+                    errno = 0;
                     if (rename(temp_path.c_str(), ss.str().c_str())) {
                         throw das::io_exception(errno);
                     }
@@ -556,7 +574,7 @@ namespace das {
     RawStorageAccess::flush_buffer(const std::string &col_name, ColumnFromFile* col) {
         if (col->buffer().empty()) return;
         if (col->temp_path() == "") {
-            int dst_fd;
+
             std::stringstream tmp;
             tmp << get_temp_path(true) << obj_->name() << "_" << col_name << "_XXXXXX";
             std::string str = tmp.str();
@@ -565,8 +583,8 @@ namespace das {
             std::strcpy(c_str, str.c_str());
 
             // generates unique filename and opens it exclusively
-            errno=0;
-            dst_fd = mkstemp(c_str);
+            errno = 0;
+            AutoFile dst_fd(mkstemp(c_str));
             if (dst_fd == -1) {
                 delete[] c_str;
                 throw io_exception(errno);
@@ -581,16 +599,14 @@ namespace das {
                 std::stringstream src;
                 src << col->fname() << col->id();
 
-                int src_fd;
+
                 struct stat stat_buf;
                 off_t offset = 0;
 
-                src_fd = open(src.str().c_str(), O_RDONLY);
+                AutoFile src_fd(open(src.str().c_str(), O_RDONLY));
                 fstat(src_fd, &stat_buf);
                 sendfile(dst_fd, src_fd, &offset, stat_buf.st_size);
-                close(src_fd);
             }
-            close(dst_fd);
         }
         column_type col_t = DdlInfo::get_instance()->
                 get_column_info(type_name(obj_), col_name).type_var_;
@@ -604,7 +620,6 @@ namespace das {
     RawStorageAccess::flush_buffer(ImageFromFile* img) {
         if (img->buffer().empty()) return;
         if (img->temp_path() == "") {
-            int dst_fd;
             std::stringstream tmp;
             tmp << get_temp_path(true) << obj_->name() << "_XXXXXX";
             std::string str = tmp.str();
@@ -613,8 +628,8 @@ namespace das {
             str.copy(c_str, len);
             c_str[len] = '\0';
             // generates unique filename and opens it exclusively
-            errno=0;
-            dst_fd = mkstemp(c_str);
+            errno = 0;
+            AutoFile dst_fd(mkstemp(c_str));
             if (dst_fd == -1) {
                 delete[] c_str;
                 throw io_exception(errno);
@@ -629,16 +644,13 @@ namespace das {
                 std::stringstream src;
                 src << img->fname() << img->id();
 
-                int src_fd;
                 struct stat stat_buf;
                 off_t offset = 0;
 
-                src_fd = open(src.str().c_str(), O_RDONLY);
+                AutoFile src_fd(open(src.str().c_str(), O_RDONLY));
                 fstat(src_fd, &stat_buf);
                 sendfile(dst_fd, src_fd, &offset, stat_buf.st_size);
-                close(src_fd);
             }
-            close(dst_fd);
         }
         image_type img_t = DdlInfo::get_instance()->
                 get_image_info(type_name(obj_)).type_var_;
@@ -661,21 +673,10 @@ namespace das {
 
         template<typename T>
         ssize_t operator() (T* buff) const {
-            errno=0;
-            int fd = open(path_, O_RDONLY);
+            errno = 0;
+            AutoFile fd(open(path_, O_RDONLY));
             if (fd == -1)
                 throw io_exception(errno);
-            /*off_t off = lseek(fd, o_ * sizeof (T), SEEK_SET);
-            if (off == -1) {
-                close(fd);
-                throw io_exception();
-            }
-            ssize_t count = read(fd, buff, c_ * sizeof (T));
-            if (count == -1) {
-                close(fd);
-                throw io_exception();
-            }
-             */
             size_t count = 0;
 
             das::TinyVector<size_t, 11> shape(
@@ -754,21 +755,17 @@ namespace das {
                                                         }
                                                         );
                                                         size_t file_pos = seeks[10] * sizeof (T);
-                                                        errno=0;
+                                                        errno = 0;
                                                         off_t off = lseek(fd, file_pos, SEEK_SET);
                                                         if (off == -1) {
-                                                            int err = errno;
-                                                            close(fd);
-                                                            throw io_exception(err);
+                                                            throw io_exception(errno);
                                                         }
                                                         T* ptr = buff + count;
-                                                        errno=0;
+                                                        errno = 0;
                                                         ssize_t c = read(fd, ptr, sizeof (T));
                                                         DAS_LOG_DBG("buffer[" << count << "] = " << *ptr);
                                                         if (c == -1) {
-                                                            int err = errno;
-                                                            close(fd);
-                                                            throw io_exception(err);
+                                                            throw io_exception(errno);
                                                         }
                                                         ++count;
                                                     }
@@ -783,7 +780,6 @@ namespace das {
                 }
 
             }
-            close(fd);
             return count;
         }
 

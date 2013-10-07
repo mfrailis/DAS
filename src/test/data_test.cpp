@@ -32,8 +32,11 @@ long long signature(das::Array<T, 1> &array);
 template<>
 long long signature(das::Array<std::string, 1> &array);
 
+int ret_code = 0;
 
-#define LOG(s) {log_mtx.lock(); cout << s; log_mtx.unlock();}
+//#define LOG(s) {log_mtx.lock(); cout << s; log_mtx.unlock();}
+#define LOG(s)
+#define ERR_LOG(s) {log_mtx.lock(); cerr << s; ret_code = 1; log_mtx.unlock();}
 
 template<typename T>
 T gen_rand() {
@@ -271,7 +274,7 @@ void iteraction(const shared_ptr<D::Database> &db, long long id) {
         t.commit();
         LOG(boost::this_thread::get_id() << /*" " << typeid (T).name() <<*/ ":L" << print_stats(ptr) << endl);
     } catch (const exception &e) {
-        LOG(boost::this_thread::get_id() << " " << typeid (T).name() << ": exception while loading object: "
+        ERR_LOG(boost::this_thread::get_id() << " " << typeid (T).name() << ": exception while loading object: "
                 << e.what() << endl);
         return;
     }
@@ -288,7 +291,7 @@ void iteraction(const shared_ptr<D::Database> &db, long long id) {
         t.commit();
         LOG(boost::this_thread::get_id() /*<< " " << typeid (T).name() */<< ":S" << print_stats(ptr) << endl);
     } catch (const exception &e) {
-        LOG(boost::this_thread::get_id() << " " << typeid (T).name() << ": exception while saving object: "
+        ERR_LOG(boost::this_thread::get_id() << " " << typeid (T).name() << ": exception while saving object: "
                 << e.what() << endl);
     }
 }
@@ -316,11 +319,11 @@ void cross_check(const shared_ptr<test_columns> &ptr, const std::string &col_nam
         sig = signature(a);
     }
     if (m_dim != dim) {
-        LOG(boost::this_thread::get_id() << " ERR: " << col_name << "dim mismatch " << std::setprecision(10) << dim << " " << m_dim << endl);
+        ERR_LOG(boost::this_thread::get_id() << " ERR: " << col_name << "dim mismatch " << std::setprecision(10) << dim << " " << m_dim << endl);
         return;
     }
     if (sig != m_sig) {
-        LOG(boost::this_thread::get_id() << " ERR: " << col_name << " sig mismatch " << std::setprecision(10) << sig << " " << m_sig << endl);
+        ERR_LOG(boost::this_thread::get_id() << " ERR: " << col_name << " sig mismatch " << std::setprecision(10) << sig << " " << m_sig << endl);
         return;
     }
 }
@@ -335,11 +338,11 @@ void cross_check<float, double>(const shared_ptr<test_columns> &ptr, const std::
         sig = signature(a);
     }
     if (m_dim != dim) {
-        LOG(boost::this_thread::get_id() << " ERR: " << col_name << "dim mismatch " << std::setprecision(10) << dim << " " << m_dim << endl);
+        ERR_LOG(boost::this_thread::get_id() << " ERR: " << col_name << "dim mismatch " << std::setprecision(10) << dim << " " << m_dim << endl);
         return;
     }
     if (sig != m_sig) {
-        LOG(boost::this_thread::get_id() << " ERR: " << col_name << " sig mismatch " << std::setprecision(10) << sig << " " << m_sig << endl);
+        ERR_LOG(boost::this_thread::get_id() << " ERR: " << col_name << " sig mismatch " << std::setprecision(10) << sig << " " << m_sig << endl);
         return;
     }
 }
@@ -354,11 +357,11 @@ void cross_check<double, double>(const shared_ptr<test_columns> &ptr, const std:
         sig = signature(a);
     }
     if (m_dim != dim) {
-        LOG(boost::this_thread::get_id() << " ERR: " << col_name << "dim mismatch " << std::setprecision(10) << dim << " " << m_dim << endl);
+        ERR_LOG(boost::this_thread::get_id() << " ERR: " << col_name << "dim mismatch " << std::setprecision(10) << dim << " " << m_dim << endl);
         return;
     }
     if (sig != m_sig) {
-        LOG(boost::this_thread::get_id() << " ERR: " << col_name << " sig mismatch " << std::setprecision(10) << sig << " " << m_sig << endl);
+        ERR_LOG(boost::this_thread::get_id() << " ERR: " << col_name << " sig mismatch " << std::setprecision(10) << sig << " " << m_sig << endl);
         return;
     }
 }
@@ -371,7 +374,7 @@ void checker(const shared_ptr<D::Database> &db, long long id) {
         t.commit();
         LOG(boost::this_thread::get_id() << ":C" << print_stats(ptr) << endl);
     } catch (const exception &e) {
-        LOG(boost::this_thread::get_id() << ":C exception while loading object: "
+        ERR_LOG(boost::this_thread::get_id() << ":C exception while loading object: "
                 << e.what() << endl);
         return;
     }
@@ -404,11 +407,6 @@ long long signature(das::Array<std::string, 1> &array) {
     long long sum = 0;
     for (typename das::Array<std::string>::iterator it = array.begin(); it != array.end(); ++it) {
         sum += it->size();
-
-//        cout << "[";
-//        cout.width(2);
-//        cout << it->size() << "] " << *it << endl;
-
     }
     return sum;
 }
@@ -464,7 +462,7 @@ public:
 };
 
 int main(int argc, char** argv) {
-    cout << "char           :" << typeid (char).name() << endl;
+/*    cout << "char           :" << typeid (char).name() << endl;
     cout << "short          :" << typeid (short).name() << endl;
     cout << "int            :" << typeid (int).name() << endl;
     cout << "long long      :" << typeid (long long).name() << endl;
@@ -475,11 +473,11 @@ int main(int argc, char** argv) {
     cout << "unsigned short :" << typeid (unsigned short).name() << endl;
     cout << "unsigned int   :" << typeid (unsigned int).name() << endl;
     cout << "std::string    :" << typeid (std::string).name() << endl;
-
+*/
 
 
     shared_ptr<D::Database> db = D::Database::create("test_level2");
-    shared_ptr<test_columns> ptr = test_columns::create("concurrent_test_C", "test_level2");
+    shared_ptr<test_columns> ptr = test_columns::create("concurrent_stress_test", "test_level2");
     D::Transaction t = db->begin();
     long long id = db->persist(ptr);
     t.commit();
@@ -491,9 +489,6 @@ int main(int argc, char** argv) {
     for (int i = 0; i < N_POOLS; ++i)
         pool[i]->join();
 
-    // checker(db,id);
-
-
-    return 0;
+    return ret_code;
 }
 
