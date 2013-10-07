@@ -434,8 +434,8 @@ void
         self._src_body.append('\n  map.insert(std::pair<std::string,ColumnFromFile*>("'+col+'",NULL));')
       self._src_body.append('''
 
-  for(std::vector<'''+self._class_name+'''_config>::iterator i = columns_.begin(); i != columns_.end(); ++i)
-    map[i->column_name()] = i->column_from_file();
+  for(boost::unordered_map<std::string,'''+self._class_name+'''_config>::iterator i = columns_.begin(); i != columns_.end(); ++i)
+    map[i->first] = i->second.column_from_file();
 }
 
 void
@@ -443,9 +443,9 @@ void
   /* we need to remove empty columns in orded to avoid exceptions when odb will eventually
    * try to load them. This also helps to keep the database clean
    */ 
-  std::vector<'''+self._class_name+'''_config>::iterator it = columns_.begin();
+  boost::unordered_map<std::string,'''+self._class_name+'''_config>::iterator it = columns_.begin();
   while(it != columns_.end()){
-    if(it->column_from_file()->size() == 0)
+    if(it->second.column_from_file()->size() == 0)
       it = columns_.erase(it);
     else
       ++it;
@@ -461,9 +461,9 @@ void
   /* we need to remove empty columns in orded to avoid exceptions when odb will eventually
    * try to load them. This also helps to keep the database clean
    */ 
-  std::vector<'''+self._class_name+'''_config>::iterator it = columns_.begin();
+  boost::unordered_map<std::string,'''+self._class_name+'''_config>::iterator it = columns_.begin();
   while(it != columns_.end()){
-    if(it->column_from_file()->size() == 0)
+    if(it->second.column_from_file()->size() == 0)
       it = columns_.erase(it);
     else
       ++it;
@@ -478,27 +478,24 @@ void
 ColumnFromFile*
 '''+self._class_name+'''::column_from_file(const std::string &col_name){
   get_column_info(col_name); // will throw if not present
-  
-  for(std::vector<'''+self._class_name+'''_config>::iterator i = columns_.begin(); i != columns_.end(); ++i){
-    if(i->column_name() == col_name)
-      return i->column_from_file();
-  }
-  return NULL;
+
+  boost::unordered_map<std::string,'''+self._class_name+'''_config>::iterator i = columns_.find(col_name);
+
+  if(i == columns_.end())
+    return NULL;
+  else
+    return i->second.column_from_file();
+
 }
 
 void
 '''+self._class_name+'''::column_from_file(const std::string &col_name, const ColumnFromFile &cf){
   get_column_info(col_name); // will throw if not present
-  for(std::vector<'''+self._class_name+'''_config>::iterator i = columns_.begin(); i != columns_.end(); ++i){
-    if(i->column_name() == col_name){
-      //i.modify().column_from_file(cf);
-      i->column_from_file(cf);
-      return;
-    }
-  }
   '''+self._class_name+'''_config conf(col_name);
   conf.column_from_file(cf);
-  columns_.push_back(conf);
+
+  columns_.erase(col_name);
+  columns_.insert(std::pair<std::string,'''+self._class_name+'''_config>(col_name,conf));
 }
 
 void
@@ -508,7 +505,7 @@ void
     i.modify();
 */}
 ''')
-      self._private_section.append("std::vector<"+self._class_name+"_config> columns_;")
+      self._private_section.append("boost::unordered_map<std::string,"+self._class_name+"_config> columns_;")
       self._data_types = ['''
 #pragma db object session(false)
 class ColumnFromFile_'''+self._class_name+''' : public ColumnFromFile
@@ -577,7 +574,7 @@ ColumnFromFile_'''+self._class_name+'''::persist(odb::database &db){
 }
 ''')
     else:   
-      self._private_section.append("std::vector<ColumnFromBlob> columns_;")
+      self._private_section.append("boost::unordered_map<ColumnFromBlob> columns_;")
     
 # if we prepare the vector, this will be stored in th db even without data reference
 #  def visit_column(self,column):

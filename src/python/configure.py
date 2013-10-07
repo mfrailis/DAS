@@ -111,7 +111,7 @@ foreach(type_name ${TYPE_NAMES_ALL})
             --include-regex "%(.*)ddl_(.+).hxx%ddl_$2.hxx%"
             --include-regex "%ddl/(.+).hxx%$1.hxx%"
             --include-regex "%ddl_(.+).hpp%../ddl_$1.hpp%"
-
+            --profile boost/unordered
 
             --default-pointer std::tr1::shared_ptr
 	    -I${ODB_SOURCE_DIR}
@@ -364,6 +364,8 @@ foreach(type_name ${TYPE_NAMES})
             --database '''+db_type+'''
 	    --generate-schema-only
             --omit-drop
+            --profile boost/unordered
+
             -I${ODB_SOURCE_DIR}
             -I${CPP_INCLUDE_DIR}
             -I${ODB_INCLUDE_DIR}
