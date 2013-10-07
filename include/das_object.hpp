@@ -9,6 +9,7 @@
 #include <string>
 #include <boost/variant.hpp>
 #include <boost/unordered_map.hpp>
+#include <boost/optional.hpp>
 
 #include "ddl/info.hpp"
 #include "ddl/column.hpp"
@@ -32,11 +33,11 @@ namespace das {
 class Key_set : public boost::static_visitor<void> {
 public:
 
-    void operator() (std::string& keyword, const std::string& value) const {
+    void operator() (boost::optional<std::string>& keyword, const std::string& value) const {
         keyword = value;
     }
 
-    void operator() (std::string& keyword, const char* value) const {
+    void operator() (boost::optional<std::string>& keyword, const char* value) const {
         keyword = value;
     }
 
@@ -46,13 +47,13 @@ public:
     }
 
     template<typename Arg_type>
-    void operator() (std::string& keyword, const Arg_type& value) const {
-        std::cout << "cannot assign numbers to string" << std::endl;
+    void operator() (boost::optional<std::string>& keyword, const Arg_type& value) const {
+        throw das::bad_keyword_type();
     }
 
     template<typename Key_type>
     void operator() (Key_type& keyword, const std::string& value) const {
-        std::cout << "cannot assign string to numeric type" << std::endl;
+        throw das::bad_keyword_type();
     }
 };
 
@@ -61,14 +62,23 @@ class Key_get : public boost::static_visitor<T> {
 public:
 
     template<typename Key_type>
+    T operator() (boost::optional<Key_type>& key) const {
+        return key.get();
+    }
+    
+    template<typename Key_type>
     T operator() (Key_type& key) const {
         return key;
     }
 
-    T operator() (std::string& key) const {
-        T lhs = 0;
-        std::cout << "cannot assign string to numeric type" << std::endl;
+    T operator() (boost::optional<std::string>& key) const {
+        throw das::bad_keyword_type();
     }
+    
+    T operator() (std::string& key) const {
+        throw das::bad_keyword_type();
+    }
+    
 };
 
 template<>
@@ -77,8 +87,11 @@ public:
 
     template<typename Key_type>
     std::string operator() (Key_type& key) const {
-        std::cout << "cannot assign numbers to string" << std::endl;
-        return std::string("bad value");
+        throw das::bad_keyword_type();
+    }
+    
+    std::string operator() (boost::optional<std::string>& key) const {
+        return key.get();
     }
 
     std::string operator() (std::string& key) const {
@@ -103,15 +116,18 @@ public:
     > keyword_type;
 
     typedef boost::variant<
-    signed char&,
-    char&,
-    short&,
-    int&,
-    long long&,
-    float&,
-    double&,
-    bool&,
-    std::string&
+    long long,       // das_id
+    std::string,     // name
+    short,           // version
+    boost::optional<signed char>&,
+    boost::optional<char>&,
+    boost::optional<short>&,
+    boost::optional<int>&,
+    boost::optional<long long>&,
+    boost::optional<float>&,
+    boost::optional<double>&,
+    boost::optional<bool>&,
+    boost::optional<std::string>&
     > keyword_type_ref;
 
     const KeywordInfo&
@@ -193,12 +209,12 @@ public:
         sa_->append_column<T>(col_name, a);
     }
 
-        /*    template <typename T, int Rank>
-        das::Array<T, Rank> get_image() {
-            if (sa_.get() == NULL)
-                sa_.reset(das::StorageAccess::create(bundle_.alias(), this));
-            return sa_->get_image<T, Rank>();
-        }
+    /*    template <typename T, int Rank>
+    das::Array<T, Rank> get_image() {
+        if (sa_.get() == NULL)
+            sa_.reset(das::StorageAccess::create(bundle_.alias(), this));
+        return sa_->get_image<T, Rank>();
+    }
      */
     template <typename T, int Rank>
     das::Array<T, Rank> get_image(
@@ -402,29 +418,39 @@ protected:
     }
 
     static inline
-    std::string
-    escape_string(const std::string &str) {
-        std::string s;
-        size_t len = str.length();
-        for (size_t i = 0; i < len; ++i) {
-            if (str[i] == '\'')
-                s.push_back('\\');
-            s.push_back(str[i]);
+    boost::optional<std::string>
+    escape_string(const boost::optional<std::string> &opt) {
+        boost::optional<std::string> result;
+        if (opt) {
+            std::string str = opt.get();
+            std::string s;
+            size_t len = str.length();
+            for (size_t i = 0; i < len; ++i) {
+                if (str[i] == '\'')
+                    s.push_back('\\');
+                s.push_back(str[i]);
+            }
+            result = s;
         }
-        return s;
+        return result;
     }
 
     static inline
-    std::string
-    unescape_string(const std::string &str) {
-        std::string s;
-        size_t len = str.length();
-        for (size_t i = 0; i < len; ++i) {
-            if (str[i] == '\\' && i + 1 < len && str[i + 1] == '\'')
-                continue;
-            s.push_back(str[i]);
+    boost::optional<std::string>
+    unescape_string(const boost::optional<std::string> &opt) {
+        boost::optional<std::string> result;
+        if (opt) {
+            std::string str = opt.get();
+            std::string s;
+            size_t len = str.length();
+            for (size_t i = 0; i < len; ++i) {
+                if (str[i] == '\\' && i + 1 < len && str[i + 1] == '\'')
+                    continue;
+                s.push_back(str[i]);
+            }
+            result = s;
         }
-        return s;
+        return result;
     }
 private:
 
@@ -437,11 +463,11 @@ private:
     }
 
     std::string get_name() const {
-        return escape_string(name_);
+        return escape_string(boost::make_optional(name_)).get();
     }
 
     void set_name(const std::string &name) {
-        name_ = unescape_string(name);
+        name_ = unescape_string(boost::make_optional(name)).get();
     }
 
     friend class odb::access;

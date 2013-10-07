@@ -393,8 +393,8 @@ void
     self._default_init.append('keywords_.insert(std::pair<std::string, keyword_type_ref>("'+keyword.name+'",'+keyword.name+'_));')
     if keyword.ktype == 'string':
       self._private_section.append('')
-      self._private_section.append('std::string get_'+keyword.name+'() const {return escape_string('+keyword.name+'_);}')
-      self._private_section.append('void set_'+keyword.name+'(const std::string &'+keyword.name+'){'+keyword.name+'_ = unescape_string('+keyword.name+');}')
+      self._private_section.append('boost::optional<std::string> get_'+keyword.name+'() const {return escape_string('+keyword.name+'_);}')
+      self._private_section.append('void set_'+keyword.name+'(const boost::optional<std::string> &'+keyword.name+'){'+keyword.name+'_ = unescape_string('+keyword.name+');}')
       self._private_section.append('')
       self._private_section.append('#pragma db type("VARCHAR(256)") set(set_'+keyword.name+') get(get_'+keyword.name+')')
 
@@ -403,10 +403,15 @@ void
     if keyword.default is not None:
       self._default_init.append(keyword.name+"_ = "+keyword.default+";")
     if k_type == 'CBLOB':
-      self._private_section.append('#pragma db mysql:type("MEDIUMTEXT") oracle:type("CLOB") pgsql:type("TEXT") sqlite:type("TEXT") mssql:type("varbinary")')
+      self._private_section.append('')
+      self._private_section.append('boost::optional<CBLOB> get_'+keyword.name+'() const {return escape_string('+keyword.name+'_);}')
+      self._private_section.append('void set_'+keyword.name+'(const boost::optional<CBLOB> &'+keyword.name+'){'+keyword.name+'_ = unescape_string('+keyword.name+');}')
+      self._private_section.append('')
+      self._private_section.append('#pragma db mysql:type("MEDIUMTEXT") oracle:type("CLOB") pgsql:type("TEXT") sqlite:type("TEXT") mssql:type("varbinary") set(set_'+keyword.name+') get(get_'+keyword.name+')')
       self._header.append('typedef std::string CBLOB;')
 
-    self._private_section.append(k_type + " " + keyword.name + "_;")
+
+    self._private_section.append("boost::optional<"+k_type + "> " + keyword.name + "_;")
     self._public_section.extend(_dec_getter(keyword.name, self.KTYPE_MAP[keyword.ktype]))
     self._public_section.extend(_dec_setter(keyword.name, self.KTYPE_MAP[keyword.ktype]))
 
@@ -790,7 +795,7 @@ inline shared_ptr<'''+class_name+'''>
 def _def_getter(attribute_name, attribute_type, class_name):
   method_definition = ["inline const " + attribute_type + "&"]
   method_definition.extend([class_name+"::"+attribute_name + " () const","{"])
-  method_definition.extend(["  return " + attribute_name + "_;","}"])
+  method_definition.extend(["  return " + attribute_name + "_.get();","}"])
   return method_definition
   
 def _def_setter(attribute_name, attribute_type, class_name):
