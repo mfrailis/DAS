@@ -1,5 +1,4 @@
 #include <iostream>
-#include <vector>
 
 #include "tpl/database.hpp"
 #include "transaction.hpp"
