@@ -9,8 +9,8 @@
 #include <string>
 #include <boost/variant.hpp>
 #include <boost/unordered_map.hpp>
-#include <boost/optional.hpp>
 
+#include "optional.hpp"
 #include "ddl/info.hpp"
 #include "ddl/column.hpp"
 #include "ddl/image.hpp"
@@ -58,24 +58,25 @@ public:
 };
 
 template<typename T>
-class Key_get : public boost::static_visitor<T> {
+class Key_get : public boost::static_visitor<das::optional<T> > {
 public:
 
     template<typename Key_type>
-    T operator() (boost::optional<Key_type>& key) const {
-        return key.get();
+    das::optional<T> operator() (boost::optional<Key_type>& key) const {
+        boost::optional<T> opt(key);
+        return das::optional<T>(opt);
     }
     
     template<typename Key_type>
-    T operator() (Key_type& key) const {
+    das::optional<T> operator() (Key_type& key) const {
         return key;
     }
 
-    T operator() (boost::optional<std::string>& key) const {
+    das::optional<T> operator() (boost::optional<std::string>& key) const {
         throw das::bad_keyword_type();
     }
     
-    T operator() (std::string& key) const {
+    das::optional<T> operator() (std::string& key) const {
         throw das::bad_keyword_type();
     }
     
@@ -304,7 +305,7 @@ public:
     }
 
     template<typename T>
-    T
+    das::optional<T>
     get_key(const std::string &keyword_name) {
         return boost::apply_visitor(Key_get<T>(), keywords_.at(keyword_name));
     }

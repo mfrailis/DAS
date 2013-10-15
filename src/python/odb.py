@@ -793,9 +793,9 @@ inline shared_ptr<'''+class_name+'''>
   
 
 def _def_getter(attribute_name, attribute_type, class_name):
-  method_definition = ["inline const " + attribute_type + "&"]
+  method_definition = ["inline das::optional< " + attribute_type + " >"]
   method_definition.extend([class_name+"::"+attribute_name + " () const","{"])
-  method_definition.extend(["  return " + attribute_name + "_.get();","}"])
+  method_definition.extend(["  return " + attribute_name + "_;","}"])
   return method_definition
   
 def _def_setter(attribute_name, attribute_type, class_name):
@@ -871,7 +871,7 @@ def _def_attach_assoc(association, priv_type):
       return _a_oe.attach(association, priv_type)
 
 def _dec_getter(attribute_name, attribute_type):
-  method_declaration = ["const " + attribute_type + "&"]
+  method_declaration = ["das::optional< " + attribute_type + " >"]
   method_declaration.extend([attribute_name + " () const;\n"])
   return method_declaration
   
