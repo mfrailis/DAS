@@ -39,6 +39,7 @@ void
 '''+class_name+"::"+association.name + " ("+pub_type+" &"+association.name+'''_new)
 {
   '''+association.name+"_ = "+association.name+'''_new;
+  is_dirty_ = true;
 }''']
 ###############################################################################################################################################
 

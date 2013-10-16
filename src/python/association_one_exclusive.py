@@ -52,7 +52,7 @@ void
       //check new association compatibility
       if(!'''+association.name+'''_new->is_new())
       {
-        das::DbBundle new_bundle = '''+association.name+'''_new->bundle_.lock();
+        das::DbBundle new_bundle = '''+association.name+'''_new->bundle_.lock(false);
         if((new_bundle.valid() && new_bundle != b) ||
            (new_bundle.alias() != b.alias()))
         {

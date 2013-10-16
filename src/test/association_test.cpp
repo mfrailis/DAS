@@ -255,17 +255,18 @@ int restore_old(const shared_ptr<D::Database> &db,
         shared_ptr<T> &ptr) {
     Y old_assoc, new_assoc;
     try {
+        old_assoc = ptr->association();        
         D::Transaction t = db->begin();
         cout << "Restoring association... ";
-        db->attach(ptr);
+        shared_ptr<T> ptr1 = db->load<T>(ptr->das_id());
+        ptr1->association(old_assoc);
         t.commit();
         cout << "ok." << endl;
-        old_assoc = ptr->association();
 
         t = db->begin();
         cout << "Reloading association... ";
-        shared_ptr<T> ptr1 = db->load<T>(ptr->das_id());
-        new_assoc = ptr1->association();
+        shared_ptr<T> ptr2 = db->load<T>(ptr->das_id());
+        new_assoc = ptr2->association();
         t.commit();
         cout << "ok." << endl;
     } catch (const exception &e) {
@@ -293,23 +294,6 @@ bool same_n(size_t size, vector<shared_ptr<T> > &assoc) {
     return size == assoc.size();
 }
 
-template<typename T, typename Y>
-bool reverse_check(const shared_ptr<D::Database> &db, shared_ptr<T> &ptr, Y &assoc) {
-    cout << "Checking reverse association... ";
-    stringstream query;
-    query << "association.das_id > 0 && das_id == " << ptr->das_id();
-    D::Transaction t = db->begin();
-    D::Result<T> r = db->query<T>(query.str());
-    size_t size = r.size();
-    t.commit();
-
-    bool res = same_n(size, assoc);
-    if (res)
-        cout << "ok." << endl;
-    else
-        cout << "fail." << endl;
-    return res;
-}
 
 int main() {
     shared_ptr<D::Database> db = D::Database::create("test_level2");
@@ -341,8 +325,6 @@ int main() {
         if (restore_old<test_association_one_shared, shared_ptr<test_associated_one_shared> >(db, ptr))
             return 5;
 
-        if (!reverse_check(db, ptr, assoc))
-            return 6;
 
     }
     cout << endl << "ONE EXCLUSIVE" << endl;
@@ -372,8 +354,6 @@ int main() {
         if (restore_old<test_association_one_exclusive, shared_ptr<test_associated_one_exclusive> >(db, ptr))
             return 5;
 
-        if (!reverse_check(db, ptr, assoc))
-            return 6;
 
     }
     cout << endl << "MANY SHARED" << endl;
@@ -405,8 +385,6 @@ int main() {
         if (restore_old<test_association_many_shared, vector<shared_ptr<test_associated_many_shared> > >(db, ptr))
             return 5;
 
-        if (!reverse_check(db, ptr, assoc))
-            return 6;
     }
 
     cout << endl << "MANY EXCLUSIVE" << endl;
@@ -442,8 +420,6 @@ int main() {
         if (restore_old<test_association_many_exclusive, vector<shared_ptr<test_associated_many_exclusive> > >(db, ptr))
             return 5;
 
-        if (!reverse_check(db, ptr, assoc))
-            return 6;
 
     }
 
