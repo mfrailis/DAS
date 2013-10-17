@@ -193,8 +193,9 @@ namespace das {
     StorageAccess::append_column(const string &col_name, Array<T> &a) {
         ColumnFromFile *c = obj_->column_from_file(col_name); //throw if bad name
 
-        if (!c) {
-            ColumnFromFile cff(DdlInfo::get_instance()->get_column_info(obj_->type_name_, col_name).type);
+        if (!c) {       
+            const ColumnInfo& info = DdlInfo::get_instance()->get_column_info(obj_->type_name_, col_name);
+            ColumnFromFile cff(info.type,info.array_size);
             obj_->column_from_file(col_name, cff);
             c = obj_->column_from_file(col_name);
         }

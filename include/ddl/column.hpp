@@ -14,18 +14,24 @@ class Column {
 public:
 
     Column(const long long& size,
-            const std::string &type)
-    : size_(size), type_(type) {
+            const std::string &type,
+            const std::string &array_size)
+    : size_(size), type_(type), array_size_(array_size) {
     }
 
-    Column(const std::string &type)
-    : size_(0), type_(type) {
+    Column(const std::string &type, const std::string &array_size)
+    : size_(0), type_(type), array_size_(array_size) {
     }
 
     virtual
     long long
     size() const {
         return size_;
+    }
+    
+    const std::string&
+    array_size(){
+        return array_size_;
     }
     
     const std::string&
@@ -44,6 +50,7 @@ protected:
     long long size_;
 #pragma db get(get_type) set(set_type)
     std::string type_;
+    std::string array_size_;
 
     Column() {
     }
@@ -58,12 +65,13 @@ public:
 
     ColumnFromFile(const long long &size,
             const std::string &type,
+            const std::string &array_size,
             const std::string &fname)
-    : Column(size, type), fname_(fname), id_(0), buff_(type) {
+    : Column(size, type,array_size), fname_(fname), id_(0), buff_(type) {
     }
 
-    ColumnFromFile(const std::string &type)
-    : Column(type), id_(0), buff_(type) {
+    ColumnFromFile(const std::string &type, const std::string& array_size)
+    : Column(type,array_size), id_(0), buff_(type) {
     }
     
     const std::string&
@@ -147,12 +155,13 @@ class ColumnFromBlob : public Column {
 public:
 
     ColumnFromBlob(const long long &size,
-            const std::string &type)
-    : Column(size, type) {
+            const std::string &type,
+            const std::string &array_size)
+    : Column(size, type, array_size) {
     }
 
-    ColumnFromBlob(const std::string &type)
-    : Column(type) {
+    ColumnFromBlob(const std::string &type, const std::string& array_size)
+    : Column(type,array_size) {
     }
 
 

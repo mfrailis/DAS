@@ -193,6 +193,8 @@ public:
         sa_->append_column<T>(col_name, a);
     }
     
+    
+    
     template <typename T, int Rank>
     das::Array<T, Rank> get_image(
             das::Range r0 = das::Range::all(),

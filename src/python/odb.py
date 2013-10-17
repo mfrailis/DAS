@@ -513,11 +513,12 @@ class ColumnFromFile_'''+self._class_name+''' : public ColumnFromFile
 public:
   ColumnFromFile_'''+self._class_name+'''(const long long &size,
 	     const std::string &type,
+             const std::string &array_size,
 	     const std::string &fname)
-  : ColumnFromFile(size,type,fname) {}
+  : ColumnFromFile(size,type,array_size,fname) {}
 
-  ColumnFromFile_'''+self._class_name+'''(const std::string &type)
-  : ColumnFromFile(type) {}
+  ColumnFromFile_'''+self._class_name+'''(const std::string &type, const std::string &array_size)
+  : ColumnFromFile(type,array_size) {}
 
   ColumnFromFile_'''+self._class_name+'''(const ColumnFromFile &cff)
   : ColumnFromFile(cff){}

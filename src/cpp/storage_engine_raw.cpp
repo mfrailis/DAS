@@ -359,7 +359,7 @@ namespace das {
 
                         ss << m_it->first << "_";
 
-                        ColumnFromFile cffn(cff->file_size(), cff->get_type(), ss.str());
+                        ColumnFromFile cffn(cff->file_size(), cff->get_type(), cff->array_size(), ss.str());
                         column_from_file(obj, c_name, cffn);
 
                         ColumnFromFile *cffnp = column_from_file(obj, c_name);
@@ -488,7 +488,7 @@ namespace das {
                         ss << storage_path;
                         ss << m_it->first << "_";
 
-                        ColumnFromFile cffn(cff->file_size(), cff->get_type(), ss.str());
+                        ColumnFromFile cffn(cff->file_size(), cff->get_type(), cff->array_size(), ss.str());
                         column_from_file(obj, c_name, cffn);
 
                         ColumnFromFile *cffnp = column_from_file(obj, c_name);
