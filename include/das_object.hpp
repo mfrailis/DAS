@@ -192,14 +192,7 @@ public:
             sa_.reset(das::StorageAccess::create(bundle_.alias(), this));
         sa_->append_column<T>(col_name, a);
     }
-
-        /*    template <typename T, int Rank>
-        das::Array<T, Rank> get_image() {
-            if (sa_.get() == NULL)
-                sa_.reset(das::StorageAccess::create(bundle_.alias(), this));
-            return sa_->get_image<T, Rank>();
-        }
-     */
+    
     template <typename T, int Rank>
     das::Array<T, Rank> get_image(
             das::Range r0 = das::Range::all(),
@@ -227,16 +220,6 @@ public:
         else
             return 0;
     }
-
-    /*template <typename T, int Rank>
-    das::Array<T, Rank> get_image(
-            const das::TinyVector<int, Rank> &offset,
-            const das::TinyVector<int, Rank> &count,
-            const das::TinyVector<int, Rank> &stride) {
-        if (sa_.get() == NULL)
-            sa_.reset(das::StorageAccess::create(bundle_.alias(), this));
-        return sa_->get_image<T, Rank>(offset, count, stride);
-    }*/
 
     template <typename T, int Rank>
     void set_image(das::Array<T, Rank> &i) {

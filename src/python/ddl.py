@@ -283,10 +283,11 @@ class BinaryTable:
     
     
 class Column:
-  def __init__(self, name, ctype, unit, max_string_length, desc):
+  def __init__(self, name, ctype, unit, array_size, max_string_length, desc):
     self.name = name
     self.ctype = ctype
     self.unit = unit
+    self.array_size = array_size
     self.max_string_length = max_string_length
     self.description = desc
 
@@ -399,8 +400,9 @@ class DdlParser:
         ctype = c.get('type')
         unit = c.get('unit')
         max_string_length = c.get('maxStringLength')
+        array_size = c.get('arraysize')
         desc = c.get('description')
-        bt.columns[name]=Column(name, ctype, unit, max_string_length, desc)
+        bt.columns[name]=Column(name, ctype, unit, array_size ,max_string_length, desc)
       
       d.data_obj = bt
         
