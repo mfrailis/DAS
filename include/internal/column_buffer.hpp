@@ -98,6 +98,9 @@ public:
 
     template<typename T>
     void append(das::Array<T> &array);
+    
+    template<typename T,int Rank>
+    void append(das::ColumnArray<T,Rank> &array);
 
     template<class OutputIterator>
     OutputIterator

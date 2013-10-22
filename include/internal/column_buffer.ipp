@@ -141,6 +141,78 @@ private:
     das::Array<std::string> &elem_;
 };
 
+// column arrays
+
+template<typename X, int Rank>
+class ColumnBuffer_array_add : public boost::static_visitor<void> {
+public:
+
+    ColumnBuffer_array_add(das::ColumnArray<X, Rank> &elem) : elem_(elem) {
+    }
+
+    void operator() (std::vector< das::ColumnArray<X, Rank> > &vec) const {
+        if (elem_.size() > 0)
+            vec.push_back(elem_);
+    }
+
+    template<typename Y>
+    void operator() (std::vector< das::ColumnArray<Y, Rank> > &vec) const {
+        size_t elements = elem_.size();
+
+        if (elements == 0) return;
+        das::Array<das::Array<Y> > casted;
+        casted.resize(elements);
+        for (size_t j = 0; j < elements; ++j) {
+            size_t size = elem_(j).size();
+            Y *data = new Y[size];
+            size_t i = 0;
+            for (typename das::Array<X>::iterator it = elem_(j).begin(); it != elem_(j).end(); ++it) {
+                data[i] = *it;
+                ++i;
+            }
+            casted(j) = das::Array<Y>(data, size, das::deleteDataWhenDone);
+        }
+    }
+
+    template<typename U, int Bad_Rank>
+    void operator() (std::vector< das::ColumnArray<U, Bad_Rank> > &vec) const {
+        throw das::bad_array_size();
+    }
+    
+    template<typename U, int Bad_Rank>
+    void operator() (std::vector< das::Array<U, Bad_Rank> > &vec) const {
+        throw das::bad_array_size();
+    }
+    
+    void operator() (std::vector< das::ColumnArray<std::string, Rank> > &vec) const {
+        std::cout << "conversion to string is not supported" << std::endl;
+    }
+
+private:
+    das::ColumnArray<X, Rank> &elem_;
+
+};
+
+template<int Rank>
+class ColumnBuffer_array_add<std::string, Rank> : public boost::static_visitor<void> {
+public:
+
+    ColumnBuffer_array_add(das::ColumnArray<std::string, Rank> &elem) : elem_(elem) {
+    }
+
+    void operator() (std::vector< das::ColumnArray<std::string, Rank> > &vec) const {
+        if (elem_.size() > 0)
+            vec.push_back(elem_);
+    }
+
+    template<typename Y>
+    void operator() (std::vector< das::ColumnArray<Y, Rank> > &vec) const {
+        std::cout << "conversion from string is not supported" << std::endl;
+    }
+private:
+    das::ColumnArray<std::string, Rank> &elem_;
+};
+
 template<typename T>
 void
 ColumnBuffer::append(das::Array<T> &array) {
@@ -149,6 +221,15 @@ ColumnBuffer::append(das::Array<T> &array) {
         throw std::exception();
     }
     boost::apply_visitor(ColumnBuffer_add<T>(array), buffer_);
+}
+
+template<typename T, int Rank>
+void ColumnBuffer::append(das::ColumnArray<T, Rank> &array) {
+    if (!is_init_) {
+        std::cout << "buffer type uninitialized" << std::endl;
+        throw std::exception();
+    }
+    boost::apply_visitor(ColumnBuffer_array_add<T,Rank>(array), buffer_);
 }
 
 template<class OutputIterator>
@@ -213,7 +294,137 @@ private:
     size_t o_;
 };
 
-template<class OutputIterator>
+// column_array
+
+template<typename X, int Rank>
+class ColumnBuffer_copy< das::Array<X, Rank>* >
+: public boost::static_visitor< das::Array<X, Rank>* > {
+public:
+    typedef das::Array<X, Rank>* OutputIterator;
+
+    ColumnBuffer_copy(OutputIterator &begin, OutputIterator &end, size_t offset) :
+    b_(begin), e_(end), o_(offset) {
+    }
+
+    OutputIterator
+    operator() (std::vector< das::ColumnArray<X, Rank> > &vec) {
+        typename std::vector< das::ColumnArray<X, Rank> >::iterator v_it = vec.begin();
+        if (v_it == vec.end()) return b_;
+        size_t first_offset = 0;
+
+        while (o_ > 0) {
+            size_t size = v_it->size();
+            if (o_ >= size) {
+                o_ -= size;
+                ++v_it;
+            } else {
+                first_offset = o_;
+                o_ = 0;
+            }
+            if (v_it == vec.end()) return b_;
+        }
+        typename das::ColumnArray<X, Rank>::iterator a_it = v_it->begin();
+        while (first_offset-- > 0) ++a_it;
+
+        while (a_it == v_it->end()) {
+            ++v_it;
+            if (v_it == vec.end())
+                return b_;
+            a_it = v_it->begin();
+        }
+
+
+        while (b_ != e_) {
+            // do not reference the array in the buffer. Make a copy
+            *b_ = das::Array<X, Rank>(a_it->copy(), a_it->shape(), das::deleteDataWhenDone);
+            ++b_;
+            ++a_it;
+            while (a_it == v_it->end()) {
+                ++v_it;
+                if (v_it == vec.end())
+                    return b_;
+                a_it = v_it->begin();
+            }
+        }
+
+        return b_;
+    }
+
+    template<typename U>
+    OutputIterator
+    operator() (std::vector< das::ColumnArray<U, Rank> > &vec) {
+        typename std::vector< das::ColumnArray<U, Rank> >::iterator v_it = vec.begin();
+        if (v_it == vec.end()) return b_;
+        size_t first_offset = 0;
+
+        while (o_ > 0) {
+            size_t size = v_it->size();
+            if (o_ >= size) {
+                o_ -= size;
+                ++v_it;
+            } else {
+                first_offset = o_;
+                o_ = 0;
+            }
+            if (v_it == vec.end()) return b_;
+        }
+        typename das::ColumnArray<U, Rank>::iterator a_it = v_it->begin();
+        while (first_offset-- > 0) ++a_it;
+
+        while (a_it == v_it->end()) {
+            ++v_it;
+            if (v_it == vec.end())
+                return b_;
+            a_it = v_it->begin();
+        }
+
+
+        while (b_ != e_) {
+            // do not reference the array in the buffer. Make a copy
+            *b_ = das::Array<X, Rank>(new X[a_it->size()], a_it->shape(), das::deleteDataWhenDone);
+            typename das::Array<X, Rank>::iterator x_it = b_->begin();
+            for (typename das::Array<U, Rank>::iterator u_it = a_it->begin(); u_it != a_it->end(); ++u_it) {
+                *x_it = *u_it;
+                ++u_it;
+            }
+
+            ++b_;
+            ++a_it;
+            while (a_it == v_it->end()) {
+                ++v_it;
+                if (v_it == vec.end())
+                    return b_;
+                a_it = v_it->begin();
+            }
+        }
+
+        return b_;
+    }
+
+    template<typename U, int Bad_Rank>
+    OutputIterator
+    operator() (std::vector< das::ColumnArray<U, Bad_Rank> > &vec) {
+        throw das::bad_array_shape();
+    }
+
+    template<typename U, int Bad_Rank>
+    OutputIterator
+    operator() (std::vector< das::Array<U, Bad_Rank> > &vec) {
+        throw das::bad_array_shape();
+    }
+
+    OutputIterator operator() (std::vector< das::ColumnArray<std::string, Rank> > &vec) {
+        std::cout << "string copy not implemented yet" << std::endl;
+        throw das::not_implemented();
+    }
+
+private:
+    OutputIterator b_;
+    OutputIterator e_;
+    size_t o_;
+};
+
+template<class OutputIterator >
 OutputIterator
 ColumnBuffer::copy(OutputIterator &begin, OutputIterator &end, size_t offset) {
     if (!is_init_) {
@@ -278,7 +489,7 @@ public:
     }
 };
 
-template<typename T>
+template<typename T >
 std::vector<std::pair<T*, size_t> >
 ColumnBuffer::buckets() {
     return boost::apply_visitor(ColumnBuffer_buckets<T>(), buffer_);

@@ -302,6 +302,9 @@ target_link_libraries(association_test das ${ODB_LIBRARIES} ${ODB_MYSQL_LIBRARIE
 add_executable(data_test EXCLUDE_FROM_ALL ${TEST_SOURCE_DIR}/data_test.cpp)
 target_link_libraries(data_test boost_thread boost_random das ${ODB_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
 
+add_executable(array_column_test EXCLUDE_FROM_ALL ${TEST_SOURCE_DIR}/array_column_test.cpp)
+target_link_libraries(array_column_test boost_thread boost_random das ${ODB_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+
 add_executable(persistence_example EXCLUDE_FROM_ALL ${EXAMPLES_SOURCE_DIR}/persistence_example.cpp)
 target_link_libraries(persistence_example das ${ODB_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
 
@@ -324,11 +327,11 @@ add_custom_target(examples
 
 add_custom_target(tests
   DEPENDS
-    das
     main_test
     metadata_test
     association_test
     data_test
+    array_column_test    
 )
 '''
 )

@@ -193,6 +193,28 @@ public:
         sa_->append_column<T>(col_name, a);
     }
     
+    template <typename T, int Rank>
+    das::ColumnArray<T,Rank>
+    get_column_array(const std::string &col_name, size_t start, size_t length) {
+        if (sa_.get() == NULL)
+            sa_.reset(das::StorageAccess::create(bundle_.alias(), this));
+        return sa_->get_column_array<T,Rank>(col_name, start, length);
+    }
+
+    ///TODO
+    long long
+    get_column_array_size(const std::string &col_name) {
+            return 0;
+    }
+
+
+    template <typename T,int Rank>
+    void append_column_array(const std::string &col_name, das::ColumnArray<T,Rank> &a) {
+        if (sa_.get() == NULL)
+            sa_.reset(das::StorageAccess::create(bundle_.alias(), this));
+        sa_->append_column_array<T,Rank>(col_name, a);
+    }
+    
     
     
     template <typename T, int Rank>

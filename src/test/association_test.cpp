@@ -6,8 +6,6 @@
 #include "ddl/types.hpp"
 #include <vector>
 #include <algorithm>
-#include "tpl/database.hpp"
-#include "ddl/types/ddl_test_associated_one_exclusive.hpp"
 
 using namespace std;
 namespace D = das::tpl;

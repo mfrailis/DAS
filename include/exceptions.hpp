@@ -130,6 +130,35 @@ namespace das {
 
     }; //TODO
 
+     class wrong_size : public std::exception {
+    public:
+
+        virtual const char*
+        what() const throw () {
+            return "requested wrong number of arrays in column array";
+        }
+
+    }; //TODO   
+    
+    class bad_array_size : public std::exception {
+    public:
+
+        virtual const char*
+        what() const throw () {
+            return "the column requested has incopatible array size";
+        }
+
+    }; //TODO
+    
+    class bad_array_shape : public std::exception {
+    public:
+
+        virtual const char*
+        what() const throw () {
+            return "requested array with incompatible shape";
+        }
+
+    }; //TODO
     class empty_image : public std::exception {
     public:
 
@@ -288,6 +317,18 @@ namespace das {
 
     }; //TODO
 
+    class data_corrupted : public std::exception {
+    public:
+
+        virtual const char*
+        what() const throw () {
+            return "array size not compatible with array shape: possible data corruption";
+        }
+
+
+    }; //TODO 
+    
+    
     class das_io_exception : public std::exception {
     public:
 

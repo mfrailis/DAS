@@ -22,25 +22,27 @@
 
 using namespace std;
 
+typedef unsigned long long chunk_t;
+
 /* class for auto managing file descriptors.
  * Avoids dangling opened files
  */
 class AutoFile {
 public:
 
-    AutoFile(int fd) : fd_(fd){
+    AutoFile(int fd) : fd_(fd) {
     }
 
     operator int&() {
         return fd_;
     }
-    
+
     ~AutoFile() {
         if (fd_ > 0) {
             close(fd_);
         }
     }
-    
+
 private:
     AutoFile();
     AutoFile(const AutoFile& rhs);
@@ -145,6 +147,123 @@ namespace das {
         const static size_t BUFF_SIZE = 512;
     };
 
+
+    class RawStorageAccess_read_column_array : public boost::static_visitor<ssize_t> {
+    public:
+
+        RawStorageAccess_read_column_array(size_t offset, size_t count, const std::string &array_size, const char* path)
+        : o_(offset), c_(count), array_size_(array_size), path_(path) {
+        }
+
+        das::TinyVector<int, 11>
+        get_shape() const{
+            das::TinyVector<int, 11> s(1,1,1,1,1,1,1,1,1,1,1);
+            std::istringstream buffer(array_size_);
+            int ext = 0;
+            std::vector<int> shape;
+            while (buffer) {
+                if (!buffer >> ext)
+                    if(!buffer.eof())
+                        throw das::bad_array_size();
+                shape.push_back(ext);
+                char c;
+                buffer.get(c);
+            }
+            if(!buffer.eof())
+                throw das::bad_array_size();
+            
+            size_t rank = shape.size();
+            for(size_t i=0; i<rank; ++i)
+                s(i) = shape[(rank-i)-1];
+                        
+            return s;
+        }
+
+        template<typename T>
+        ssize_t operator() (ColumnArrayBuffer<T> &buff) const {
+            using boost::interprocess::unique_ptr;
+            das::TinyVector<int, 11> shape = get_shape();
+            
+            errno = 0;
+            AutoFile fd(open(path_, O_RDONLY));
+            if (fd == -1)
+                throw io_exception(errno);
+
+            if (array_size_[array_size_.length() - 1] == '*') {
+                unsigned long long elems = 1;
+                for (int i = 1; i < 11; ++i)
+                    elems *= shape(i); 
+                
+                for(size_t i = 0; i< o_; ++i){
+                    chunk_t c_size = 0;
+                    errno = 0;
+                    ssize_t count = read(fd, &c_size, sizeof(chunk_t));
+                    if(count != sizeof(chunk_t))
+                        throw io_exception(errno);
+                    
+                    if(c_size % elems != 0)
+                        throw das::data_corrupted();
+                    
+                    off_t off = lseek(fd,  c_size * sizeof (T), SEEK_CUR);
+                    if (off == -1) 
+                        throw io_exception(errno);
+                }
+                
+                for(size_t i = 0; i< c_; ++i){
+                    chunk_t c_size = 0;
+                    errno = 0;
+                    ssize_t count = read(fd, &c_size, sizeof(chunk_t));
+                    if(count != sizeof(chunk_t))
+                        throw io_exception(errno);
+                    
+                    if(c_size % elems != 0)
+                        throw das::data_corrupted();
+                    
+                    unique_ptr<T, ArrayDeleter<T> > buffer(new T[c_size]);
+                    count = read(fd, buffer.get(), c_size * sizeof (T));
+                    if (count != c_size * sizeof (T))
+                        throw io_exception(errno);
+                    
+                    buff.add(buffer.release(),c_size);
+                }
+                
+            } else {
+                unsigned long long elems = 1;
+                for (int i = 0; i < 11; ++i)
+                    elems *= shape(i);
+
+                errno = 0;
+                off_t off = lseek(fd, o_ * elems * sizeof (T), SEEK_SET);
+                if (off == -1) {
+                    throw io_exception(errno);
+                }
+
+                for (size_t i = 0; i < c_; ++i) {
+                    unique_ptr<T, ArrayDeleter<T> > buffer(new T[elems]);
+                    errno = 0;
+                    ssize_t count = read(fd, buffer.get(), elems * sizeof (T));
+                    if (count != elems * sizeof (T))
+                        throw io_exception(errno);
+                    
+                    buff.add(buffer.release(),elems);
+                }
+            }
+            return buff.size();
+        }
+
+        //TODO
+        ssize_t operator() (ColumnArrayBuffer<std::string> &buff) const {
+            return 0;
+        }
+
+    private:
+        size_t o_;
+        size_t c_;
+        std::string array_size_;
+        const char *path_;
+        const static size_t BUFF_SIZE = 512;
+    };
+
     class RawStorageAccess_append_column : public boost::static_visitor<size_t> {
     public:
 
@@ -199,7 +318,7 @@ namespace das {
     };
 
     size_t
-    RawStorageAccess::read(const std::string &col_name, ColumnFromFile* c,
+    RawStorageAccess::read_column(const std::string &col_name, ColumnFromFile* c,
             column_buffer_ptr buffer, size_t offset, size_t count) {
         //size_t max_str_l = DdlInfo::get_instance()->get_column_info(type_name(obj_), col_name).max_string_length;
         if (c->temp_path() != "")
@@ -213,6 +332,29 @@ namespace das {
 
             return boost::apply_visitor(
                     RawStorageAccess_read_column(offset, count, /*max_str_l,*/ ss.str().c_str()),
+                    buffer);
+        }
+
+        return 0;
+    }
+
+    size_t
+    RawStorageAccess::read_column_array(const std::string &col_name, ColumnFromFile* c,
+            column_array_buffer_ptr &buffer, size_t offset, size_t count) {
+        
+        using boost::interprocess::unique_ptr;
+        
+        if (c->temp_path() != "")
+            return boost::apply_visitor(
+                RawStorageAccess_read_column_array(offset, count, c->array_size(), c->temp_path().c_str()),
+                buffer);
+        else
+            if (c->fname() != "") {
+            std::stringstream ss;
+            ss << c->fname() << c->id();
+
+            return boost::apply_visitor(
+                    RawStorageAccess_read_column_array(offset, count, c->array_size(), ss.str().c_str()),
                     buffer);
         }
 
@@ -793,7 +935,7 @@ namespace das {
     };
 
     size_t
-    RawStorageAccess::read(
+    RawStorageAccess::read_image(
             ImageFromFile* i,
             image_buffer_ptr buffer,
             const das::TinyVector<int, 11> &offset,
