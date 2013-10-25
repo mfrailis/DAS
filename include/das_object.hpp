@@ -185,7 +185,7 @@ public:
         else
             return 0;
     }
-
+    
     template <typename T>
     void append_column(const std::string &col_name, das::Array<T> &a) {
         if (sa_.get() == NULL)
@@ -201,10 +201,9 @@ public:
         return sa_->get_column_array<T,Rank>(col_name, start, length);
     }
 
-    ///TODO
     long long
-    get_column_array_size(const std::string &col_name) {
-            return 0;
+    get_column_array_size(const std::string &col_name){
+        return get_column_size(col_name);
     }
 
 

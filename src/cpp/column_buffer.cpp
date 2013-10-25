@@ -8,7 +8,7 @@ ColumnBuffer::ColumnBuffer(const std::string &type, const std::string &array_siz
     init_shape(array_size);
 }
 
-ColumnBuffer::ColumnBuffer() : is_init_type_(false), is_init_shape_(false),  shape_(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) {
+ColumnBuffer::ColumnBuffer() : is_init_type_(false), is_init_shape_(false), shape_(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) {
 }
 
 void
@@ -54,7 +54,7 @@ ColumnBuffer::init_shape(const std::string &array_size) {
         std::cout << "type already initialized" << std::endl;
         throw std::exception();
     }
-    
+
     std::vector<int> parsed = ColumnInfo::array_extent(array_size);
 
     rank_ = parsed.size();
@@ -80,13 +80,23 @@ bool ColumnBuffer::empty() {
 class ColumnBuffer_size : public boost::static_visitor<size_t> {
 public:
 
+    ColumnBuffer_size(bool is_column_array) : is_column_array_(is_column_array) {
+
+    }
+
     template<typename T>
     size_t operator() (T &vec) const {
+        if (is_column_array_)
+            return vec.size();
+        
         size_t s = 0;
         for (typename T::const_iterator it = vec.begin(); it != vec.end(); ++it)
             s += it->size();
         return s;
     }
+
+private:
+    bool is_column_array_;
 };
 
 size_t ColumnBuffer::size() const {
@@ -94,5 +104,8 @@ size_t ColumnBuffer::size() const {
         std::cout << "buffer type uninitialized" << std::endl;
         throw std::exception();
     }
-    return boost::apply_visitor(ColumnBuffer_size(), buffer_);
+    if (rank_ == 1 && shape_(0) == 1)
+        return boost::apply_visitor(ColumnBuffer_size(false), buffer_);
+    else
+        return boost::apply_visitor(ColumnBuffer_size(true), buffer_);
 }

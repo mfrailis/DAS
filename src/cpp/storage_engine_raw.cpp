@@ -402,9 +402,12 @@ namespace das {
                 throw io_exception(errno);
 
             bool is_variable = false;
-            const std::string &as = c_->get_array_size();
-            if (as[as.length() - 1] == '*')
+            bool is_array_column = true;
+            std::vector<int> sp  = ColumnInfo::array_extent(c_->get_array_size());
+            if (sp[sp.size()-1] == -1)
                 is_variable = true;
+            if(sp.size() == 1 && sp[0] == 1)
+                is_array_column = false;
 
             for (typename buckets_type::iterator it = bks.begin(); it != bks.end(); ++it) {
 
@@ -412,7 +415,10 @@ namespace das {
                 size_t count = boost::apply_visitor(
                         RawStorageAccess_append_column(file_des, it->second, is_variable),
                         buffer);
-                size += it->second;
+                if(is_array_column)
+                    size += 1; // we count the arrays we store
+                else
+                    size += it->second;
             }
 
             size += c_->file_size();

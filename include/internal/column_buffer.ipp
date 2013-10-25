@@ -4,88 +4,6 @@
 #include "column_buffer.hpp"
 #include <iterator>
 
-/*template<typename T>
-inline
-bool operator==(const BufferIterator<T> &lhs, const BufferIterator<T> &rhs) {
-    return lhs.equal(rhs);
-}
-
-template<typename T>
-inline
-bool operator!=(const BufferIterator<T> &lhs, const BufferIterator<T> &rhs) {
-    return !(lhs.equal(rhs));
-}
-
-template<typename T>
-inline
-BufferIterator<T>&
-BufferIterator<T>::operator++() {
-    if (vb_ != ve_) {
-        if (ab_ != ae_) {
-            ++ab_;
-        }
-        //while allows to skip possible empty containers
-        while (ab_ == ae_) {
-            ++vb_;
-            if (vb_ == ve_) {
-                ab_ = das_iterator();
-                ae_ = das_iterator();
-                break;
-            }
-            ab_ = vb_->begin();
-            ae_ = vb_->end();
-        }
-    } else {
-        ab_ = das_iterator();
-        ae_ = das_iterator();
-    }
-    return *this;
-}
-
-template<typename T>
-inline
-void
-BufferIterator<T>::seek_b() {
-    vb_ = vec_.begin();
-    ve_ = vec_.end();
-    if (vb_ != ve_) {
-        ab_ = vb_->begin();
-        ae_ = vb_->end();
-
-        //while allows to skip possible empty containers
-        while (ab_ == ae_) {
-            ++vb_;
-            if (vb_ == ve_) {
-                ab_ = das_iterator();
-                ae_ = das_iterator();
-                break;
-            }
-            ab_ = vb_->begin();
-            ae_ = vb_->end();
-        }
-    } else {
-        ab_ = das_iterator();
-        ae_ = das_iterator();
-    }
-}
-
-template<typename T>
-inline
-void
-BufferIterator<T>::seek_e() {
-    vb_ = ve_ = vec_.end();
-
-    if (vb_ != vec_.begin()) {
-        --vb_;
-        ab_ = ae_ = vb_->end();
-        ++vb_;
-    } else {
-        ab_ = das_iterator();
-        ae_ = das_iterator();
-    }
-}
- */
-
 template<int Rank>
 bool
 ColumnBuffer::check_shape(das::TinyVector<int, Rank> &s) {
@@ -170,7 +88,6 @@ private:
 };
 
 // column arrays
-
 template<typename X, int Rank>
 class ColumnBuffer_array_add : public boost::static_visitor<void> {
 public:
@@ -395,37 +312,7 @@ template<class OutputIterator >
     return boost::apply_visitor(bcp, buffer_);
 }
 
-/*template<typename T>
-class ColumnBuffer_iterator : public boost::static_visitor<BufferIterator<T> > {
-public:
 
-    BufferIterator<T>
-    operator() (std::vector< das::Array<T> > &vec) const {
-        return BufferIterator<T>(vec);
-    }
-
-    template<typename U>
-    BufferIterator<T>
-    operator() (std::vector< das::Array<U> > &vec) const {
-        std::cout << "type mismatch" << std::endl;
-        throw std::exception();
-    }
-};
-
-template<typename T>
-inline
-BufferIterator<T>
-ColumnBuffer::get_iterator(bool is_end) {
-    if (!is_init_) {
-        std::cout << "buffer type uninitialized" << std::endl;
-        throw std::exception();
-    }
-    BufferIterator<T> it = boost::apply_visitor(ColumnBuffer_iterator<T>(), buffer_);
-    if (is_end)
-        it.seek_e();
-    return it;
-}
- */
 template<typename T>
         class ColumnBuffer_buckets : public boost::static_visitor<std::vector<std::pair<T*, size_t> > > {
 public:
