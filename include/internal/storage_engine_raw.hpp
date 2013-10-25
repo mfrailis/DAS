@@ -73,7 +73,6 @@ namespace das {
                 return false;
             }
 
-            //            size_t append(std::fstream &stream, column_buffer_ptr buffer, size_t count);
 
             std::string
             get_default_path(const bool& mkdirs = false);

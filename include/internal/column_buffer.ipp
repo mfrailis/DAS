@@ -15,9 +15,9 @@ ColumnBuffer::check_shape(das::TinyVector<int, Rank> &s) {
     if (rank_ != Rank)
         return false;
 
-    if(Rank == 1)
+    if (Rank == 1)
         return true;
-    
+
     for (size_t i = 1; i < Rank; ++i)
         if (shape_(i) != s(i))
             return false;
@@ -88,6 +88,7 @@ private:
 };
 
 // column arrays
+
 template<typename X, int Rank>
 class ColumnBuffer_array_add : public boost::static_visitor<void> {
 public:
@@ -179,59 +180,59 @@ void ColumnBuffer::append(das::ColumnArray<T, Rank> &array) {
             ++it) {
         das::TinyVector<int, Rank> s = it->extent();
         if (!check_shape(s))
-                throw das::bad_array_shape();
-        }
+            throw das::bad_array_shape();
+    }
 
     boost::apply_visitor(ColumnBuffer_array_add<T, Rank>(array), buffer_);
 }
 
 template<class OutputIterator>
-        class ColumnBuffer_copy : public boost::static_visitor<OutputIterator> {
+class ColumnBuffer_copy : public boost::static_visitor<OutputIterator> {
 public:
 
     ColumnBuffer_copy(OutputIterator &begin, OutputIterator &end, size_t offset) :
-            b_(begin), e_(end), o_(offset) {
+    b_(begin), e_(end), o_(offset) {
     }
 
     template<typename T>
-            OutputIterator operator() (std::vector< das::ArrayStore<T> > &vec) {
+    OutputIterator operator() (std::vector< das::ArrayStore<T> > &vec) {
         typename std::vector< das::ArrayStore<T> >::iterator v_it = vec.begin();
         if (v_it == vec.end()) return b_;
-                size_t first_offset = 0;
+        size_t first_offset = 0;
 
-            while (o_ > 0) {
-                size_t size = v_it->size();
-                if (o_ >= size) {
-                    o_ -= size;
-                            ++v_it;
-                } else {
-                    first_offset = o_;
-                            o_ = 0;
-                }
-                if (v_it == vec.end()) return b_;
-                }
+        while (o_ > 0) {
+            size_t size = v_it->size();
+            if (o_ >= size) {
+                o_ -= size;
+                ++v_it;
+            } else {
+                first_offset = o_;
+                o_ = 0;
+            }
+            if (v_it == vec.end()) return b_;
+        }
         typename das::ArrayStore<T>::iterator a_it = v_it->begin();
         while (first_offset-- > 0) ++a_it;
 
-            while (a_it == v_it->end()) {
-                ++v_it;
-                if (v_it == vec.end())
-                    return b_;
-                        a_it = v_it->begin();
-                }
+        while (a_it == v_it->end()) {
+            ++v_it;
+            if (v_it == vec.end())
+                return b_;
+            a_it = v_it->begin();
+        }
 
 
         while (b_ != e_) {
             *b_ = *a_it;
-                    ++b_;
-                    ++a_it;
+            ++b_;
+            ++a_it;
             while (a_it == v_it->end()) {
                 ++v_it;
                 if (v_it == vec.end())
 
                     return b_;
-                        a_it = v_it->begin();
-                }
+                a_it = v_it->begin();
+            }
         }
 
         return b_;
@@ -245,100 +246,98 @@ public:
 
 private:
     OutputIterator b_;
-            OutputIterator e_;
-            size_t o_;
+    OutputIterator e_;
+    size_t o_;
 };
 
 // column_array
-
 template<typename X, int Rank>
-        class ColumnBuffer_copy< das::Array<X, Rank>* >
-        : public boost::static_visitor< das::Array<X, Rank>* > {
+class ColumnBuffer_copy< das::Array<X, Rank>* >
+: public boost::static_visitor< das::Array<X, Rank>* > {
 public:
 
     typedef das::Array<X, Rank>* OutputIterator;
 
-            ColumnBuffer_copy(OutputIterator &begin, OutputIterator &end, size_t offset) :
-            b_(begin), e_(end), o_(offset) {
+    ColumnBuffer_copy(OutputIterator &begin, OutputIterator &end, size_t offset) :
+    b_(begin), e_(end), o_(offset) {
     }
 
     template<typename U>
-            OutputIterator
-            operator() (std::vector< das::ArrayStore<U> > &vec) {
+    OutputIterator
+    operator() (std::vector< das::ArrayStore<U> > &vec) {
         typename std::vector< das::ArrayStore<U> >::iterator v_it = vec.begin();
         if (v_it == vec.end()) return b_;
-                size_t first_offset = 0;
+        size_t first_offset = 0;
 
-            while (o_ > 0) {
-                ++v_it;
-                        --o_;
-                if (v_it == vec.end()) return b_;
-                }
+        while (o_ > 0) {
+            ++v_it;
+            --o_;
+            if (v_it == vec.end()) return b_;
+        }
 
         while (b_ != e_) {
             // do not reference the array in the buffer. Make a copy
 
             b_->reference(v_it->template copy_array<X, Rank>());
-                    ++b_;
-                    ++v_it;
+            ++b_;
+            ++v_it;
             if (v_it == vec.end())
 
                 return b_;
-            }
+        }
         return b_;
     }
 
     OutputIterator operator() (std::vector< das::ArrayStore<std::string> > &vec) {
 
         std::cout << "string copy not implemented yet" << std::endl;
-                throw das::not_implemented();
+        throw das::not_implemented();
     }
 
 private:
     OutputIterator b_;
-            OutputIterator e_;
-            size_t o_;
+    OutputIterator e_;
+    size_t o_;
 };
 
 template<class OutputIterator >
-        OutputIterator
-        ColumnBuffer::copy(OutputIterator &begin, OutputIterator &end, size_t offset) {
+OutputIterator
+ColumnBuffer::copy(OutputIterator &begin, OutputIterator &end, size_t offset) {
     if (!is_init()) {
         std::cout << "buffer type uninitialized" << std::endl;
-                throw std::exception();
+        throw std::exception();
     }
     ColumnBuffer_copy<OutputIterator> bcp(begin, end, offset);
 
     return boost::apply_visitor(bcp, buffer_);
 }
 
-
 template<typename T>
-        class ColumnBuffer_buckets : public boost::static_visitor<std::vector<std::pair<T*, size_t> > > {
+class ColumnBuffer_buckets : public boost::static_visitor<std::vector<std::pair<T*, size_t> > > {
 public:
 
     template<typename U>
-            std::vector<std::pair<T*, size_t> >
-            operator() (std::vector< das::ArrayStore<U> > &vec) const {
+    std::vector<std::pair<T*, size_t> >
+    operator() (std::vector< das::ArrayStore<U> > &vec) const {
 
         std::cout << "type and type pointer mismatch" << std::endl;
-                throw std::exception();
+        throw std::exception();
     }
 
     std::vector<std::pair<T*, size_t> >
-            operator() (std::vector< das::ArrayStore<T> > &vec) const {
+    operator() (std::vector< das::ArrayStore<T> > &vec) const {
         std::vector<std::pair<T*, size_t> > bks;
         for (typename std::vector< das::ArrayStore<T> >::iterator it = vec.begin();
                 it != vec.end(); ++it)
-                bks.push_back(it->pair());
+            bks.push_back(it->pair());
 
-            return bks;
-        }
+        return bks;
+    }
 };
 
 template<typename T >
-        std::vector<std::pair<T*, size_t> >
-        ColumnBuffer::buckets() {
+std::vector<std::pair<T*, size_t> >
+ColumnBuffer::buckets() {
 
     return boost::apply_visitor(ColumnBuffer_buckets<T>(), buffer_);
 }
@@ -347,8 +346,8 @@ class ColumnBuffer_clear : public boost::static_visitor<void> {
 public:
 
     template<typename T>
-            void
-            operator() (std::vector< das::ArrayStore<T> > &vec) const {
+    void
+    operator() (std::vector< das::ArrayStore<T> > &vec) const {
 
         vec.clear();
     }

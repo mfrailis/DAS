@@ -459,8 +459,7 @@ private:
     friend class das::StorageTransaction;
     template <typename T> friend class das::tpl::result_iterator;
     friend class QLVisitor;
-    //  template <typename T> friend class DasVector;
-    //  template <typename T> friend void ::swap(DasVector<T> &x, DasVector<T> &y);
+
 #pragma db id auto
     long long das_id_;
 
@@ -482,6 +481,4 @@ template<class T>
 struct das_traits {
 };
 
-
-//#include "internal/storage_engine.ipp"
 #endif

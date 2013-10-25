@@ -151,13 +151,6 @@ namespace das {
                 const das::Range &r10
                 );
 
-        /*template <typename T, int Rank>
-        Array<T, Rank>
-        get_image(
-                const TinyVector<int, Rank> &offset,
-                const TinyVector<int, Rank> &count,
-                const TinyVector<int, Rank> &stride
-                );*/
 
         template <typename T, int Rank>
         void set_image(Array<T, Rank> &i);
