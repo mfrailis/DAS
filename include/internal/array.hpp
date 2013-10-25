@@ -194,24 +194,24 @@ namespace das {
         }
 
     };
+    /*
+        template<typename T>
+        class Array<T, 1> : public blitz::Array<T, 1> {
+            typedef blitz::Array<T, 1> super;
+        public:
 
-    template<typename T>
-    class Array<T, 1> : public blitz::Array<T, 1> {
-        typedef blitz::Array<T, 1> super;
-    public:
+            Array(T *buffer, size_t length, buffer_policy flag)
+            : super(buffer, blitz::shape(length), (blitz::preexistingMemoryPolicy) flag) {
+            }
 
-        Array(T *buffer, size_t length, buffer_policy flag)
-        : super(buffer, blitz::shape(length), (blitz::preexistingMemoryPolicy) flag) {
-        }
+            Array(T *buffer, const TinyVector<int, 1> &shape, buffer_policy flag)
+            : super(buffer, shape, (blitz::preexistingMemoryPolicy) flag) {
+            }
 
-        Array(T *buffer, const TinyVector<int, 1> &shape, buffer_policy flag)
-        : super(buffer, shape, (blitz::preexistingMemoryPolicy) flag) {
-        }
-
-        Array() : super() {
-        }
-    };
-
+            Array() : super() {
+            }
+        };
+     */
 }
 #endif	/* ARRAY_HPP */
 

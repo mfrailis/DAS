@@ -175,7 +175,6 @@
                 <column name="column_byte"    type="byte"   arraysize="10x5"/>
                 <column name="column_int16"   type="int16"  arraysize="10x*"/>
                 <column name="column_int32"   type="int32"  arraysize="10x5*"/>
-                <column name="column_int32"   type="int32"  arraysize="*"/>
                 <column name="column_int64"   type="int64"  arraysize="*"/>
                 <column name="column_float32" type="float32"/>
                 <column name="column_float64" type="float64"/>

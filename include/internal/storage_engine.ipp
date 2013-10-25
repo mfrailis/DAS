@@ -182,23 +182,12 @@ namespace das {
         TinyVector<int, Rank>
         get_shape() const{
             das::TinyVector<int, Rank> s;
-            std::istringstream buffer(c_->array_size());
-            int ext = 0;
-            std::vector<int> shape;
-            while (buffer) {
-                if (!buffer >> ext)
-                    if(!buffer.eof())
-                        throw das::bad_array_size();
-                shape.push_back(ext);
-                char c;
-                buffer.get(c);
-            }
-            if(!buffer.eof())
-                throw das::bad_array_size();
+            std::vector<int> shape = ColumnInfo::array_extent(c_->get_array_size());
             
             size_t rank = shape.size();
             if(Rank != rank)
                 throw das::bad_array_size();
+            
             for(size_t i=0; i<rank; ++i)
                 s(i) = shape[(rank-i)-1];
                         
@@ -249,9 +238,7 @@ namespace das {
                 boost::get<ColumnArrayBuffer<T> >(tb).release(buffer.get(),count,shape);
 
             }
-             /*
-             * CONTINUA DA QUI
-             */
+
             b += count;
             size_t missing = 0;
             if (count < l_) {
@@ -286,7 +273,7 @@ namespace das {
         if (!c || length == 0) { //no data, throw exception
             throw empty_column();
         }
-        if (c->array_size() != "1") throw bad_array_size();
+        if (c->get_array_size() != "1") throw bad_array_size();
 
         column_type type = DdlInfo::get_instance()->
                 get_column_info(type_name(obj_), col_name).type_var_;
@@ -305,8 +292,6 @@ namespace das {
             obj_->column_from_file(col_name, cff);
             c = obj_->column_from_file(col_name);
         }
-
-        if (c->array_size() != "1") throw bad_array_size();
 
         /*
          * even if we have direct write set we have to flush the buffer 
@@ -335,9 +320,6 @@ namespace das {
             c = obj_->column_from_file(col_name);
         }
 
-        if (c->array_size() == "1") throw bad_array_size();
-
-
         /*
          * considerations as for append coulmn.
          */
@@ -356,7 +338,7 @@ namespace das {
         if (!c || length == 0) { //no data, throw exception
             throw empty_column();
         }
-        if (c->array_size() == "1") throw bad_array_size();
+        if (c->get_array_size() == "1") throw bad_array_size();
 
         column_type type = DdlInfo::get_instance()->
                 get_column_info(type_name(obj_), col_name).type_var_;

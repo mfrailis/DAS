@@ -136,6 +136,10 @@ struct ColumnInfo {
     std::string array_size;
     size_t max_string_length;
     column_type type_var_;
+    
+    static std::vector<int>
+    array_extent(const std::string &array_size);
+    
 private:
     // we do not allow default constructor because the type_var_ member unassigned brings undefined behaviour in boost visits
     ColumnInfo();

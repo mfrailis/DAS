@@ -14,8 +14,8 @@
 #include <boost/random/uniform_int_distribution.hpp>
 #include <boost/random/random_device.hpp>
 
-#define N_ITERATIONS 40
-#define N_POOLS 30
+const size_t N_ITERATIONS = 40;
+const size_t N_POOLS = 30;
 
 using namespace std;
 namespace D = das::tpl;
@@ -442,7 +442,7 @@ public:
     t8(&data_worker<unsigned short>, id),
     t9(&data_worker<unsigned int>, id),
     t10(&data_worker<std::string>, id),
-    t11(&data_worker<signed char>, id) {
+    t11(&data_worker<signed char>, id){
     }
 
     void join() {

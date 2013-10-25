@@ -30,7 +30,7 @@ public:
     }
     
     const std::string&
-    array_size(){
+    get_array_size() const{
         return array_size_;
     }
     
@@ -47,9 +47,17 @@ protected:
         type_ = type;
     }
     
+    virtual
+    void
+    set_array_size(const std::string &array_size) {
+        array_size_ = array_size;
+    }
+    
     long long size_;
 #pragma db get(get_type) set(set_type)
     std::string type_;
+    
+#pragma db get(get_array_size) set(set_array_size)    
     std::string array_size_;
 
     Column() {
@@ -67,11 +75,11 @@ public:
             const std::string &type,
             const std::string &array_size,
             const std::string &fname)
-    : Column(size, type,array_size), fname_(fname), id_(0), buff_(type) {
+    : Column(size, type,array_size), fname_(fname), id_(0), buff_(type,array_size) {
     }
 
     ColumnFromFile(const std::string &type, const std::string& array_size)
-    : Column(type,array_size), id_(0), buff_(type) {
+    : Column(type,array_size), id_(0), buff_(type,array_size) {
     }
     
     const std::string&
@@ -130,7 +138,14 @@ protected:
     void
     set_type(const std::string &type) {
         type_ = type;
-        buff_.init(type);
+        buff_.init_type(type);
+    }
+    
+    virtual
+    void
+    set_array_size(const std::string &array_size) {
+        array_size_ = array_size;
+        buff_.init_shape(array_size);
     }
 
 #pragma db transient

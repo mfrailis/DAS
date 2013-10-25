@@ -4,9 +4,10 @@
 #include <vector>
 #include <exception>
 #include "array.hpp"
+#include "utility.hpp"
 #include <boost/variant.hpp>
 
-template<typename T>
+/*template<typename T>
 class BufferIterator {
 public:
 
@@ -65,31 +66,55 @@ bool operator==(const BufferIterator<T> &lhs, const BufferIterator<T> &rhs);
 
 template<typename T>
 bool operator!=(const BufferIterator<T> &lhs, const BufferIterator<T> &rhs);
-
+*/
 class ColumnBuffer {
 public:
-    typedef boost::variant<
-    std::vector< das::Array<char> >,
-    std::vector< das::Array<short> >,
-    std::vector< das::Array<int> >,
-    std::vector< das::Array<long long> >,
-    std::vector< das::Array<float> >,
-    std::vector< das::Array<double> >,
-    std::vector< das::Array<bool> >,
-    std::vector< das::Array<unsigned char> >,
-    std::vector< das::Array<unsigned short> >,
-    std::vector< das::Array<unsigned int> >,
-    std::vector< das::Array<std::string> >
+    typedef boost::variant<  
+    std::vector< das::ArrayStore<char> >,
+    std::vector< das::ArrayStore<short> >,
+    std::vector< das::ArrayStore<int> >,
+    std::vector< das::ArrayStore<long long> >,
+    std::vector< das::ArrayStore<float> >,
+    std::vector< das::ArrayStore<double> >,
+    std::vector< das::ArrayStore<bool> >,
+    std::vector< das::ArrayStore<unsigned char> >,
+    std::vector< das::ArrayStore<unsigned short> >,
+    std::vector< das::ArrayStore<unsigned int> >,
+    std::vector< das::ArrayStore<std::string> >
     > buffer_type;
 
-    ColumnBuffer(const std::string &type);
+    ColumnBuffer(const std::string &type, const std::string &array_size);
 
     ColumnBuffer();
 
-    void init(const std::string &type);
-
-    bool is_init() {
-        return is_init_;
+    void init_type(const std::string &type);
+    
+    void init_shape(const std::string &array_size);
+    
+    bool is_init() const{
+        return is_init_type_ && is_init_shape_;
+    }
+    
+    template<int Rank>
+    bool
+    check_shape(das::TinyVector<int, Rank> &s);
+    
+    const size_t&
+    rank() const{
+        if (!is_init_shape_) {
+            std::cout << "buffer type uninitialized" << std::endl;
+            throw std::exception();
+        } 
+        return rank_;
+    }
+    
+    const das::TinyVector<int,11>&
+    extent() const{
+        if (!is_init_shape_) {
+            std::cout << "buffer type uninitialized" << std::endl;
+            throw std::exception();
+        } 
+        return shape_;
     }
 
     bool empty();
@@ -106,7 +131,7 @@ public:
     OutputIterator
     copy(OutputIterator &begin, OutputIterator &end, size_t offset);
 
-    template<typename T>
+/*    template<typename T>
     BufferIterator<T>
     begin() {
         return get_iterator<T>(false);
@@ -117,7 +142,7 @@ public:
     end() {
         return get_iterator<T>(true);
     }
-
+*/
     template<typename T>
     std::vector<std::pair<T*, size_t> >
     buckets();
@@ -126,10 +151,13 @@ public:
     clear();
 
 private:
-    template<typename T>
-    BufferIterator<T> get_iterator(bool is_end);
+//    template<typename T>
+//    BufferIterator<T> get_iterator(bool is_end);
     buffer_type buffer_;
-    bool is_init_;
+    bool is_init_type_;
+    bool is_init_shape_;
+    das::TinyVector<int,11> shape_;
+    size_t rank_;
 };
 
 

@@ -130,7 +130,7 @@ namespace das {
 
     }; //TODO
 
-     class wrong_size : public std::exception {
+    class wrong_size : public std::exception {
     public:
 
         virtual const char*
