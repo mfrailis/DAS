@@ -41,7 +41,7 @@ namespace das {
         repeatableRead,  ///< phantom reads can occour. Good overall performance.
         serializable     ///< strogest isolation level. Possible low performance.
     };
-
+    class GarbageDataCollector;
     namespace tpl {
 
         typedef das::Transaction Transaction;
@@ -227,6 +227,7 @@ namespace das {
             DdlInfo *info_;
         private:
             friend class das::Transaction;
+            friend class das::GarbageDataCollector;
 
             weak_ptr<TransactionBundle> tb_;
             shared_ptr<odb::session> extended_;

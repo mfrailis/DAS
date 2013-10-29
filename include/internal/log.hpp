@@ -11,7 +11,7 @@
 #define DAS_DBG_NO_SCOPE(c)
 #define DAS_LOG_DBG(s)
 #endif
-
+#define DAS_LOG_ERR(s) std::cerr << s << std::endl;
 
 
 #endif	/* LOG_HPP */

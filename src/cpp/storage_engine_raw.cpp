@@ -165,13 +165,13 @@ namespace das {
             AutoFile fd(open(path_, O_RDONLY));
             if (fd == -1)
                 throw io_exception(errno);
-            
+
             size_t elems = 1;
             if (shape[shape.size() - 1] == -1) { // last extent variable
 
-                for (int i = 0; i < shape.size()-1; ++i)
+                for (int i = 0; i < shape.size() - 1; ++i)
                     elems *= shape[i];
-                
+
 
                 for (size_t i = 0; i < o_; ++i) {
                     chunk_t c_size = 0;
@@ -403,10 +403,10 @@ namespace das {
 
             bool is_variable = false;
             bool is_array_column = true;
-            std::vector<int> sp  = ColumnInfo::array_extent(c_->get_array_size());
-            if (sp[sp.size()-1] == -1)
+            std::vector<int> sp = ColumnInfo::array_extent(c_->get_array_size());
+            if (sp[sp.size() - 1] == -1)
                 is_variable = true;
-            if(sp.size() == 1 && sp[0] == 1)
+            if (sp.size() == 1 && sp[0] == 1)
                 is_array_column = false;
 
             for (typename buckets_type::iterator it = bks.begin(); it != bks.end(); ++it) {
@@ -415,7 +415,7 @@ namespace das {
                 size_t count = boost::apply_visitor(
                         RawStorageAccess_append_column(file_des, it->second, is_variable),
                         buffer);
-                if(is_array_column)
+                if (is_array_column)
                     size += 1; // we count the arrays we store
                 else
                     size += it->second;
@@ -644,9 +644,10 @@ namespace das {
                         ss << cffnp->id();
                         errno = 0;
                         if (rename(temp_path.c_str(), ss.str().c_str())) {
+                            cffnp->temp_path(temp_path);
                             throw das::io_exception(errno);
                         }
-
+                        cffnp->rollback_path(temp_path);
                     }
                 }
             } else if (obj->is_image()) {
@@ -708,11 +709,70 @@ namespace das {
                     ss << iffnp->id();
                     errno = 0;
                     if (rename(temp_path.c_str(), ss.str().c_str())) {
+                        iffnp->temp_path(temp_path);
                         throw das::io_exception(errno);
                     }
+                    iffnp->rollback_path(temp_path);
 
                 }
 
+            }
+        }
+    }
+
+    void
+    RawStorageTransaction::rollback() {
+        for (std::vector<DasObject*>::iterator obj_it = objs_.begin();
+                obj_it != objs_.end(); ++obj_it) {
+            std::map<std::string, ColumnFromFile*> map;
+            DasObject* obj = *obj_it;
+            if (obj->is_table()) {
+                StorageTransaction::get_columns_from_file(obj, map);
+                RawStorageAccess *rsa = dynamic_cast<RawStorageAccess*> (storage_access(obj));
+
+                std::string storage_path;
+
+                for (std::map<std::string, ColumnFromFile*>::iterator m_it = map.begin();
+                        m_it != map.end(); ++m_it) {
+                    ColumnFromFile* cff = m_it->second;
+
+                    if (cff == NULL) // empty column, skip
+                        continue;
+
+                    if (!cff->rollback_path().empty()) {
+                        std::stringstream ss;
+                        ss << cff->fname();
+                        ss << cff->id();
+                        if (rename(ss.str().c_str(), cff->rollback_path().c_str())) {
+                            cff->temp_path(ss.str());
+                            DAS_LOG_ERR("error while renaming file (keeping the first as temp):"
+                                    << ss.str() << " -> " << cff->rollback_path());
+                        } else {
+                            cff->temp_path(cff->rollback_path());
+                            cff->rollback_path("");
+                        }
+                    }
+                }
+            } else if (obj->is_image()) {
+                std::string storage_path;
+
+                ImageFromFile* iff = image_from_file(obj);
+                if (iff == NULL) //image empty, skip
+                    continue;
+
+                if (!iff->rollback_path().empty()) {
+                    std::stringstream ss;
+                    ss << iff->fname();
+                    ss << iff->id();
+                    if (rename(ss.str().c_str(), iff->rollback_path().c_str())) {
+                        iff->temp_path(ss.str());
+                        DAS_LOG_ERR("error while renaming file (keeping the first as temp):"
+                                << ss.str() << " -> " << iff->rollback_path());
+                    } else {
+                        iff->temp_path(iff->rollback_path());
+                        iff->rollback_path("");
+                    }
+                }
             }
         }
     }
@@ -967,31 +1027,83 @@ namespace das {
 
     }
 
+    template<class T>
+    bool RawStorageAccess::drop(const T& obj) {
+        std::stringstream ss;
+        ss << obj.fname() << obj.id();
+        std::string path = ss.str();
+
+        struct stat stt;
+        errno = 0;
+        if (stat(path.c_str(), &stt)){
+            switch (errno) {
+                case ENOENT:
+                    DAS_LOG_DBG(obj.id() << "T bad path: "<< path);
+                    return true;
+                default:
+                    DAS_LOG_DBG(obj.id() << "F generic error");                    
+                    return false;
+            }
+        }
+
+        time_t now;
+        time(&now);
+        time_t diff = now - stt.st_mtime;
+        if (diff > 60) {
+            errno = 0;
+           if (unlink(path.c_str())){
+                switch (errno) {
+                    case ENOENT:
+                        DAS_LOG_DBG(obj.id() << "T bad path: "<< path);
+                        return true;
+                    default:
+                        DAS_LOG_DBG(obj.id() << "F generic error"); 
+                        return false;
+                }
+           }else {
+               DAS_LOG_DBG(obj.id() << "T deleted: "<< path);
+               return true;
+           }
+        }else{
+            DAS_LOG_DBG(obj.id() << "F too young: "<< diff);
+            return false;
+        }
+        return false;
+    }
+
+    bool RawStorageAccess::release(const ColumnFromFile & cff) {
+        return drop(cff);
+    }
+
+    bool RawStorageAccess::release(const ImageFromFile & iff) {
+        return drop(iff);
+    }
+
     inline
-    RawStorageAccess::BasicToken::BasicToken(const std::string& str) : s_(str) {
+    RawStorageAccess::BasicToken::BasicToken(const std::string & str) : s_(str) {
     }
 
     inline
     void
-    RawStorageAccess::BasicToken::expand(std::stringstream& ss) {
+    RawStorageAccess::BasicToken::expand(std::stringstream & ss) {
 
         ss << s_;
     }
 
     inline
     void
-    RawStorageAccess::BasicToken::dbg(std::stringstream &ss) {
+    RawStorageAccess::BasicToken::dbg(std::stringstream & ss) {
 
         ss << "basic: " << s_ << endl;
     }
 
     inline
-    RawStorageAccess::TimeToken::TimeToken(const std::string& str) : s_(str) {
+    RawStorageAccess::TimeToken::TimeToken(const std::string & str) : s_(str) {
     }
 
     inline
     void
-    RawStorageAccess::TimeToken::expand(std::stringstream& ss) {
+    RawStorageAccess::TimeToken::expand(std::stringstream & ss) {
         time_t rawtime;
         struct tm * timeinfo;
         char buffer [128];
@@ -1022,18 +1134,18 @@ namespace das {
 
     inline
     void
-    RawStorageAccess::TimeToken::dbg(std::stringstream &ss) {
+    RawStorageAccess::TimeToken::dbg(std::stringstream & ss) {
 
         ss << "time : " << s_ << endl;
     }
 
     inline
-    RawStorageAccess::EnvToken::EnvToken(const std::string& str) : s_(str) {
+    RawStorageAccess::EnvToken::EnvToken(const std::string & str) : s_(str) {
     }
 
     inline
     void
-    RawStorageAccess::EnvToken::expand(std::stringstream& ss) {
+    RawStorageAccess::EnvToken::expand(std::stringstream & ss) {
         char* var;
         var = getenv(s_.c_str());
 
@@ -1043,7 +1155,7 @@ namespace das {
 
     inline
     void
-    RawStorageAccess::EnvToken::dbg(std::stringstream &ss) {
+    RawStorageAccess::EnvToken::dbg(std::stringstream & ss) {
 
         ss << "env  : " << s_ << endl;
     }
@@ -1055,14 +1167,14 @@ namespace das {
 
     inline
     void
-    RawStorageAccess::TypeToken::dbg(std::stringstream &ss) {
+    RawStorageAccess::TypeToken::dbg(std::stringstream & ss) {
 
         ss << "type : %" << c_ << endl;
     }
 
     inline
     void
-    RawStorageAccess::TypeToken::expand(std::stringstream& ss) {
+    RawStorageAccess::TypeToken::expand(std::stringstream & ss) {
         switch (c_) {
             case 't':
                 ss << type_name(sa_.obj_);
@@ -1077,20 +1189,20 @@ namespace das {
     }
 
     inline
-    RawStorageAccess::CustomToken::CustomToken(RawStorageAccess& sa)
+    RawStorageAccess::CustomToken::CustomToken(RawStorageAccess & sa)
     : sa_(sa) {
     }
 
     inline
     void
-    RawStorageAccess::CustomToken::dbg(std::stringstream &ss) {
+    RawStorageAccess::CustomToken::dbg(std::stringstream & ss) {
 
         ss << "cust.: %s" << endl;
     }
 
     inline
     void
-    RawStorageAccess::CustomToken::expand(std::stringstream& ss) {
+    RawStorageAccess::CustomToken::expand(std::stringstream & ss) {
 
         ss << *sa_.cp_;
     }
@@ -1190,7 +1302,8 @@ namespace das {
                             skip = true;
                             break;
                         default:
-                            cout << "unknown expression: %" << la << endl;
+                            delete ss;
+                            throw bad_token(la);
                     }
                     break;
                 default:
@@ -1314,7 +1427,7 @@ namespace das {
     }
 
     void
-    RawStorageAccess::make_dirs(const std::string &s) {
+    RawStorageAccess::make_dirs(const std::string & s) {
         struct stat stt;
         size_t offset = 0;
         size_t len = s.length() - 1;

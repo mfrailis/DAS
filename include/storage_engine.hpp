@@ -113,6 +113,10 @@ namespace das {
                 ) = 0;
 
         virtual void flush_buffer(ImageFromFile* img) = 0;
+        
+        virtual bool release(const ColumnFromFile &cff) = 0;
+        
+        virtual bool release(const ImageFromFile &iff) = 0;
 
         virtual bool buffered_only() {
             return true;

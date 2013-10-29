@@ -83,11 +83,11 @@ public:
     }
     
     const std::string&
-    fname() {
+    fname() const{
         return fname_;
     }
     const std::string&
-    temp_path() {
+    temp_path() const{
         return temp_path_;
     }
 
@@ -112,7 +112,7 @@ public:
 
     const
     long long&
-    id(){
+    id() const{
         return id_;
     }
     
@@ -133,6 +133,15 @@ public:
         size_ = size;
     }
     
+    const std::string&
+    rollback_path(){
+        return rollback_path_;
+    }
+    
+    void
+    rollback_path(const std::string& path){
+       rollback_path_ = path; 
+    }
 protected:
     virtual
     void
@@ -160,6 +169,9 @@ private:
     long long id_;
 #pragma db transient
     std::string temp_path_;
+#pragma db transient
+    std::string rollback_path_;
+    
     friend class odb::access;
 
     std::string fname_;

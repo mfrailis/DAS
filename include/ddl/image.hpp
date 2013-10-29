@@ -74,7 +74,7 @@ public:
     }
 
     const std::string&
-    fname() {
+    fname() const{
         return fname_;
     }
     
@@ -99,7 +99,7 @@ public:
     }
 
     const long long&
-    id(){
+    id() const{
         return id_;
     }
     
@@ -107,6 +107,16 @@ public:
     void
     persist(odb::database &db){
         throw das::abstract_das_object();
+    }
+    
+    const std::string&
+    rollback_path(){
+        return rollback_path_;
+    }
+    
+    void
+    rollback_path(const std::string& path){
+       rollback_path_ = path; 
     }
     
 protected:
@@ -137,7 +147,9 @@ private:
 #pragma db id auto
     long long id_;
 #pragma db transient
-    std::string temp_path_;
+    std::string temp_path_;  
+#pragma db transient
+    std::string rollback_path_;    
 
 };
 

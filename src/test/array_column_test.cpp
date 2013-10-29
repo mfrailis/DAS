@@ -69,22 +69,5 @@ int main() {
 
     }
 
-    /*{
-        shared_ptr<D::Database> db = D::Database::create("test_level1");
-        shared_ptr<lfiHkDaeSlowVoltage> ptr = lfiHkDaeSlowVoltage::create("test1", "test_level1");
-        
-        das::Array<long long> a;
-        a.resize(50);
-        a(0) = 25;
-        ptr->append_column<long long>("sampleOBT", a);
-        a(9) = 15;
 
-        D::Transaction t = db->begin();
-        db->persist(ptr);
-        t.commit();
-
-        das::Array<long long> b = ptr->get_column<long long>("sampleOBT", 0, 10);
-
-        cout << b << endl;
-    }*/
 }
