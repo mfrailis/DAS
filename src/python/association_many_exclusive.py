@@ -58,7 +58,7 @@ void
         {
           if(!(*i)->is_new())
           {
-            das::DbBundle new_bundle = (*i)->bundle_.lock();
+            das::DbBundle new_bundle = (*i)->bundle_.lock(false);
             if((new_bundle.valid() && new_bundle != b) ||
                (new_bundle.alias() != b.alias()))
             {
@@ -131,11 +131,9 @@ def update(association, priv_type):
     if('''+association.name+'''_temp)
     {
       if('''+association.name+'''_temp->is_new())
-      {
         tb.persist<'''+association.atype+'''> ('''+association.name+'''_temp);
-      }
-      // call update anyways because of the nested associated objects
-      '''+association.name+'''_temp->update(tb);
+      else
+        '''+association.name+'''_temp->update(tb);
     }
   }
 '''

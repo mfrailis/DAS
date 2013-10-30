@@ -7,11 +7,13 @@
 #include <algorithm>
 #include <tr1/memory>
 #include <boost/variant.hpp>
+#include <boost/interprocess/smart_ptr/unique_ptr.hpp>
 #include "ddl/column.hpp"
 #include "ddl/image.hpp"
 #include "ddl/info.hpp"
 #include "internal/db_bundle.hpp"
 #include "internal/array.hpp"
+#include "internal/utility.hpp"
 #include "internal/database_config.hpp"
 
 using namespace std;
@@ -25,7 +27,7 @@ namespace das {
     class StorageTransaction;
 
     typedef std::pair<std::string, int> Extension;
-
+    
     class StorageAccess {
     public:
 
@@ -56,6 +58,20 @@ namespace das {
         > column_buffer_ptr;
 
         typedef boost::variant<
+        ColumnArrayBuffer<char>,
+        ColumnArrayBuffer<short>,
+        ColumnArrayBuffer<int>,
+        ColumnArrayBuffer<long long>,
+        ColumnArrayBuffer<float>,
+        ColumnArrayBuffer<double>,
+        ColumnArrayBuffer<bool>,
+        ColumnArrayBuffer<unsigned char>,
+        ColumnArrayBuffer<unsigned short>,
+        ColumnArrayBuffer<unsigned int>,
+        ColumnArrayBuffer<std::string>        
+        > column_array_buffer_ptr;
+
+        typedef boost::variant<
         char*,
         short*,
         int*,
@@ -66,10 +82,18 @@ namespace das {
 
 
 
-        virtual size_t read(
+        virtual size_t read_column(
                 const std::string &col_name,
                 ColumnFromFile* col,
                 column_buffer_ptr buffer,
+                size_t offset,
+                size_t count
+                ) = 0;
+
+        virtual size_t read_column_array(
+                const std::string &col_name,
+                ColumnFromFile* col,
+                column_array_buffer_ptr &buffer,
                 size_t offset,
                 size_t count
                 ) = 0;
@@ -80,7 +104,7 @@ namespace das {
                 ) = 0;
 
 
-        virtual size_t read(
+        virtual size_t read_image(
                 ImageFromFile* col,
                 image_buffer_ptr buffer,
                 const das::TinyVector<int, 11> &offset,
@@ -104,15 +128,29 @@ namespace das {
         void append_column(const string &col_name, Array<T> &a);
 
         template <typename T, int Rank>
-        Array<T, Rank> get_image();
+        ColumnArray<T,Rank> get_column_array(const string &col_name, size_t start, size_t length);
+
+        template <typename T,int Rank>
+        void append_column_array(const string &col_name, ColumnArray<T,Rank> &a);
+
+        /*template <typename T, int Rank>
+        Array<T, Rank> get_image();*/
 
         template <typename T, int Rank>
-        Array<T, Rank>
-        get_image(
-                const TinyVector<int, Rank> &offset,
-                const TinyVector<int, Rank> &count,
-                const TinyVector<int, Rank> &stride
+        Array<T, Rank> get_image(
+                const das::Range &r0,
+                const das::Range &r1,
+                const das::Range &r2,
+                const das::Range &r3,
+                const das::Range &r4,
+                const das::Range &r5,
+                const das::Range &r6,
+                const das::Range &r7,
+                const das::Range &r8,
+                const das::Range &r9,
+                const das::Range &r10
                 );
+
 
         template <typename T, int Rank>
         void set_image(Array<T, Rank> &i);

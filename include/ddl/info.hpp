@@ -95,12 +95,14 @@ struct ColumnInfo {
     ColumnInfo(const std::string& _name,
             const std::string& _type,
             const std::string& _unit,
+            const std::string& _array_size,           
             const std::string& _description,
             size_t _max_sting_length)
     : name(_name),
     type(_type),
     unit(_unit),
     description(_description),
+    array_size(_array_size),
     max_string_length(_max_sting_length) {
         if (_type == "byte" || _type == "char") {
             type_var_ = static_cast<char> (0);
@@ -131,8 +133,13 @@ struct ColumnInfo {
     std::string type;
     std::string unit;
     std::string description;
+    std::string array_size;
     size_t max_string_length;
     column_type type_var_;
+    
+    static std::vector<int>
+    array_extent(const std::string &array_size);
+    
 private:
     // we do not allow default constructor because the type_var_ member unassigned brings undefined behaviour in boost visits
     ColumnInfo();

@@ -65,7 +65,7 @@ class DdlInfoGenerator(_odb.DdlVisitor):
                 d = ""
             else:
                 d = c.description
-            self._init_columns.append('all_types_["'+data_type.name+'"].columns_.insert(std::pair<std::string,ColumnInfo>("'+c.name+'",ColumnInfo("'+c.name+'","'+c.ctype+'","'+c.unit+'","'+d+'",'+c.max_string_length+')));')
+            self._init_columns.append('all_types_["'+data_type.name+'"].columns_.insert(std::pair<std::string,ColumnInfo>("'+c.name+'",ColumnInfo("'+c.name+'","'+c.ctype+'","'+c.unit+'","'+c.array_size+'","'+d+'",'+c.max_string_length+')));')
 
         for (ass_name,association) in self._associations:
             self._init_associations.append('all_types_["'+data_type.name+'"].associations_.insert(std::pair<std::string,AssociationInfo>("'+ass_name+'",'+_association_info_gen(data_type.name,ass_name,association)+'));')

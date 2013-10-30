@@ -22,13 +22,19 @@ namespace das {
             begin();
 
             iterator
-            end();
+            end();        
 
             const_iterator
             cbegin();
 
             const_iterator
             cend();
+            
+            bool
+            empty() const;
+
+            size_t
+            size() const;
 
         private:
             shared_ptr<ResultWrapper> w_;

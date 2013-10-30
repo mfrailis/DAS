@@ -13,6 +13,10 @@ namespace das {
             virtual result_const_iterator cbegin() = 0;
 
             virtual result_const_iterator cend() = 0;
+            
+            virtual bool empty() const = 0;
+            
+            virtual size_t size() const = 0;
 
             virtual ~ResultWrapper(){}
         };
@@ -47,6 +51,16 @@ namespace das {
                         new ResultIteratorWrapperConstImp<Das_type>(super::cend());
                 return result_const_iterator(riw);
             }
+            
+            virtual bool empty() const{
+                return super::empty();
+            }
+            
+            virtual size_t size() const{
+                return super::size();
+            }
+            
+            
 
             virtual ~ResultWrapperImp() {
             }
@@ -66,13 +80,13 @@ namespace das {
 
         inline
         result_const_iterator
-        Result::cbegin() {
+        Result::cbegin(){
             return w_->cbegin();
         }
 
         inline
         result_const_iterator
-        Result::cend() {
+        Result::cend(){
             return w_->cend();
         }
 

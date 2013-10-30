@@ -37,12 +37,14 @@ struct ColumnInfo {
     ColumnInfo(const std::string& _name,
                const std::string& _type,
                const std::string& _unit,
+	       const std::string& _array_size,
                const std::string& _description,
                size_t _max_sting_length);
 
     std::string name;
     std::string type;
     std::string unit;
+    std::string array_size;
     std::string description;
     size_t max_string_length;
 

@@ -41,16 +41,25 @@ namespace das {
                 configure();
             }
             
-            virtual size_t read(
+            virtual size_t read_column(
                     const std::string &col_name,
                     ColumnFromFile* col,
                     column_buffer_ptr buffer,
                     size_t offset,
                     size_t count);
+            
+            
+            virtual size_t read_column_array(
+                const std::string &col_name,
+                ColumnFromFile* col,
+                column_array_buffer_ptr &buffer,
+                size_t offset,
+                size_t count
+                );
 
             virtual void flush_buffer(const std::string &col_name, ColumnFromFile* col);
 
-            virtual size_t read(
+            virtual size_t read_image(
                     ImageFromFile* col,
                     image_buffer_ptr buffer,
                     const das::TinyVector<int, 11> &offset,
@@ -64,7 +73,6 @@ namespace das {
                 return false;
             }
 
-            //            size_t append(std::fstream &stream, column_buffer_ptr buffer, size_t count);
 
             std::string
             get_default_path(const bool& mkdirs = false);

@@ -20,7 +20,7 @@ namespace das {
 
         inline
         Transaction
-        Database::begin() throw (das::already_in_transaction) {
+        Database::begin(isolation_level isolation) throw (das::already_in_transaction) {
             shared_ptr<odb::transaction> t = bundle_.transaction();
             if (t) {
                 throw das::already_in_transaction();
@@ -30,11 +30,31 @@ namespace das {
                 s.reset(new odb::session());
                 bundle_.reset_session(s);
             }
-            t.reset(new odb::transaction(bundle_.db()->begin()));
+            
+            odb::connection_ptr c = bundle_.db()->connection();
+            
+            switch(isolation){
+                case databaseDefault:
+                    break;
+                case readUncommitted:
+                    c->execute("SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;");
+                    break;
+                case readCommitted:
+                    c->execute("SET TRANSACTION ISOLATION LEVEL READ COMMITTED;");
+                    break;
+                case repeatableRead:
+                    c->execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;");
+                    break;
+                case serializable:
+                    c->execute("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;");
+                    break;
+            }
+            t.reset(new odb::transaction(c->begin()));
             bundle_.transaction(t);
 
             shared_ptr<TransactionBundle> tb(new TransactionBundle(bundle_.alias(), bundle_.db(), s, t));
             tb_ = tb;
+
             return Transaction(tb);
         }
 
@@ -43,8 +63,8 @@ namespace das {
         Database::load(const long long &id) throw (object_not_persistent) {
             shared_ptr<odb::session> s = bundle_.lock_session(true);
             odb::session::current(*s);
-            shared_ptr<T> pobj;
-            pobj = bundle_.db()->load<T>(id);
+            shared_ptr<T> pobj = bundle_.db()->load<T>(id);
+            pobj->self_ = pobj;
             // bind loaded object with this database
             pobj->bundle_ = bundle_;
             return pobj;
@@ -117,8 +137,6 @@ namespace das {
             DAS_LOG_DBG("DAS debug INFO: WHERE" << std::endl << clause + order);
 
             odb::result<T> odb_r(bundle_.db()->query<T>(clause + order));
-            //result<T> r = static_cast<result<T> > (bundle_.db()->query<T>(clause + order));
-            //return static_cast<Result<T> > (odb_r);
 
             return Result<T>(odb_r, bundle_);
         }

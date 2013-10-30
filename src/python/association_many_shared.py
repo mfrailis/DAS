@@ -44,6 +44,8 @@ void
   '''+association.name+'''_.clear();
   for('''+pub_type+'''::const_iterator i = '''+association.name+'''_new.begin(); i != '''+association.name+'''_new.end(); ++i)
       '''+association.name+'''_.push_back(*i);
+  
+  is_dirty_ = true;
 }''']
 ###############################################################################################################################################
 
@@ -58,11 +60,9 @@ def update(association, priv_type):
     if('''+association.name+'''_temp)
     {
       if('''+association.name+'''_temp->is_new())
-      {
         tb.persist<'''+association.atype+'''> ('''+association.name+'''_temp);
-      }
-      // call update anyways because of the nested associated objects
-      '''+association.name+'''_temp->update(tb);
+      else
+        '''+association.name+'''_temp->update(tb);
     }
   }
 '''

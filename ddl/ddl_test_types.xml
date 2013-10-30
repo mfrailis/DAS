@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE doc [
+<!ENTITY das_essential SYSTEM "../resources/das_essential.xml">
+]>
+<ddl xmlns="http://oats.inaf.it/das"
+     xmlns:xi="http://www.w3.org/2001/XInclude"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://oats.inaf.it/das ../resources/ddl.xsd">
+    
+    <!-- 
+       DAS System types  
+    -->    
+    
+    &das_essential;
+    
+    <!-- 
+        User defined types
+    -->  
+    
+    
+    <!-- 
+        Metadata for CIWS DPS measures
+    -->      
+    
+    
+    <type name="test_keywords">
+        <metadata>
+            <keyword name ="key_byte"    type="byte" />
+            <keyword name ="key_int16"   type="int16" />
+            <keyword name ="key_int32"   type="int32" />	
+            <keyword name ="key_int64"   type="int64" />
+            <keyword name ="key_float32" type="float32" />
+            <keyword name ="key_float64" type="float64" />
+            <keyword name ="key_boolean" type="boolean" />
+            <keyword name ="key_char"    type="char" />
+            <keyword name ="key_string"  type="string" />
+            <keyword name ="key_text"    type="text" />
+        </metadata>
+    </type>
+   
+    <type name="test_associated_one_shared" ancestor="test_keywords"/> 
+    <type name="test_association_one_shared">
+        <associated name="association"
+                  type="test_associated_one_shared"
+                  multiplicity="one"
+                  relation="shared"/>
+    </type>
+
+
+    <type name="test_associated_one_exclusive" ancestor="test_keywords"/>
+    <type name="test_association_one_exclusive">
+        <associated name="association"
+                  type="test_associated_one_exclusive"
+                  multiplicity="one"
+                  relation="exclusive"/>
+    </type>
+
+
+    <type name="test_associated_many_shared" ancestor="test_keywords"/>
+    <type name="test_association_many_shared">
+        <associated name="association"
+                  type="test_associated_many_shared"
+                  multiplicity="many"
+                  relation="shared"/>
+    </type>
+
+
+    <type name="test_associated_many_exclusive" ancestor="test_keywords"/>
+    <type name="test_association_many_exclusive">
+        <associated name="association"
+                  type="test_associated_many_exclusive"
+                  multiplicity="many"
+                  relation="exclusive"/>
+    </type>
+
+
+
+    <type name="test_columns">
+        <metadata>
+            <keyword name ="sig_string"  type="int64" default="0"/>
+            <keyword name ="dim_string"  type="int64" default="0"/>
+            
+            <keyword name ="sig_byte"    type="int64" default="0"/>
+            <keyword name ="dim_byte"    type="int64" default="0"/>
+            
+            <keyword name ="sig_int16"   type="int64" default="0"/>
+            <keyword name ="dim_int16"   type="int64" default="0"/>
+            
+            <keyword name ="sig_int32"   type="int64" default="0"/>
+            <keyword name ="dim_int32"   type="int64" default="0"/>
+            
+            <keyword name ="sig_int64"   type="int64" default="0"/>
+            <keyword name ="dim_int64"   type="int64" default="0"/>
+            
+            <keyword name ="sig_float32" type="float64" default="0"/>
+            <keyword name ="dim_float32" type="int64" default="0"/>
+            
+            <keyword name ="sig_float64" type="float64" default="0"/>
+            <keyword name ="dim_float64" type="int64" default="0"/>
+            
+            <keyword name ="sig_boolean" type="int64" default="0"/>
+            <keyword name ="dim_boolean" type="int64" default="0"/>
+            
+            <keyword name ="sig_char"    type="int64" default="0"/>
+            <keyword name ="dim_char"    type="int64" default="0"/>
+            
+            <keyword name ="sig_uint8"   type="int64" default="0"/>
+            <keyword name ="dim_uint8"   type="int64" default="0"/>
+            
+            <keyword name ="sig_uint16"  type="int64" default="0"/>
+            <keyword name ="dim_uint16"  type="int64" default="0"/>
+            
+            <keyword name ="sig_uint32"  type="int64" default="0"/>
+            <keyword name ="dim_uint32"  type="int64" default="0"/>
+        </metadata>
+        <data>
+            <binaryTable>
+                <column name="column_string"  type="string"/>
+                <column name="column_byte"    type="byte"/>
+                <column name="column_int16"   type="int16"/>
+                <column name="column_int32"   type="int32"/>
+                <column name="column_int64"   type="int64"/>
+                <column name="column_float32" type="float32"/>
+                <column name="column_float64" type="float64"/>
+                <column name="column_boolean" type="boolean"/>
+                <column name="column_char"    type="char"/>
+                <column name="column_uint8"   type="uint8"/>
+                <column name="column_uin16"   type="uint16"/>
+                <column name="column_uint32"  type="uint32"/>
+            </binaryTable>
+        </data>
+    </type>
+
+    <type name="test_columns_array">
+        <metadata>
+            <keyword name ="sig_string"  type="int64" default="0"/>
+            <keyword name ="dim_string"  type="int64" default="0"/>
+            
+            <keyword name ="sig_byte"    type="int64" default="0"/>
+            <keyword name ="dim_byte"    type="int64" default="0"/>
+            
+            <keyword name ="sig_int16"   type="int64" default="0"/>
+            <keyword name ="dim_int16"   type="int64" default="0"/>
+            
+            <keyword name ="sig_int32"   type="int64" default="0"/>
+            <keyword name ="dim_int32"   type="int64" default="0"/>
+            
+            <keyword name ="sig_int64"   type="int64" default="0"/>
+            <keyword name ="dim_int64"   type="int64" default="0"/>
+            
+            <keyword name ="sig_float32" type="float64" default="0"/>
+            <keyword name ="dim_float32" type="int64" default="0"/>
+            
+            <keyword name ="sig_float64" type="float64" default="0"/>
+            <keyword name ="dim_float64" type="int64" default="0"/>
+            
+            <keyword name ="sig_boolean" type="int64" default="0"/>
+            <keyword name ="dim_boolean" type="int64" default="0"/>
+            
+            <keyword name ="sig_char"    type="int64" default="0"/>
+            <keyword name ="dim_char"    type="int64" default="0"/>
+            
+            <keyword name ="sig_uint8"   type="int64" default="0"/>
+            <keyword name ="dim_uint8"   type="int64" default="0"/>
+            
+            <keyword name ="sig_uint16"  type="int64" default="0"/>
+            <keyword name ="dim_uint16"  type="int64" default="0"/>
+            
+            <keyword name ="sig_uint32"  type="int64" default="0"/>
+            <keyword name ="dim_uint32"  type="int64" default="0"/>
+        </metadata>
+        <data>
+            <binaryTable>
+                <column name="column_string"  type="string" arraysize="10"/>
+                <column name="column_byte"    type="byte"   arraysize="10x5"/>
+                <column name="column_int16"   type="int16"  arraysize="10x*"/>
+                <column name="column_int32"   type="int32"  arraysize="10x5*"/>
+                <column name="column_int64"   type="int64"  arraysize="*"/>
+                <column name="column_float32" type="float32"/>
+                <column name="column_float64" type="float64"/>
+                <column name="column_boolean" type="boolean"/>
+                <column name="column_char"    type="char"/>
+                <column name="column_uint8"   type="uint8"/>
+                <column name="column_uin16"   type="uint16"/>
+                <column name="column_uint32"  type="uint32"/>
+            </binaryTable>
+        </data>
+    </type>
+
+<!--
+    <type name="test_image2d">
+        <data>
+            <image pixType="float64"/>
+        </data>
+    </type>
+
+    <type name="test_image3d">
+        <data>
+            <image pixType="float32"/>
+        </data>
+    </type>
+-->
+</ddl>
