@@ -62,6 +62,12 @@ protected:
     return das::map_das_object_methods[col_type].get_column(self, col_name, 
                                                             start, length);
   }
+  
+  void append_column(const std::string &col_name, PyObject* array)
+  {
+    std::string col_type = self->get_column_info(col_name).type;
+    das::map_das_object_methods[col_type].append_column(self, col_name, array);
+  }
 
 }
 
