@@ -14,18 +14,24 @@ class Column {
 public:
 
     Column(const long long& size,
-            const std::string &type)
-    : size_(size), type_(type) {
+            const std::string &type,
+            const std::string &array_size)
+    : size_(size), type_(type), array_size_(array_size) {
     }
 
-    Column(const std::string &type)
-    : size_(0), type_(type) {
+    Column(const std::string &type, const std::string &array_size)
+    : size_(0), type_(type), array_size_(array_size) {
     }
 
     virtual
     long long
     size() const {
         return size_;
+    }
+    
+    const std::string&
+    get_array_size() const{
+        return array_size_;
     }
     
     const std::string&
@@ -41,9 +47,18 @@ protected:
         type_ = type;
     }
     
+    virtual
+    void
+    set_array_size(const std::string &array_size) {
+        array_size_ = array_size;
+    }
+    
     long long size_;
 #pragma db get(get_type) set(set_type)
     std::string type_;
+    
+#pragma db get(get_array_size) set(set_array_size)    
+    std::string array_size_;
 
     Column() {
     }
@@ -58,20 +73,21 @@ public:
 
     ColumnFromFile(const long long &size,
             const std::string &type,
+            const std::string &array_size,
             const std::string &fname)
-    : Column(size, type), fname_(fname), id_(0), buff_(type) {
+    : Column(size, type,array_size), fname_(fname), id_(0), buff_(type,array_size) {
     }
 
-    ColumnFromFile(const std::string &type)
-    : Column(type), id_(0), buff_(type) {
+    ColumnFromFile(const std::string &type, const std::string& array_size)
+    : Column(type,array_size), id_(0), buff_(type,array_size) {
     }
     
     const std::string&
-    fname() {
+    fname() const{
         return fname_;
     }
     const std::string&
-    temp_path() {
+    temp_path() const{
         return temp_path_;
     }
 
@@ -96,7 +112,7 @@ public:
 
     const
     long long&
-    id(){
+    id() const{
         return id_;
     }
     
@@ -117,12 +133,28 @@ public:
         size_ = size;
     }
     
+    const std::string&
+    rollback_path(){
+        return rollback_path_;
+    }
+    
+    void
+    rollback_path(const std::string& path){
+       rollback_path_ = path; 
+    }
 protected:
     virtual
     void
     set_type(const std::string &type) {
         type_ = type;
-        buff_.init(type);
+        buff_.init_type(type);
+    }
+    
+    virtual
+    void
+    set_array_size(const std::string &array_size) {
+        array_size_ = array_size;
+        buff_.init_shape(array_size);
     }
 
 #pragma db transient
@@ -137,6 +169,9 @@ private:
     long long id_;
 #pragma db transient
     std::string temp_path_;
+#pragma db transient
+    std::string rollback_path_;
+    
     friend class odb::access;
 
     std::string fname_;
@@ -147,12 +182,13 @@ class ColumnFromBlob : public Column {
 public:
 
     ColumnFromBlob(const long long &size,
-            const std::string &type)
-    : Column(size, type) {
+            const std::string &type,
+            const std::string &array_size)
+    : Column(size, type, array_size) {
     }
 
-    ColumnFromBlob(const std::string &type)
-    : Column(type) {
+    ColumnFromBlob(const std::string &type, const std::string& array_size)
+    : Column(type,array_size) {
     }
 
 

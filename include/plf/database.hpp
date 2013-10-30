@@ -37,6 +37,7 @@ namespace das {
              * Starts a new database transaction, if you are not using an
              * extended session, a new session that spans only the transaction 
              * life is also started.
+             * @tparam das::isolation_level the isolation level for the transaction
              * @return Transaction needed for commit or rollback the
              * transaction. Note that if the returned object goes out of scope
              * before any of Transaction::commit(), Transaction::rollback()
@@ -48,8 +49,8 @@ namespace das {
              * committed or rolled-back.
              */
             Transaction
-            begin() throw (das::already_in_transaction) {
-                return super::begin();
+            begin(isolation_level isolation = databaseDefault) throw (das::already_in_transaction) {
+                return super::begin(isolation);
             }
 
             shared_ptr<DasObject>

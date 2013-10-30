@@ -33,6 +33,18 @@ using std::tr1::weak_ptr;
 
 
 namespace das {
+
+    enum isolation_level {
+        databaseDefault, ///< keeps the isolation level configured for the database.
+        readUncommitted, ///< no isolation level.
+        readCommitted,   ///< weak isolation level: non repeatable reads and phantom reads can occour.
+        repeatableRead,  ///< phantom reads can occour. Good overall performance.
+        serializable     ///< strogest isolation level. Possible low performance.
+    };
+    namespace data_gc{
+        template<typename T>
+        class Collector;
+    }
     namespace tpl {
 
         typedef das::Transaction Transaction;
@@ -57,6 +69,7 @@ namespace das {
              * Starts a new database transaction, if you are not using an
              * extended session, a new session that spans only the transaction 
              * life is also started.
+             * @tparam das::isolation_level the isolation level for the transaction
              * @return Transaction needed for commit or rollback the
              * transaction. Note that if the returned object goes out of scope
              * before any of Transaction::commit(), Transaction::rollback()
@@ -68,7 +81,7 @@ namespace das {
              * committed or rolled-back.
              */
             Transaction
-            begin() throw (das::already_in_transaction);
+            begin(isolation_level isolation = databaseDefault) throw (das::already_in_transaction);
 
             template<typename T>
             shared_ptr<T>
@@ -217,6 +230,8 @@ namespace das {
             DdlInfo *info_;
         private:
             friend class das::Transaction;
+            template<typename T>
+            friend class das::data_gc::Collector;
 
             weak_ptr<TransactionBundle> tb_;
             shared_ptr<odb::session> extended_;

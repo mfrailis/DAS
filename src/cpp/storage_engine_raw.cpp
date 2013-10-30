@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <vector>
 #include <time.h> 
 #include <stdio.h>
 #include <errno.h>
@@ -22,25 +23,27 @@
 
 using namespace std;
 
+typedef unsigned long long chunk_t;
+
 /* class for auto managing file descriptors.
  * Avoids dangling opened files
  */
 class AutoFile {
 public:
 
-    AutoFile(int fd) : fd_(fd){
+    AutoFile(int fd) : fd_(fd) {
     }
 
     operator int&() {
         return fd_;
     }
-    
+
     ~AutoFile() {
         if (fd_ > 0) {
             close(fd_);
         }
     }
-    
+
 private:
     AutoFile();
     AutoFile(const AutoFile& rhs);
@@ -145,14 +148,116 @@ namespace das {
         const static size_t BUFF_SIZE = 512;
     };
 
+    class RawStorageAccess_read_column_array : public boost::static_visitor<ssize_t> {
+    public:
+
+        RawStorageAccess_read_column_array(size_t offset, size_t count, const std::string &array_size, const char* path)
+        : o_(offset), c_(count), array_size_(array_size), path_(path) {
+        }
+
+        template<typename T>
+        ssize_t operator() (ColumnArrayBuffer<T> &buff) const {
+            using boost::interprocess::unique_ptr;
+
+            std::vector<int> shape = ColumnInfo::array_extent(array_size_);
+
+            errno = 0;
+            AutoFile fd(open(path_, O_RDONLY));
+            if (fd == -1)
+                throw io_exception(errno);
+
+            size_t elems = 1;
+            if (shape[shape.size() - 1] == -1) { // last extent variable
+
+                for (int i = 0; i < shape.size() - 1; ++i)
+                    elems *= shape[i];
+
+
+                for (size_t i = 0; i < o_; ++i) {
+                    chunk_t c_size = 0;
+                    errno = 0;
+                    ssize_t count = read(fd, &c_size, sizeof (chunk_t));
+                    if (count != sizeof (chunk_t))
+                        throw io_exception(errno);
+
+                    if (c_size % elems != 0)
+                        throw das::data_corrupted();
+
+                    off_t off = lseek(fd, c_size * sizeof (T), SEEK_CUR);
+                    if (off == -1)
+                        throw io_exception(errno);
+                }
+
+                for (size_t i = 0; i < c_; ++i) {
+                    chunk_t c_size = 0;
+                    errno = 0;
+                    ssize_t count = read(fd, &c_size, sizeof (chunk_t));
+                    if (count != sizeof (chunk_t))
+                        throw io_exception(errno);
+
+                    if (c_size % elems != 0)
+                        throw das::data_corrupted();
+
+                    unique_ptr<T, ArrayDeleter<T> > buffer(new T[c_size]);
+                    count = read(fd, buffer.get(), c_size * sizeof (T));
+                    if (count != c_size * sizeof (T))
+                        throw io_exception(errno);
+
+                    buff.add(buffer.release(), c_size);
+                }
+
+            } else {
+                for (int i = 0; i < shape.size(); ++i)
+                    elems *= shape[i];
+
+                errno = 0;
+                off_t off = lseek(fd, o_ * elems * sizeof (T), SEEK_SET);
+                if (off == -1) {
+                    throw io_exception(errno);
+                }
+
+                for (size_t i = 0; i < c_; ++i) {
+                    unique_ptr<T, ArrayDeleter<T> > buffer(new T[elems]);
+                    errno = 0;
+                    ssize_t count = read(fd, buffer.get(), elems * sizeof (T));
+                    if (count != elems * sizeof (T))
+                        throw io_exception(errno);
+
+                    buff.add(buffer.release(), elems);
+                }
+            }
+            return buff.size();
+        }
+
+        //TODO
+
+        ssize_t operator() (ColumnArrayBuffer<std::string> &buff) const {
+            return 0;
+        }
+
+    private:
+        size_t o_;
+        size_t c_;
+        std::string array_size_;
+        const char *path_;
+        const static size_t BUFF_SIZE = 512;
+    };
+
     class RawStorageAccess_append_column : public boost::static_visitor<size_t> {
     public:
 
-        RawStorageAccess_append_column(int file_desc, size_t count)
-        : c_(count), f_(file_desc) {
+        RawStorageAccess_append_column(int file_desc, size_t count, bool include_size)
+        : c_(count), f_(file_desc), include_size_(include_size) {
         }
 
         size_t operator() (std::string* buff) const {
+            if (include_size_) {
+                chunk_t size = c_;
+                errno = 0;
+                ssize_t count = write(f_, &size, sizeof (chunk_t));
+                if (count == -1)
+                    throw io_exception(errno);
+            }
             for (size_t i = 0; i < c_; ++i) {
                 size_t len = buff[i].length();
                 errno = 0;
@@ -165,6 +270,13 @@ namespace das {
 
         template<typename T>
         size_t operator() (T* buff) const {
+            if (include_size_) {
+                chunk_t size = c_;
+                errno = 0;
+                ssize_t count = write(f_, &size, sizeof (chunk_t));
+                if (count == -1)
+                    throw io_exception(errno);
+            }
             errno = 0;
             ssize_t count = write(f_, buff, c_ * sizeof (T));
             if (count == -1)
@@ -175,6 +287,7 @@ namespace das {
     private:
         size_t c_;
         int f_;
+        bool include_size_;
     };
 
     class RawStorageAccess_append_image : public boost::static_visitor<size_t> {
@@ -199,7 +312,7 @@ namespace das {
     };
 
     size_t
-    RawStorageAccess::read(const std::string &col_name, ColumnFromFile* c,
+    RawStorageAccess::read_column(const std::string &col_name, ColumnFromFile* c,
             column_buffer_ptr buffer, size_t offset, size_t count) {
         //size_t max_str_l = DdlInfo::get_instance()->get_column_info(type_name(obj_), col_name).max_string_length;
         if (c->temp_path() != "")
@@ -213,6 +326,29 @@ namespace das {
 
             return boost::apply_visitor(
                     RawStorageAccess_read_column(offset, count, /*max_str_l,*/ ss.str().c_str()),
+                    buffer);
+        }
+
+        return 0;
+    }
+
+    size_t
+    RawStorageAccess::read_column_array(const std::string &col_name, ColumnFromFile* c,
+            column_array_buffer_ptr &buffer, size_t offset, size_t count) {
+
+        using boost::interprocess::unique_ptr;
+
+        if (c->temp_path() != "")
+            return boost::apply_visitor(
+                RawStorageAccess_read_column_array(offset, count, c->get_array_size(), c->temp_path().c_str()),
+                buffer);
+        else
+            if (c->fname() != "") {
+            std::stringstream ss;
+            ss << c->fname() << c->id();
+
+            return boost::apply_visitor(
+                    RawStorageAccess_read_column_array(offset, count, c->get_array_size(), ss.str().c_str()),
                     buffer);
         }
 
@@ -265,13 +401,24 @@ namespace das {
             if (file_des == -1)
                 throw io_exception(errno);
 
+            bool is_variable = false;
+            bool is_array_column = true;
+            std::vector<int> sp = ColumnInfo::array_extent(c_->get_array_size());
+            if (sp[sp.size() - 1] == -1)
+                is_variable = true;
+            if (sp.size() == 1 && sp[0] == 1)
+                is_array_column = false;
+
             for (typename buckets_type::iterator it = bks.begin(); it != bks.end(); ++it) {
 
                 StorageAccess::column_buffer_ptr buffer = it->first;
                 size_t count = boost::apply_visitor(
-                        RawStorageAccess_append_column(file_des, it->second),
+                        RawStorageAccess_append_column(file_des, it->second, is_variable),
                         buffer);
-                size += it->second;
+                if (is_array_column)
+                    size += 1; // we count the arrays we store
+                else
+                    size += it->second;
             }
 
             size += c_->file_size();
@@ -359,7 +506,7 @@ namespace das {
 
                         ss << m_it->first << "_";
 
-                        ColumnFromFile cffn(cff->file_size(), cff->get_type(), ss.str());
+                        ColumnFromFile cffn(cff->file_size(), cff->get_type(), cff->get_array_size(), ss.str());
                         column_from_file(obj, c_name, cffn);
 
                         ColumnFromFile *cffnp = column_from_file(obj, c_name);
@@ -488,7 +635,7 @@ namespace das {
                         ss << storage_path;
                         ss << m_it->first << "_";
 
-                        ColumnFromFile cffn(cff->file_size(), cff->get_type(), ss.str());
+                        ColumnFromFile cffn(cff->file_size(), cff->get_type(), cff->get_array_size(), ss.str());
                         column_from_file(obj, c_name, cffn);
 
                         ColumnFromFile *cffnp = column_from_file(obj, c_name);
@@ -497,9 +644,10 @@ namespace das {
                         ss << cffnp->id();
                         errno = 0;
                         if (rename(temp_path.c_str(), ss.str().c_str())) {
+                            cffnp->temp_path(temp_path);
                             throw das::io_exception(errno);
                         }
-
+                        cffnp->rollback_path(temp_path);
                     }
                 }
             } else if (obj->is_image()) {
@@ -561,11 +709,70 @@ namespace das {
                     ss << iffnp->id();
                     errno = 0;
                     if (rename(temp_path.c_str(), ss.str().c_str())) {
+                        iffnp->temp_path(temp_path);
                         throw das::io_exception(errno);
                     }
+                    iffnp->rollback_path(temp_path);
 
                 }
 
+            }
+        }
+    }
+
+    void
+    RawStorageTransaction::rollback() {
+        for (std::vector<DasObject*>::iterator obj_it = objs_.begin();
+                obj_it != objs_.end(); ++obj_it) {
+            std::map<std::string, ColumnFromFile*> map;
+            DasObject* obj = *obj_it;
+            if (obj->is_table()) {
+                StorageTransaction::get_columns_from_file(obj, map);
+                RawStorageAccess *rsa = dynamic_cast<RawStorageAccess*> (storage_access(obj));
+
+                std::string storage_path;
+
+                for (std::map<std::string, ColumnFromFile*>::iterator m_it = map.begin();
+                        m_it != map.end(); ++m_it) {
+                    ColumnFromFile* cff = m_it->second;
+
+                    if (cff == NULL) // empty column, skip
+                        continue;
+
+                    if (!cff->rollback_path().empty()) {
+                        std::stringstream ss;
+                        ss << cff->fname();
+                        ss << cff->id();
+                        if (rename(ss.str().c_str(), cff->rollback_path().c_str())) {
+                            cff->temp_path(ss.str());
+                            DAS_LOG_ERR("error while renaming file (keeping the first as temp):"
+                                    << ss.str() << " -> " << cff->rollback_path());
+                        } else {
+                            cff->temp_path(cff->rollback_path());
+                            cff->rollback_path("");
+                        }
+                    }
+                }
+            } else if (obj->is_image()) {
+                std::string storage_path;
+
+                ImageFromFile* iff = image_from_file(obj);
+                if (iff == NULL) //image empty, skip
+                    continue;
+
+                if (!iff->rollback_path().empty()) {
+                    std::stringstream ss;
+                    ss << iff->fname();
+                    ss << iff->id();
+                    if (rename(ss.str().c_str(), iff->rollback_path().c_str())) {
+                        iff->temp_path(ss.str());
+                        DAS_LOG_ERR("error while renaming file (keeping the first as temp):"
+                                << ss.str() << " -> " << iff->rollback_path());
+                    } else {
+                        iff->temp_path(iff->rollback_path());
+                        iff->rollback_path("");
+                    }
+                }
             }
         }
     }
@@ -793,7 +1000,7 @@ namespace das {
     };
 
     size_t
-    RawStorageAccess::read(
+    RawStorageAccess::read_image(
             ImageFromFile* i,
             image_buffer_ptr buffer,
             const das::TinyVector<int, 11> &offset,
@@ -820,31 +1027,85 @@ namespace das {
 
     }
 
+    template<class T>
+    bool RawStorageAccess::drop(const T& obj) {
+        time_t exp = info.storage_engine.get<time_t> ("unref_data_expiration_time");
+
+        std::stringstream ss;
+        ss << obj.fname() << obj.id();
+        std::string path = ss.str();
+
+        struct stat stt;
+        errno = 0;
+        if (stat(path.c_str(), &stt)){
+            switch (errno) {
+                case ENOENT:
+                    DAS_LOG_DBG(obj.id() << "T bad path: "<< path);
+                    return true;
+                default:
+                    DAS_LOG_DBG(obj.id() << "F generic error");                    
+                    return false;
+            }
+        }
+
+        time_t now;
+        time(&now);
+        time_t diff = now - stt.st_mtime;
+        if (diff > exp) {
+            errno = 0;
+           if (unlink(path.c_str())){
+                switch (errno) {
+                    case ENOENT:
+                        DAS_LOG_DBG(obj.id() << "T bad path: "<< path);
+                        return true;
+                    default:
+                        DAS_LOG_DBG(obj.id() << "F generic error"); 
+                        return false;
+                }
+           }else {
+               DAS_LOG_DBG(obj.id() << "T deleted: "<< path);
+               return true;
+           }
+        }else{
+            DAS_LOG_DBG(obj.id() << "F too young: "<< diff);
+            return false;
+        }
+        return false;
+    }
+
+    bool RawStorageAccess::release(const ColumnFromFile & cff) {
+        return drop(cff);
+    }
+
+    bool RawStorageAccess::release(const ImageFromFile & iff) {
+        return drop(iff);
+    }
+
     inline
-    RawStorageAccess::BasicToken::BasicToken(const std::string& str) : s_(str) {
+    RawStorageAccess::BasicToken::BasicToken(const std::string & str) : s_(str) {
     }
 
     inline
     void
-    RawStorageAccess::BasicToken::expand(std::stringstream& ss) {
+    RawStorageAccess::BasicToken::expand(std::stringstream & ss) {
 
         ss << s_;
     }
 
     inline
     void
-    RawStorageAccess::BasicToken::dbg(std::stringstream &ss) {
+    RawStorageAccess::BasicToken::dbg(std::stringstream & ss) {
 
         ss << "basic: " << s_ << endl;
     }
 
     inline
-    RawStorageAccess::TimeToken::TimeToken(const std::string& str) : s_(str) {
+    RawStorageAccess::TimeToken::TimeToken(const std::string & str) : s_(str) {
     }
 
     inline
     void
-    RawStorageAccess::TimeToken::expand(std::stringstream& ss) {
+    RawStorageAccess::TimeToken::expand(std::stringstream & ss) {
         time_t rawtime;
         struct tm * timeinfo;
         char buffer [128];
@@ -875,18 +1136,18 @@ namespace das {
 
     inline
     void
-    RawStorageAccess::TimeToken::dbg(std::stringstream &ss) {
+    RawStorageAccess::TimeToken::dbg(std::stringstream & ss) {
 
         ss << "time : " << s_ << endl;
     }
 
     inline
-    RawStorageAccess::EnvToken::EnvToken(const std::string& str) : s_(str) {
+    RawStorageAccess::EnvToken::EnvToken(const std::string & str) : s_(str) {
     }
 
     inline
     void
-    RawStorageAccess::EnvToken::expand(std::stringstream& ss) {
+    RawStorageAccess::EnvToken::expand(std::stringstream & ss) {
         char* var;
         var = getenv(s_.c_str());
 
@@ -896,7 +1157,7 @@ namespace das {
 
     inline
     void
-    RawStorageAccess::EnvToken::dbg(std::stringstream &ss) {
+    RawStorageAccess::EnvToken::dbg(std::stringstream & ss) {
 
         ss << "env  : " << s_ << endl;
     }
@@ -908,14 +1169,14 @@ namespace das {
 
     inline
     void
-    RawStorageAccess::TypeToken::dbg(std::stringstream &ss) {
+    RawStorageAccess::TypeToken::dbg(std::stringstream & ss) {
 
         ss << "type : %" << c_ << endl;
     }
 
     inline
     void
-    RawStorageAccess::TypeToken::expand(std::stringstream& ss) {
+    RawStorageAccess::TypeToken::expand(std::stringstream & ss) {
         switch (c_) {
             case 't':
                 ss << type_name(sa_.obj_);
@@ -930,20 +1191,20 @@ namespace das {
     }
 
     inline
-    RawStorageAccess::CustomToken::CustomToken(RawStorageAccess& sa)
+    RawStorageAccess::CustomToken::CustomToken(RawStorageAccess & sa)
     : sa_(sa) {
     }
 
     inline
     void
-    RawStorageAccess::CustomToken::dbg(std::stringstream &ss) {
+    RawStorageAccess::CustomToken::dbg(std::stringstream & ss) {
 
         ss << "cust.: %s" << endl;
     }
 
     inline
     void
-    RawStorageAccess::CustomToken::expand(std::stringstream& ss) {
+    RawStorageAccess::CustomToken::expand(std::stringstream & ss) {
 
         ss << *sa_.cp_;
     }
@@ -1043,7 +1304,8 @@ namespace das {
                             skip = true;
                             break;
                         default:
-                            cout << "unknown expression: %" << la << endl;
+                            delete ss;
+                            throw bad_token(la);
                     }
                     break;
                 default:
@@ -1167,7 +1429,7 @@ namespace das {
     }
 
     void
-    RawStorageAccess::make_dirs(const std::string &s) {
+    RawStorageAccess::make_dirs(const std::string & s) {
         struct stat stt;
         size_t offset = 0;
         size_t len = s.length() - 1;
@@ -1183,53 +1445,4 @@ namespace das {
         }
     }
 
-    /*
-            class RawStorageAccess_write_column : public boost::static_visitor<size_t> {
-            public:
-
-                RawStorageAccess_write_column(size_t offset, size_t count, const char* path)
-                : o_(offset), c_(count), path_(path) {
-                }
-
-                size_t operator() (std::string* buff) const {
-                    throw not_implemented();
-                }
-
-                template<typename T>
-                size_t operator() (T* buff) const {
-                    fstream s;
-                    s.open(path_, std::ios_base::out);
-                    s << std::setprecision(std::numeric_limits<T>::digits);
-                    T skip;
-                    while (s.good() && o_-- > 0)
-                        s >> skip;
-
-                    size_t count = 0;
-                    while (s.good() && c_-- > 0)
-                        s << buff[count++] << endl;
-
-                    s.close();
-                    return count;
-                }
-                mutable size_t o_;
-                mutable size_t c_;
-                const char *path_;
-            };
-
-            size_t
-            RawStorageAccess::write(ColumnFromFile* c, column_buffer_ptr buffer, size_t offset, size_t count) {
-                if (c->temp_path() != "")
-                    return boost::apply_visitor(
-                        RawStorageAccess_write_column(offset, count, c->temp_path().c_str()),
-                        buffer);
-                else
-                    if (c->fname() != "")
-                    return boost::apply_visitor(
-                        RawStorageAccess_write_column(offset, count, c->fname().c_str()),
-                        buffer);
-                else {
-                    throw std::exception();
-                }
-            }
-     */
 }

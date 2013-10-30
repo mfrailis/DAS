@@ -44,6 +44,8 @@ void
   '''+association.name+'''_.clear();
   for('''+pub_type+'''::const_iterator i = '''+association.name+'''_new.begin(); i != '''+association.name+'''_new.end(); ++i)
       '''+association.name+'''_.push_back(*i);
+  
+  is_dirty_ = true;
 }''']
 ###############################################################################################################################################
 

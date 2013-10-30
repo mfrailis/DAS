@@ -58,7 +58,7 @@ void
         {
           if(!(*i)->is_new())
           {
-            das::DbBundle new_bundle = (*i)->bundle_.lock();
+            das::DbBundle new_bundle = (*i)->bundle_.lock(false);
             if((new_bundle.valid() && new_bundle != b) ||
                (new_bundle.alias() != b.alias()))
             {

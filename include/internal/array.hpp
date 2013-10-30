@@ -15,13 +15,13 @@ namespace das {
     class TinyVector : public blitz::TinyVector<Num_type, Length> {
         typedef blitz::TinyVector<Num_type, Length> super;
     public:
-        
+
         TinyVector() : super() {
-        }       
-        
+        }
+
         TinyVector(const super &vector) : super(vector) {
         }
-        
+
         TinyVector(Num_type x0) : super(x0) {
         }
 
@@ -75,7 +75,58 @@ namespace das {
 
 
     };
-    
+
+    inline TinyVector<int, 1> shape(int n1) {
+        return TinyVector<int, 1>(n1);
+    }
+
+    inline TinyVector<int, 2> shape(int n1, int n2) {
+        return TinyVector<int, 2>(n1, n2);
+    }
+
+    inline TinyVector<int, 3> shape(int n1, int n2, int n3) {
+        return TinyVector<int, 3>(n1, n2, n3);
+    }
+
+    inline TinyVector<int, 4> shape(int n1, int n2, int n3, int n4) {
+        return TinyVector<int, 4>(n1, n2, n3, n4);
+    }
+
+    inline TinyVector<int, 5> shape(int n1, int n2, int n3, int n4,
+            int n5) {
+        return TinyVector<int, 5>(n1, n2, n3, n4, n5);
+    }
+
+    inline TinyVector<int, 6> shape(int n1, int n2, int n3, int n4,
+            int n5, int n6) {
+        return TinyVector<int, 6>(n1, n2, n3, n4, n5, n6);
+    }
+
+    inline TinyVector<int, 7> shape(int n1, int n2, int n3, int n4,
+            int n5, int n6, int n7) {
+        return TinyVector<int, 7>(n1, n2, n3, n4, n5, n6, n7);
+    }
+
+    inline TinyVector<int, 8> shape(int n1, int n2, int n3, int n4,
+            int n5, int n6, int n7, int n8) {
+        return TinyVector<int, 8>(n1, n2, n3, n4, n5, n6, n7, n8);
+    }
+
+    inline TinyVector<int, 9> shape(int n1, int n2, int n3, int n4,
+            int n5, int n6, int n7, int n8, int n9) {
+        return TinyVector<int, 9>(n1, n2, n3, n4, n5, n6, n7, n8, n9);
+    }
+
+    inline TinyVector<int, 10> shape(int n1, int n2, int n3, int n4,
+            int n5, int n6, int n7, int n8, int n9, int n10) {
+        return TinyVector<int, 10>(n1, n2, n3, n4, n5, n6, n7, n8, n9, n10);
+    }
+
+    inline TinyVector<int, 11> shape(int n1, int n2, int n3, int n4,
+            int n5, int n6, int n7, int n8, int n9, int n10, int n11) {
+        return TinyVector<int, 11>(n1, n2, n3, n4, n5, n6, n7, n8, n9, n10, n11);
+    }
+
     class bad_range : public std::exception {
     public:
 
@@ -85,27 +136,33 @@ namespace das {
         }
 
     };
-    
+
     class Range : public blitz::Range {
         typedef blitz::Range super;
     public:
-        Range() : super(){}
-        Range(int slicePosition) : super(slicePosition){}
-        Range (int first, int last, int stride=1) : super(first,last,stride){
-            if(stride < 1) throw bad_range();
-            if(last < first) throw bad_range();
-            if(first < 0) throw bad_range();
+
+        Range() : super() {
         }
-        size_t length() const{          
+
+        Range(int slicePosition) : super(slicePosition) {
+        }
+
+        Range(int first, int last, int stride = 1) : super(first, last, stride) {
+            if (stride < 1) throw bad_range();
+            if (last < first) throw bad_range();
+            if (first < 0) throw bad_range();
+        }
+
+        size_t length() const {
             size_t len = last() - first();
             int div = len / stride();
-            if(len % stride() != 0)
-                return div+1;
+            if (len % stride() != 0)
+                return div + 1;
             else
                 return div;
         }
-        
-        static Range all(){
+
+        static Range all() {
             return Range();
         }
     };
@@ -123,24 +180,38 @@ namespace das {
         }
     };
 
-    template<typename T>
-    class Array<T, 1> : public blitz::Array<T, 1> {
-        typedef blitz::Array<T, 1> super;
+    template<typename P_numtype, int N_Rank = 1 >
+    class ColumnArray : public Array< Array<P_numtype, N_Rank> > {
+        typedef Array< Array<P_numtype, N_Rank> > super;
+        typedef Array<P_numtype, N_Rank> item;
     public:
 
-        Array(T *buffer, size_t length, buffer_policy flag)
-        : super(buffer, blitz::shape(length), (blitz::preexistingMemoryPolicy) flag) {
+        ColumnArray(item* buffer, size_t size, buffer_policy flag) :
+        super(buffer, TinyVector<int, 1>(size), flag) {
         }
-        
-        Array(T *buffer, const TinyVector<int, 1> &shape, buffer_policy flag)
-        : super(buffer, shape, (blitz::preexistingMemoryPolicy) flag) {
-        }
-        
 
-        Array() : super() {
+        ColumnArray() : super() {
         }
+
     };
+    /*
+        template<typename T>
+        class Array<T, 1> : public blitz::Array<T, 1> {
+            typedef blitz::Array<T, 1> super;
+        public:
 
+            Array(T *buffer, size_t length, buffer_policy flag)
+            : super(buffer, blitz::shape(length), (blitz::preexistingMemoryPolicy) flag) {
+            }
+
+            Array(T *buffer, const TinyVector<int, 1> &shape, buffer_policy flag)
+            : super(buffer, shape, (blitz::preexistingMemoryPolicy) flag) {
+            }
+
+            Array() : super() {
+            }
+        };
+     */
 }
 #endif	/* ARRAY_HPP */
 

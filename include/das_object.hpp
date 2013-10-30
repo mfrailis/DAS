@@ -202,21 +202,37 @@ public:
         else
             return 0;
     }
-
+    
     template <typename T>
     void append_column(const std::string &col_name, das::Array<T> &a) {
         if (sa_.get() == NULL)
             sa_.reset(das::StorageAccess::create(bundle_.alias(), this));
         sa_->append_column<T>(col_name, a);
     }
-
-    /*    template <typename T, int Rank>
-    das::Array<T, Rank> get_image() {
+    
+    template <typename T, int Rank>
+    das::ColumnArray<T,Rank>
+    get_column_array(const std::string &col_name, size_t start, size_t length) {
         if (sa_.get() == NULL)
             sa_.reset(das::StorageAccess::create(bundle_.alias(), this));
-        return sa_->get_image<T, Rank>();
+        return sa_->get_column_array<T,Rank>(col_name, start, length);
     }
-     */
+
+    long long
+    get_column_array_size(const std::string &col_name){
+        return get_column_size(col_name);
+    }
+
+
+    template <typename T,int Rank>
+    void append_column_array(const std::string &col_name, das::ColumnArray<T,Rank> &a) {
+        if (sa_.get() == NULL)
+            sa_.reset(das::StorageAccess::create(bundle_.alias(), this));
+        sa_->append_column_array<T,Rank>(col_name, a);
+    }
+    
+    
+    
     template <typename T, int Rank>
     das::Array<T, Rank> get_image(
             das::Range r0 = das::Range::all(),
@@ -244,16 +260,6 @@ public:
         else
             return 0;
     }
-
-    /*template <typename T, int Rank>
-    das::Array<T, Rank> get_image(
-            const das::TinyVector<int, Rank> &offset,
-            const das::TinyVector<int, Rank> &count,
-            const das::TinyVector<int, Rank> &stride) {
-        if (sa_.get() == NULL)
-            sa_.reset(das::StorageAccess::create(bundle_.alias(), this));
-        return sa_->get_image<T, Rank>(offset, count, stride);
-    }*/
 
     template <typename T, int Rank>
     void set_image(das::Array<T, Rank> &i) {
@@ -480,8 +486,7 @@ private:
     friend class das::StorageTransaction;
     template <typename T> friend class das::tpl::result_iterator;
     friend class QLVisitor;
-    //  template <typename T> friend class DasVector;
-    //  template <typename T> friend void ::swap(DasVector<T> &x, DasVector<T> &y);
+
 #pragma db id auto
     long long das_id_;
 
@@ -503,6 +508,4 @@ template<class T>
 struct das_traits {
 };
 
-
-//#include "internal/storage_engine.ipp"
 #endif
