@@ -41,7 +41,10 @@ namespace das {
         repeatableRead,  ///< phantom reads can occour. Good overall performance.
         serializable     ///< strogest isolation level. Possible low performance.
     };
-    class GarbageDataCollector;
+    namespace data_gc{
+        template<typename T>
+        class Collector;
+    }
     namespace tpl {
 
         typedef das::Transaction Transaction;
@@ -227,7 +230,8 @@ namespace das {
             DdlInfo *info_;
         private:
             friend class das::Transaction;
-            friend class das::GarbageDataCollector;
+            template<typename T>
+            friend class das::data_gc::Collector;
 
             weak_ptr<TransactionBundle> tb_;
             shared_ptr<odb::session> extended_;

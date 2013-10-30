@@ -1029,6 +1029,8 @@ namespace das {
 
     template<class T>
     bool RawStorageAccess::drop(const T& obj) {
+        time_t exp = info.storage_engine.get<time_t> ("unref_data_expiration_time");
+
         std::stringstream ss;
         ss << obj.fname() << obj.id();
         std::string path = ss.str();
@@ -1049,7 +1051,7 @@ namespace das {
         time_t now;
         time(&now);
         time_t diff = now - stt.st_mtime;
-        if (diff > 60) {
+        if (diff > exp) {
             errno = 0;
            if (unlink(path.c_str())){
                 switch (errno) {

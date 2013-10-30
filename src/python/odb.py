@@ -76,6 +76,9 @@ class DdlOdbGenerator(DdlVisitor):
     self._assoc_touples = []
     self._data_types = []
     self._src_body = []
+    self._traits_data_type   = "void"
+    self._traits_data_config_table  = ''
+    self._traits_foreign_key = ''
 
   def name(self,name):
     self._class_name=name
@@ -231,7 +234,10 @@ public:
 template<>
 struct das_traits<'''+self._class_name+'''>
 {
+    typedef '''+self._traits_data_type+''' data_type;
     static const std::string name;
+    static const std::string data_config_table;
+    static const std::string foreign_key;
 };
 ''')
 
@@ -248,6 +254,8 @@ struct das_traits<'''+self._class_name+'''>
     s.writelines(l + "\n" for l in self._src_header)
     # type traits static inizialization
     s.writelines(['const std::string das_traits<'+self._class_name+'>::name = "'+self._class_name+'";\n'])
+    s.writelines(['const std::string das_traits<'+self._class_name+'>::data_config_table = "'+self._traits_data_config_table+'";\n'])
+    s.writelines(['const std::string das_traits<'+self._class_name+'>::foreign_key = "'+self._traits_foreign_key+'";\n'])
     # public constructor with name argument
     s.writelines([self._class_name+"::"+self._class_name+" (const std::string &name, const std::string &db_alias)\n"])
     if self._init_list:
@@ -422,6 +430,9 @@ void
     self._public_section.append('virtual bool is_table() const { return true; }')
 
     if self._store_as == 'File':
+      self._traits_data_type = 'ColumnFromFile_'+self._class_name
+      self._traits_data_config_table = self._class_name+'_columns'
+      self._traits_foreign_key = 'value_cff'
       self._protected_section.append('virtual ColumnFromFile* column_from_file(const std::string &col_name);')
       self._protected_section.append('virtual void column_from_file(const std::string &col_name, const ColumnFromFile &cf);')
       self._protected_section.append('virtual void get_columns_from_file(std::map<std::string,ColumnFromFile*> &map);')
@@ -595,6 +606,9 @@ ColumnFromFile_'''+self._class_name+'''::persist(odb::database &db){
     self._public_section.append('virtual bool is_image() const { return true; }')
     dim = int(image.dimensions) + 1
     if  self._store_as == 'File':
+      self._traits_data_type = 'ImageFromFile_'+self._class_name
+      self._traits_data_config_table = self._class_name
+      self._traits_foreign_key = 'image'
       self._protected_section.append("shared_ptr<ImageFromFile_"+self._class_name+"> image_;")
       self._protected_section.append("virtual ImageFromFile* image_from_file();")
       self._protected_section.append("virtual void image_from_file(const ImageFromFile &iff);")

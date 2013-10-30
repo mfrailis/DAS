@@ -49,10 +49,30 @@ class JsonConfigParser:
             f.write('\n#endif\n')
             f.close()
 
+    def generate_garbage_collectors(self,output_dir):
+        for db in self._config:
+            if db['storage_engine']['name'] == 'Raw':
+                f = open(_os.path.join(output_dir,db['alias']+'_gc.cpp'),'w')  
+                f.write('''
+#include "tpl/database.hpp"
+#include "transaction.hpp"
+#include "ddl/types.hpp"
+#include "internal/daemon.hpp"
+
+int main(){
+    shared_ptr<das::tpl::Database> db = das::tpl::Database::create("'''+db['alias']+'''");''')    
+                for t in self.ddl_map.get_type_list(_assemble_ddl(db['ddl'])):
+                    if t != 'essentialMetadata':
+                        f.write('\n    das::data_gc::collect<'+t+'>(db);')
+        
+                f.write('\n    return 0;\n}\n')
+                f.close()
+
     def generate_sub(self,db_dir,t_pre):
         for db in self._config:
             #db_str = db['host']+"_"+str(db['port'])+"_"+db['db_name']
             db_str = db['alias']
+            has_gc = db['storage_engine']['name'] == 'Raw'
             self.sub_dirs.append(db_str)
             dir_name = _os.path.join(db_dir,db_str)
             if not _os.path.exists(dir_name):
@@ -60,7 +80,7 @@ class JsonConfigParser:
 #            ddl_h   = self.db_map[_assemble_db(db)]+'_types.h'
 #            ddl_sql = self.db_map[_assemble_db(db)]+'_types.sql'
             typelist=self.ddl_map.get_type_list(_assemble_ddl(db['ddl']))
-            _generate_sub_cmake(dir_name,db_str,db['db_type'], t_pre,db,typelist)
+            _generate_sub_cmake(dir_name,db_str,db['db_type'], t_pre,db,typelist,has_gc)
     
     def generate(self,db_dir_,cmake_dir,ddl_src_dir,types,prefix):
         db_vendors = {};
@@ -349,7 +369,7 @@ def _assemble_db(db):
 #    return "db_"+_hash.sha1(uri).hexdigest()
     return db['alias']
 
-def _generate_sub_cmake(dir_name,db_str,db_type,prefix,db,typelist):
+def _generate_sub_cmake(dir_name,db_str,db_type,prefix,db,typelist,has_gc):
     f = open(_os.path.join(dir_name,'CMakeLists.txt'),'w')
     f.write(
 '''
@@ -409,9 +429,14 @@ add_custom_command(
   WORKING_DIRECTORY ${PYTHON_SOURCE_DIR}
   COMMENT "Executing '''+db['db_type']+''' on '''+db['alias']+'''"
 )
+''')
+    if has_gc:
+        f.write('''
+add_executable('''+db_str+'''_gc ${DDL_SOURCE_DIR}/'''+db_str+'''_gc.cpp)
+target_link_libraries('''+db_str+'''_gc das ${ODB_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+''')
 
-
-
+    f.write('''
 add_custom_target(
   schema-'''+db_str+'''
   DEPENDS SIGNATURE_CHECK ${SQL_FILES}
@@ -554,6 +579,9 @@ if __name__ == '__main__':
 
     #generate per database header
     #c.generate_db_headers(ddl_source_dir)
+
+    #generate garbage collectors
+    c.generate_garbage_collectors(ddl_source_dir)
 
     #subdirectories and CmakeLists.txt
     c.generate_sub(db_dir,target_prefix)
