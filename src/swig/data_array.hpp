@@ -66,6 +66,20 @@ namespace das {
     das::Array<T> *array = static_cast<das::Array<T>* > (PyCapsule_GetPointer(capsule, 0));
     delete array;
   }
+  
+  
+  class NpyDeallocator: public das::Deallocator
+  {
+  public:
+    NpyDeallocator(PyObject* py_obj):
+      obj(py_obj)
+    {}
+      
+    void operator() () {Py_DECREF(obj);}
+    
+  private:
+    PyObject *obj;
+  };
 
 
   template <typename T>
@@ -82,6 +96,21 @@ namespace das {
     return py_array;
   }
 
+  
+  template <typename T>
+  inline das::Array<T> convert_to_array(PyObject* py_obj)
+  {
+    das::TinyVector<int,1> shape(0);    
+    npy_intp* dimensions = PyArray_DIMS(py_obj);
+    
+    // TODO: check that dimension fits an integer
+    shape[0] = (int)dimensions[0];  
+    
+    T* data = (T*) PyArray_DATA(py_obj);
+    NpyDeallocator *dealloc = new NpyDeallocator(py_obj);
+    
+    return das::Array<T>(data, shape, das::neverDeleteData, dealloc);
+  }
 
   template <typename T>
   PyObject* get_numpy_column(DasObject *obj, const std::string &col_name, 
@@ -90,11 +119,27 @@ namespace das {
     das::Array<T> column = obj->get_column<T>(col_name, start, length);
     return convert_to_numpy(column);
   }
+  
+  
+  template <typename T>
+  void append_numpy_column(DasObject *obj, const std::string &col_name,
+                           PyObject* py_array)
+  {
+    int typenum = numpy_type_map<T>::typenum;
+    PyObject* npy_array = PyArray_FromArray((PyArrayObject*) py_array, PyArray_DescrFromType(typenum),
+                                            NPY_CARRAY);
+    das::Array<T> array = convert_to_array<T>(npy_array);
+    obj->append_column(col_name, array);
+  }
 
 
   struct das_object_func_ptr {
+    
     PyObject* (*get_column)(DasObject *obj, const std::string &col_name, 
                             size_t start, size_t length);
+    
+    void (*append_column)(DasObject *obj, const std::string &col_name,
+                           PyObject* py_array);
     
   };
 
@@ -102,8 +147,9 @@ namespace das {
   struct das_object_func_ptr_T: public das_object_func_ptr
   {
     das_object_func_ptr_T()
-    {
+    {      
       get_column = get_numpy_column<T>;
+      append_column = append_numpy_column<T>;
     }
     
   };

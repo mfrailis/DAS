@@ -1,8 +1,11 @@
 #ifndef ARRAY_HPP
 #define	ARRAY_HPP
 #include <blitz/array.h>
+#include <tr1/memory>
 
 namespace das {
+ 
+    using std::tr1::shared_ptr;
 
     enum buffer_policy {
         duplicateData = blitz::duplicateData,
@@ -10,6 +13,12 @@ namespace das {
         neverDeleteData = blitz::neverDeleteData
     };
 
+
+    class Deallocator {
+    public:
+        virtual void operator() () {}
+    };
+    
     template<typename Num_type, int Length>
     class TinyVector : public blitz::TinyVector<Num_type, Length> {
         typedef blitz::TinyVector<Num_type, Length> super;
@@ -75,36 +84,30 @@ namespace das {
 
     };
 
-    template<typename P_numtype, int N_Rank = 1 >
+    template<typename P_numtype, int N_Rank = 1>
     class Array : public blitz::Array<P_numtype, N_Rank> {
         typedef blitz::Array<P_numtype, N_Rank> super;
     public:
 
-        Array(P_numtype *buffer, const TinyVector<int, N_Rank> &shape, buffer_policy flag)
-        : super(buffer, shape, (blitz::preexistingMemoryPolicy) flag) {
+        Array(P_numtype *buffer, const TinyVector<int, N_Rank> &shape, buffer_policy flag,
+              Deallocator *dealloc = 0)
+        : super(buffer, shape, (blitz::preexistingMemoryPolicy) flag), policy_(flag), dealloc_(dealloc)  {
         }
 
         Array() : super() {
         }
-    };
-
-    template<typename T>
-    class Array<T, 1> : public blitz::Array<T, 1> {
-        typedef blitz::Array<T, 1> super;
-    public:
-
-        Array(T *buffer, size_t length, buffer_policy flag)
-        : super(buffer, blitz::shape(length), (blitz::preexistingMemoryPolicy) flag) {
+        
+        ~Array() {
+            if (policy_ == neverDeleteData && super::numReferences() == 1)
+                if (dealloc_)
+                    (*dealloc_)();         
         }
         
-        Array(T *buffer, const TinyVector<int, 1> &shape, buffer_policy flag)
-        : super(buffer, shape, (blitz::preexistingMemoryPolicy) flag) {
-        }
-        
-
-        Array() : super() {
-        }
+    private:
+        buffer_policy policy_;
+        shared_ptr<Deallocator> dealloc_;
     };
+
 
 }
 #endif	/* ARRAY_HPP */
