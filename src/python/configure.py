@@ -434,8 +434,57 @@ add_custom_command(
 ''')
     if has_gc:
         f.write('''
-add_executable('''+db_str+'''_gc ${DDL_SOURCE_DIR}/'''+db_str+'''_gc.cpp)
-target_link_libraries('''+db_str+'''_gc das ${ODB_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+add_executable(das_'''+db_str+'''_gc ${DDL_SOURCE_DIR}/'''+db_str+'''_gc.cpp)
+target_link_libraries(das_'''+db_str+'''_gc das ${ODB_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+
+install(
+  TARGETS das_'''+db_str+'''_gc
+  RUNTIME DESTINATION bin
+  PERMISSIONS
+    OWNER_READ
+    OWNER_WRITE
+    OWNER_EXECUTE
+    GROUP_READ
+    GROUP_EXECUTE
+    WORLD_READ
+    WORLD_EXECUTE 
+)
+
+set(CRON_SCHED_'''+db_str+''' "0 1 1,11,21 * *" CACHE STRING "crontab expression for the garbage collector deamon")
+set(CRON_JOB_'''+db_str+''' ${CMAKE_INSTALL_PREFIX}/bin/das_'''+db_str+'''_gc)
+#set(CRON_COMMAND_'''+db_str+''' cat <\(crontab -l | grep -v ${CRON_JOB_'''+db_str+'''}\) <\(echo "${CRON_SCHED_'''+db_str+'''} ${CRON_JOB_'''+db_str+'''}"\) | crontab - )
+
+find_program( CRONTAB_EXEC crontab)
+
+if(NOT CRONTAB_EXEC)
+  MESSAGE(SEND_ERROR "no crontab executable")
+endif()
+
+add_custom_command(
+  OUTPUT CRON_TAB_'''+db_str+'''_current
+  COMMAND ${CRONTAB_EXEC} -l | grep -v ${CRON_JOB_'''+db_str+'''} > crontab.txt || true
+  VERBATIM
+)
+
+add_custom_command(
+  OUTPUT CRON_TAB_'''+db_str+'''_append_new
+  COMMAND echo "${CRON_SCHED_'''+db_str+'''} ${CRON_JOB_'''+db_str+'''}" >> crontab.txt
+  DEPENDS CRON_TAB_'''+db_str+'''_current
+  VERBATIM
+)
+
+add_custom_command(
+  OUTPUT CRON_TAB_'''+db_str+'''_install
+  COMMAND ${CRONTAB_EXEC} crontab.txt
+  DEPENDS CRON_TAB_'''+db_str+'''_append_new
+  VERBATIM
+)
+
+add_custom_target(
+  cron_job-'''+db_str+'''
+  DEPENDS CRON_TAB_'''+db_str+'''_install
+)
+
 ''')
 
     f.write('''
