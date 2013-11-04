@@ -30,6 +30,7 @@ namespace das {
         operator T() {
             return super::get();
         }
+        
     };
 
     template <typename T>
