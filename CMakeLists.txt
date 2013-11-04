@@ -7,6 +7,7 @@ set(ODB_COMPILER_DIR  CACHE PATH "hint to where to find odb compiler executable"
 
 find_package(Boost 1.47 REQUIRED)
 find_package(ODB REQUIRED)
+find_package(ODB_BOOST REQUIRED)
 find_package(Python REQUIRED)
 find_python_module(lxml REQUIRED)
 find_python_module(MySQLdb REQUIRED)
@@ -15,6 +16,12 @@ if(NOT PY_COLLECTIONS_FOUND)
   find_python_module(ordereddict)
 endif()
 find_package(Blitz REQUIRED)
+
+set(COMMON_LIBRARIES
+  boost_date_time
+  ${ODB_LIBRARIES}
+  ${ODB_BOOST_LIBRARIES}
+)
 
 set(CMAKE_BUILD_TYPE debug)
 set(CMAKE_CXX_FLAGS_DEBUG "-g -DVDBG")

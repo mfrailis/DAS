@@ -132,6 +132,7 @@ foreach(type_name ${TYPE_NAMES_ALL})
             --include-regex "%ddl/(.+).hxx%$1.hxx%"
             --include-regex "%ddl_(.+).hpp%../ddl_$1.hpp%"
             --profile boost/unordered
+            --profile boost/date-time/posix-time
 
             --default-pointer std::tr1::shared_ptr
 	    -I${ODB_SOURCE_DIR}
@@ -160,12 +161,15 @@ COMMAND ${ODB_COMPILER}
     --include-regex "%(column.hpp)|(image.hpp)%../../../ddl/$1$2%"
     --include-regex "%aux_query.hpp%../../../internal/aux_query.hpp%"
     --include-regex "%ddl_(.+).hpp%../ddl_$1.hpp%"
-
-            --include-regex "%(.*)(column-odb.hxx)|(.*)(image-odb.hxx)%$2$4%"
+    --include-regex "%(.*)(column-odb.hxx)|(.*)(image-odb.hxx)%$2$4%"
     --include-regex "%das_object-odb.hxx%ddl/types/'''+db_type+'''/das_object-odb.hxx%"
     --include-regex "%das_object.hpp%../../../das_object.hpp%"
 
+    --profile boost/date-time/posix-time
+
     --default-pointer std::tr1::shared_ptr
+
+
     -I${ODB_SOURCE_DIR}
     -I${CPP_INCLUDE_DIR}
     -I${ODB_INCLUDE_DIR}
@@ -311,34 +315,34 @@ install(
 )
 
 add_executable(main_test ${TEST_SOURCE_DIR}/main.cpp)
-target_link_libraries(main_test das ${ODB_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+target_link_libraries(main_test das ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
 
 add_executable(metadata_test EXCLUDE_FROM_ALL ${TEST_SOURCE_DIR}/metadata_test.cpp)
-target_link_libraries(metadata_test das ${ODB_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+target_link_libraries(metadata_test das ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
 
 add_executable(association_test EXCLUDE_FROM_ALL ${TEST_SOURCE_DIR}/association_test.cpp)
-target_link_libraries(association_test das ${ODB_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+target_link_libraries(association_test das ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
 
 add_executable(data_test EXCLUDE_FROM_ALL ${TEST_SOURCE_DIR}/data_test.cpp)
-target_link_libraries(data_test boost_thread boost_random das ${ODB_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+target_link_libraries(data_test boost_thread boost_random das ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
 
 add_executable(array_column_test EXCLUDE_FROM_ALL ${TEST_SOURCE_DIR}/array_column_test.cpp)
-target_link_libraries(array_column_test das ${ODB_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+target_link_libraries(array_column_test das ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
 
 add_executable(rollback_test EXCLUDE_FROM_ALL ${TEST_SOURCE_DIR}/rollback_test.cpp)
-target_link_libraries(rollback_test boost_thread das ${ODB_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+target_link_libraries(rollback_test boost_thread das ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
 
 add_executable(persistence_example EXCLUDE_FROM_ALL ${EXAMPLES_SOURCE_DIR}/persistence_example.cpp)
-target_link_libraries(persistence_example das ${ODB_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+target_link_libraries(persistence_example das ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
 
 add_executable(query_example EXCLUDE_FROM_ALL ${EXAMPLES_SOURCE_DIR}/query_example.cpp)
-target_link_libraries(query_example das ${ODB_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+target_link_libraries(query_example das ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
 
 add_executable(associations_example EXCLUDE_FROM_ALL ${EXAMPLES_SOURCE_DIR}/associations_example.cpp)
-target_link_libraries(associations_example das ${ODB_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+target_link_libraries(associations_example das ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
 
 add_executable(data_example EXCLUDE_FROM_ALL ${EXAMPLES_SOURCE_DIR}/data_example.cpp)
-target_link_libraries(data_example das ${ODB_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+target_link_libraries(data_example das ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
 
 add_custom_target(examples 
   DEPENDS 
@@ -433,7 +437,7 @@ add_custom_command(
     if has_gc:
         f.write('''
 add_executable(das_'''+db_str+'''_gc ${DDL_SOURCE_DIR}/'''+db_str+'''_gc.cpp)
-target_link_libraries(das_'''+db_str+'''_gc das ${ODB_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+target_link_libraries(das_'''+db_str+'''_gc das ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
 
 install(
   TARGETS das_'''+db_str+'''_gc
@@ -450,7 +454,6 @@ install(
 
 set(CRON_SCHED_'''+db_str+''' "0 1 1,11,21 * *" CACHE STRING "crontab expression for the garbage collector deamon")
 set(CRON_JOB_'''+db_str+''' ${CMAKE_INSTALL_PREFIX}/bin/das_'''+db_str+'''_gc)
-#set(CRON_COMMAND_'''+db_str+''' cat <\(crontab -l | grep -v ${CRON_JOB_'''+db_str+'''}\) <\(echo "${CRON_SCHED_'''+db_str+'''} ${CRON_JOB_'''+db_str+'''}"\) | crontab - )
 
 find_program( CRONTAB_EXEC crontab)
 

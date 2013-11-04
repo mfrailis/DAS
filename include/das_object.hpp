@@ -9,6 +9,7 @@
 #include <string>
 #include <boost/variant.hpp>
 #include <boost/unordered_map.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include "ddl/info.hpp"
 #include "ddl/column.hpp"
@@ -39,6 +40,10 @@ public:
     void operator() (std::string& keyword, const char* value) const {
         keyword = value;
     }
+    
+    void operator() (boost::posix_time::ptime& keyword, const boost::posix_time::ptime& value) const {
+        keyword = value;
+    }
 
     template<typename Key_type, typename Arg_type>
     void operator() (Key_type& keyword, const Arg_type& value) const {
@@ -49,11 +54,31 @@ public:
     void operator() (std::string& keyword, const Arg_type& value) const {
         std::cout << "cannot assign numbers to string" << std::endl;
     }
+    
+    template<typename Arg_type>
+    void operator() (boost::posix_time::ptime& keyword, const Arg_type& value) const {
+        std::cout << "cannot assign numbers to string" << std::endl;
+    }
+    
+    void operator() (boost::posix_time::ptime& keyword, const std::string& value) const {
+        std::cout << "cannot assign numbers to string" << std::endl;
+    }
 
     template<typename Key_type>
     void operator() (Key_type& keyword, const std::string& value) const {
         std::cout << "cannot assign string to numeric type" << std::endl;
     }
+    
+    template<typename Key_type>
+    void operator() (Key_type& keyword, const boost::posix_time::ptime& value) const {
+        std::cout << "cannot assign string to numeric type" << std::endl;
+    }
+    
+    void operator() (std::string& keyword, const boost::posix_time::ptime& value) const {
+        std::cout << "cannot assign string to numeric type" << std::endl;
+    }
+    
+    
 };
 
 template<typename T>
@@ -64,10 +89,17 @@ public:
     T operator() (Key_type& key) const {
         return key;
     }
+    
+    T operator() (boost::posix_time::ptime& key) const {
+        T lhs = 0;
+        std::cout << "cannot assign string to numeric type" << std::endl;
+        return lhs;
+    }
 
     T operator() (std::string& key) const {
         T lhs = 0;
         std::cout << "cannot assign string to numeric type" << std::endl;
+        return lhs;
     }
 };
 
@@ -86,6 +118,21 @@ public:
     }
 };
 
+template<>
+class Key_get<boost::posix_time::ptime> : public boost::static_visitor<boost::posix_time::ptime> {
+public:
+
+    template<typename Key_type>
+    boost::posix_time::ptime operator() (Key_type& key) const {
+        std::cout << "cannot assign numbers to string" << std::endl;
+        return boost::posix_time::ptime();
+    }
+
+    boost::posix_time::ptime operator() (boost::posix_time::ptime& key) const {
+        return key;
+    }
+};
+
 #pragma db object abstract
 
 class DasObject {
@@ -99,7 +146,8 @@ public:
     float,
     double,
     bool,
-    std::string
+    std::string,
+    boost::posix_time::ptime
     > keyword_type;
 
     typedef boost::variant<
@@ -111,7 +159,8 @@ public:
     float&,
     double&,
     bool&,
-    std::string&
+    std::string&,
+    boost::posix_time::ptime&
     > keyword_type_ref;
 
     const KeywordInfo&
@@ -144,15 +193,9 @@ public:
         return dbUserId_;
     }
 
-    const long long&
+    const boost::posix_time::ptime&
     creationDate() const {
         return creationDate_;
-    }
-
-    void
-    creationDate(long long &creationDate) {
-        creationDate_ = creationDate;
-        is_dirty_ = true;
     }
 
     const short&
@@ -439,7 +482,7 @@ private:
         keywords_.insert(std::pair<std::string, keyword_type_ref>("name", name_));
         keywords_.insert(std::pair<std::string, keyword_type_ref>("version", version_));
         keywords_.insert(std::pair<std::string, keyword_type_ref>("dbUserId", dbUserId_));
-        keywords_.insert(std::pair<std::string, keyword_type_ref>("creationDate", creationDate_));
+//        keywords_.insert(std::pair<std::string, keyword_type_ref>("creationDate", creationDate_));
     }
 
     std::string get_name() const {
@@ -465,7 +508,9 @@ private:
 
 #pragma db type("VARCHAR(256)")
     std::string dbUserId_;
-    long long creationDate_;
+    
+#pragma db type("TIMESTAMP") options("DEFAULT CURRENT_TIMESTAMP()") not_null
+    boost::posix_time::ptime creationDate_;
 
 #pragma db transient
     std::auto_ptr<das::StorageAccess> sa_;
