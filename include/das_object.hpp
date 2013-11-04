@@ -380,6 +380,7 @@ protected:
     das_id_(0),
     is_dirty_(false) {
         init();
+        dbUserId_ = das::DatabaseConfig::database(db_alias).user;
     }
 #pragma db transient
     std::string type_name_;
@@ -482,7 +483,7 @@ private:
         keywords_.insert(std::pair<std::string, keyword_type_ref>("name", name_));
         keywords_.insert(std::pair<std::string, keyword_type_ref>("version", version_));
         keywords_.insert(std::pair<std::string, keyword_type_ref>("dbUserId", dbUserId_));
-//        keywords_.insert(std::pair<std::string, keyword_type_ref>("creationDate", creationDate_));
+        keywords_.insert(std::pair<std::string, keyword_type_ref>("creationDate", creationDate_));
     }
 
     std::string get_name() const {
