@@ -133,6 +133,7 @@ foreach(type_name ${TYPE_NAMES_ALL})
             --include-regex "%ddl_(.+).hpp%../ddl_$1.hpp%"
             --profile boost/unordered
             --profile boost/date-time/posix-time
+            --profile boost/optional
 
             --default-pointer std::tr1::shared_ptr
 	    -I${ODB_SOURCE_DIR}
@@ -396,6 +397,7 @@ foreach(type_name ${TYPE_NAMES})
 	    --generate-schema-only
             --omit-drop
             --profile boost/unordered
+            --profile boost/optional
 
             -I${ODB_SOURCE_DIR}
             -I${CPP_INCLUDE_DIR}
@@ -454,6 +456,7 @@ install(
 
 set(CRON_SCHED_'''+db_str+''' "0 1 1,11,21 * *" CACHE STRING "crontab expression for the garbage collector deamon")
 set(CRON_JOB_'''+db_str+''' ${CMAKE_INSTALL_PREFIX}/bin/das_'''+db_str+'''_gc)
+#set(CRON_COMMAND_'''+db_str+''' cat <\(crontab -l | grep -v ${CRON_JOB_'''+db_str+'''}\) <\(echo "${CRON_SCHED_'''+db_str+'''} ${CRON_JOB_'''+db_str+'''}"\) | crontab - )
 
 find_program( CRONTAB_EXEC crontab)
 

@@ -41,7 +41,7 @@ class DdlSwigGenerator(DdlVisitor):
   
   KTYPE_MAP = {'byte':'signed char', 'char':'char', 'int16':'short', 'int32':'int', 
                'int64':'long long', 'float32':'float', 'float64':'double', 
-               'boolean':'bool', 'string':'std::string', 'text' : 'CBLOB'}
+               'boolean':'bool', 'string':'std::string', 'text' : 'std::string'}
 
   def __init__(self, src_dir, instance):
       
@@ -81,6 +81,7 @@ class DdlSwigGenerator(DdlVisitor):
 #include "tpl/database.hpp"
 %}
 
+%import "das_optional.i"
 %import "das_object.i"
 %import "database.i"
 %import "result.i"
@@ -174,7 +175,7 @@ class DdlSwigGenerator(DdlVisitor):
 
 
 def _dec_getter(attribute_name, attribute_type):
-  method_declaration = ["const " + attribute_type + "&"]
+  method_declaration = ["das::optional< " + attribute_type + " >"]
   method_declaration.extend([attribute_name + " () const;\n"])
   return method_declaration
   

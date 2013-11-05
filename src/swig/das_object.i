@@ -9,8 +9,19 @@
 #define SWIG_SHARED_PTR_SUBNAMESPACE tr1
 %include <std_shared_ptr.i>
 %shared_ptr(DasObject)
-
-
+ 
+%typemap(out) boost::posix_time::ptime {
+  boost::gregorian::date date = $1.date();
+  boost::posix_time::time_duration td = $1.time_of_day();
+  $result = PyDateTime_FromDateAndTime((int)date.year(),
+				       (int)date.month(),
+				       (int)date.day(),
+				       td.hours(),
+				       td.minutes(),
+				       td.seconds(),
+				       get_usecs(td));
+ }
+ 
 class DasObject {
 public:
 
@@ -26,12 +37,9 @@ public:
 
   const std::string&
     dbUserId() const; 
-
-  const long long&
+  
+  const boost::posix_time::ptime&
     creationDate() const; 
-
-  void
-    creationDate(long long &creationDate);
   
   const short&
     version() const; 

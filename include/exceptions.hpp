@@ -109,6 +109,16 @@ namespace das {
         }
 
     }; //TODO
+    
+        class bad_keyword_type : public std::exception {
+    public:
+
+        virtual const char*
+        what() const throw () {
+            return "object type and keyword type incompatible";
+        }
+
+    }; //TODO
 
     class column_not_present : public std::exception {
     public:

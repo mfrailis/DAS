@@ -3,8 +3,6 @@ project(libdas)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/resources/")
 set(ODB_COMPILER_DIR  CACHE PATH "hint to where to find odb compiler executable")
-
-
 find_package(Boost 1.47 REQUIRED)
 find_package(ODB REQUIRED)
 find_package(ODB_BOOST REQUIRED)
@@ -24,7 +22,7 @@ set(COMMON_LIBRARIES
 )
 
 set(CMAKE_BUILD_TYPE debug)
-set(CMAKE_CXX_FLAGS_DEBUG "-g -DVDBG")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -DVDBG -ftime-report")
 
 set(CPP_SOURCE_DIR ${CMAKE_SOURCE_DIR}/src/cpp)
 set(CPP_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
@@ -147,7 +145,7 @@ if(SWIG_FOUND AND PYTHONLIBS_FOUND)
   set_source_files_properties(${SWIG_SOURCE_DIR}/pydas.i PROPERTIES CPLUSPLUS ON)
   set_source_files_properties(${SWIG_SOURCE_DIR}/pydas.i PROPERTIES SWIG_FLAGS "-includeall")
   swig_add_module(pydas python ${SWIG_SOURCE_DIR}/pydas.i)
-  swig_link_libraries(pydas ${PYTHON_LIBRARIES} das odb odb-mysql)
+  swig_link_libraries(pydas ${PYTHON_LIBRARIES} das ${COMMON_LIBRARIES} odb-mysql)
 
 endif()
 

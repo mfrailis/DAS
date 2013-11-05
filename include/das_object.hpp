@@ -11,6 +11,7 @@
 #include <boost/unordered_map.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
+#include "optional.hpp"
 #include "ddl/info.hpp"
 #include "ddl/column.hpp"
 #include "ddl/image.hpp"
@@ -33,14 +34,14 @@ namespace das {
 class Key_set : public boost::static_visitor<void> {
 public:
 
-    void operator() (std::string& keyword, const std::string& value) const {
+    void operator() (boost::optional<std::string>& keyword, const std::string& value) const {
         keyword = value;
     }
 
-    void operator() (std::string& keyword, const char* value) const {
+    void operator() (boost::optional<std::string>& keyword, const char* value) const {
         keyword = value;
     }
-    
+
     void operator() (boost::posix_time::ptime& keyword, const boost::posix_time::ptime& value) const {
         keyword = value;
     }
@@ -51,10 +52,10 @@ public:
     }
 
     template<typename Arg_type>
-    void operator() (std::string& keyword, const Arg_type& value) const {
-        std::cout << "cannot assign numbers to string" << std::endl;
+    void operator() (boost::optional<std::string>& keyword, const Arg_type& value) const {
+        throw das::bad_keyword_type();
     }
-    
+
     template<typename Arg_type>
     void operator() (boost::posix_time::ptime& keyword, const Arg_type& value) const {
         std::cout << "cannot assign numbers to string" << std::endl;
@@ -66,7 +67,7 @@ public:
 
     template<typename Key_type>
     void operator() (Key_type& keyword, const std::string& value) const {
-        std::cout << "cannot assign string to numeric type" << std::endl;
+        throw das::bad_keyword_type();
     }
     
     template<typename Key_type>
@@ -74,7 +75,7 @@ public:
         std::cout << "cannot assign string to numeric type" << std::endl;
     }
     
-    void operator() (std::string& keyword, const boost::posix_time::ptime& value) const {
+    void operator() (boost::optional<std::string>& keyword, const boost::posix_time::ptime& value) const {
         std::cout << "cannot assign string to numeric type" << std::endl;
     }
     
@@ -82,39 +83,52 @@ public:
 };
 
 template<typename T>
-class Key_get : public boost::static_visitor<T> {
+class Key_get : public boost::static_visitor<das::optional<T> > {
 public:
 
     template<typename Key_type>
-    T operator() (Key_type& key) const {
-        return key;
+    das::optional<T> operator() (boost::optional<Key_type>& key) const {
+        boost::optional<T> opt(key);
+        return das::optional<T>(opt);
     }
     
-    T operator() (boost::posix_time::ptime& key) const {
-        T lhs = 0;
+    template<typename Key_type>
+    das::optional<T> operator() (Key_type& key) const {
+        return key;
+    }
+
+    das::optional<T> operator() (boost::posix_time::ptime& key) const {
+        das::optional<T> lhs = 0;
         std::cout << "cannot assign string to numeric type" << std::endl;
         return lhs;
     }
 
-    T operator() (std::string& key) const {
-        T lhs = 0;
-        std::cout << "cannot assign string to numeric type" << std::endl;
-        return lhs;
+
+    das::optional<T> operator() (boost::optional<std::string>& key) const {
+        throw das::bad_keyword_type();
     }
+    
+    das::optional<T> operator() (std::string& key) const {
+        throw das::bad_keyword_type();
+    }
+    
 };
 
 template<>
-class Key_get<std::string> : public boost::static_visitor<std::string> {
+class Key_get<std::string> : public boost::static_visitor<das::optional<std::string> > {
 public:
 
     template<typename Key_type>
-    std::string operator() (Key_type& key) const {
-        std::cout << "cannot assign numbers to string" << std::endl;
-        return std::string("bad value");
+    das::optional<std::string> operator() (Key_type& key) const {
+        throw das::bad_keyword_type();
+    } 
+    
+    das::optional<std::string> operator() (std::string& key) const {
+        return das::optional<std::string>(key);
     }
-
-    std::string operator() (std::string& key) const {
-        return key;
+    
+    das::optional<std::string> operator() (boost::optional<std::string>& key) const {
+        return das::optional<std::string>(key);
     }
 };
 
@@ -151,16 +165,19 @@ public:
     > keyword_type;
 
     typedef boost::variant<
-    signed char&,
-    char&,
-    short&,
-    int&,
-    long long&,
-    float&,
-    double&,
-    bool&,
-    std::string&,
-    boost::posix_time::ptime&
+    long long,                   // das_id
+    std::string,                 // name
+    short,                       // version
+    boost::posix_time::ptime&,   // creationDate
+    boost::optional<signed char>&,
+    boost::optional<char>&,
+    boost::optional<short>&,
+    boost::optional<int>&,
+    boost::optional<long long>&,
+    boost::optional<float>&,
+    boost::optional<double>&,
+    boost::optional<bool>&,
+    boost::optional<std::string>&
     > keyword_type_ref;
 
     const KeywordInfo&
@@ -337,7 +354,7 @@ public:
     }
 
     template<typename T>
-    T
+    das::optional<T>
     get_key(const std::string &keyword_name) {
         return boost::apply_visitor(Key_get<T>(), keywords_.at(keyword_name));
     }
@@ -452,29 +469,39 @@ protected:
     }
 
     static inline
-    std::string
-    escape_string(const std::string &str) {
-        std::string s;
-        size_t len = str.length();
-        for (size_t i = 0; i < len; ++i) {
-            if (str[i] == '\'')
-                s.push_back('\\');
-            s.push_back(str[i]);
+    boost::optional<std::string>
+    escape_string(const boost::optional<std::string> &opt) {
+        boost::optional<std::string> result;
+        if (opt) {
+            std::string str = opt.get();
+            std::string s;
+            size_t len = str.length();
+            for (size_t i = 0; i < len; ++i) {
+                if (str[i] == '\'')
+                    s.push_back('\\');
+                s.push_back(str[i]);
+            }
+            result = s;
         }
-        return s;
+        return result;
     }
 
     static inline
-    std::string
-    unescape_string(const std::string &str) {
-        std::string s;
-        size_t len = str.length();
-        for (size_t i = 0; i < len; ++i) {
-            if (str[i] == '\\' && i + 1 < len && str[i + 1] == '\'')
-                continue;
-            s.push_back(str[i]);
+    boost::optional<std::string>
+    unescape_string(const boost::optional<std::string> &opt) {
+        boost::optional<std::string> result;
+        if (opt) {
+            std::string str = opt.get();
+            std::string s;
+            size_t len = str.length();
+            for (size_t i = 0; i < len; ++i) {
+                if (str[i] == '\\' && i + 1 < len && str[i + 1] == '\'')
+                    continue;
+                s.push_back(str[i]);
+            }
+            result = s;
         }
-        return s;
+        return result;
     }
 private:
 
@@ -487,11 +514,11 @@ private:
     }
 
     std::string get_name() const {
-        return escape_string(name_);
+        return escape_string(boost::make_optional(name_)).get();
     }
 
     void set_name(const std::string &name) {
-        name_ = unescape_string(name);
+        name_ = unescape_string(boost::make_optional(name)).get();
     }
 
     friend class odb::access;
@@ -509,9 +536,10 @@ private:
 
 #pragma db type("VARCHAR(256)")
     std::string dbUserId_;
-    
+
 #pragma db type("TIMESTAMP") options("DEFAULT CURRENT_TIMESTAMP()") not_null
-    boost::posix_time::ptime creationDate_;
+    boost::posix_time::ptime creationDate_;    
+
 
 #pragma db transient
     std::auto_ptr<das::StorageAccess> sa_;
