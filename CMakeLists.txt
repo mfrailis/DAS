@@ -3,6 +3,8 @@ project(libdas)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/resources/")
 set(ODB_COMPILER_DIR  CACHE PATH "hint to where to find odb compiler executable")
+
+
 find_package(Boost 1.47 REQUIRED)
 find_package(ODB REQUIRED)
 find_package(ODB_BOOST REQUIRED)
@@ -80,8 +82,7 @@ set(DAS_SRC
   ${CPP_SOURCE_DIR}/column_buffer.cpp
   ${CPP_SOURCE_DIR}/image_buffer.cpp
 #remove from now on
-${CPP_SOURCE_DIR}/storage_engine_raw.cpp
-
+  ${CPP_SOURCE_DIR}/storage_engine_raw.cpp
 )
 
 include_directories(${CPP_INCLUDE_DIR})
@@ -150,7 +151,6 @@ if(SWIG_FOUND AND PYTHONLIBS_FOUND)
 endif()
 
 install(DIRECTORY include/ DESTINATION include/das)
-
 
 #add_library(das ${DAS_QL_SRC} ${DAS_SRC} ${TYPES_SRC} ${ODB_SRC})
 
