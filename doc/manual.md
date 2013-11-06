@@ -4,7 +4,7 @@ DAS user manual
 Configuring the system
 ----------------------
 
-In order to cofigure and build the DAS system you need to edit some configuration files:
+In order to co figure and build the DAS system you need to edit some configuration files:
 
   * config.json : is located in the configure directory and contains the basic information 
 	  about the database, the way the data is persisted, and the reference of the ddl files.
@@ -16,8 +16,8 @@ In order to cofigure and build the DAS system you need to edit some configuratio
 
 ## config.json ##
 
-The configuration file contains an array of ocjects. Each one contanins a configuration for a 
-different database. The file is parsed and validated during the configuraration step (cmake command)
+The configuration file contains an array of objects. Each one contains a configuration for a 
+different database. The file is parsed and validated during the configuration step (cmake command)
 through the json-schema file resources/config_schema.json. Note that each change to this file must be
 followed by a reconfiguration of the DAS system in order to make them active.
 
@@ -64,7 +64,7 @@ Each of the properties shown in this example are mandatory:
   * port : the listening port of the database
   * db_type : the database vendor, currently only mysql is supported
   * alias : human readable name to use in the code to refer to this database
-  * db_name : the name of the database to access for storing metadata
+  * db_name : the name of the database to access for storing meta-data
   * ddl : the relative path of the file that contains the DDL for this database
   * storage_engine : this object contains the configuration of the data storage engine.
 	Except for name, all other properties change for each engine type. Please refer to the 
@@ -81,27 +81,27 @@ collector runs and remove the obsolete files.
 
 this properties must be provided in the config.json file:
   * name : name of the storage engine, the value "Raw" identifies this one.
-  * root_dir : absolute path to the data. each data file will be stored in a subdirectory of this path
+  * root_dir : absolute path to the data. each data file will be stored in a sub-directory of this path
   *	default_path : expression for the default relative path for the data. The resolved expression 
 	  appended to the root_path forms the complete path for the data file. The possible token will
-	  be analized in the next session. Note that the tokens '\%n' and '\%v' are mandatory, as say the
+	  be analyzed in the next session. Note that the tokens '\%n' and '\%v' are mandatory, as say the
 	  have to appear somewhere in the expression.
   * custom_path : expression for the custom relative path for the data. Like the default_path
 	  expression, the resolved expression appended to the root_path forms the complete path for
-	  the data file. The token '\%s' is resolved runtime with the string provided by the user as 
+	  the data file. The token '\%s' is resolved run-time with the string provided by the user as 
 	  argument to the persist methods. Please note that the tokens '\%n' and '\%v' are still mandatory.
-	  If the token '\%s' doesm't appear in the expression the eventual string argument provided in the 
+	  If the token '\%s' doesn't appear in the expression the eventual string argument provided in the 
 	  persist methods will be ignored.
   * temp_path : this expression represent the absolute path for the temporary data, i.e. the data not
 	  yet persisted in a transaction. This data file will be eventually moved in the final path 
 	  during the transaction commit of the owning object. Note that if the temp_path and root_dir
-	  are mounted in the same filesystem volume the move operation does not involve any copy.
-  * unref_data_expiration_time : this parameter referes to the garbage collector. Each time the 
+	  are mounted in the same file-system volume the move operation does not involve any copy.
+  * unref_data_expiration_time : this parameter refers to the garbage collector. Each time the 
 	  garbage collector runs, the obsolete data files are deleted if the modification time plus
 	  unref_data_expiration_time is less then the current time. this value is expressed in seconds.
-	  Note that the current time is retrived from the machine wich runs the garbage collector, hence 
+	  Note that the current time is retrieved from the machine which runs the garbage collector, hence 
 	  this machine must be kept synchronized (e.g. using a common ntp server) with the machine serving
-	  the data filesystem.
+	  the data file-system.
 	  
 #### path tokens ####
 
@@ -140,8 +140,8 @@ tokens escaped by the character '\%'.
   | \%X    | Time representation *                                                  | 14-55-02
   | \%y    | Year, last two digits (00-99)                                          | 01
   | \%Y    | Year                                                                   | 2001
-  | \%z    | ISO 8601 offset from UTC in timezone (1 minute=1, 1 hour=100). If timezone cannot be termined, no characters | +100
-  | \%Z    | Timezone name or abbreviation. If timezone cannot be termined, no characters * |	CDT
+  | \%z    | ISO 8601 offset from UTC in timezone (1 minute=1, 1 hour=100). If timezone cannot be determined, no characters | +100
+  | \%Z    | Timezone name or abbreviation. If timezone cannot be determined, no characters * |	CDT
   
 
 * The specifiers marked with an asterisk (*) are locale-dependent.
@@ -166,7 +166,7 @@ tokens escaped by the character '\%'.
 ## access.json ##
 
 This file must exists in the $HOME/.das/ directory of the user and contains the credentials to access
-the databases. This file is read runtime therefore changes on them may be performed without any further
+the databases. This file is read run-time therefore changes on them may be performed without any further
 configuration.
 
 ~~~{.js} 
