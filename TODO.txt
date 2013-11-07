@@ -1,5 +1,5 @@
 
-*  wrap ddl-objects members with boost::optional, allowing null semantics on the database
+V  wrap ddl-objects members with boost::optional, allowing null semantics on the database
 *  check das query-compiler with mysql strange float types behavior
 *  implement load_for_update method in order lock database table rows
 V  pre-query cache flush only for involved types

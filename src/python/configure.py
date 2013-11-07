@@ -389,13 +389,17 @@ set(TYPE_NAMES ''')
     f.write(''')
 
 set(SQL_FILES)
+set(SQL_DDL_FILES)
+set(SQL_CONSTRAINT_FILES)
 foreach(type_name ${TYPE_NAMES})
   add_custom_command(
-    OUTPUT ${TYPE_PREFIX}${type_name}.sql
+    OUTPUT ${TYPE_PREFIX}${type_name}.sql.orig
     COMMAND ${ODB_COMPILER}
             --database '''+db_type+'''
 	    --generate-schema-only
             --omit-drop
+            --fkeys-deferrable-mode not_deferrable
+            --sql-suffix .sql.orig
             --profile boost/unordered
             --profile boost/optional
 
@@ -407,7 +411,18 @@ foreach(type_name ${TYPE_NAMES})
     DEPENDS ${DDL_LOCAL_SIGNATURE}
     COMMENT "Generating schema for type ${type_name} on '''+db['alias']+'''"
     )
-  list(APPEND SQL_FILES ${TYPE_PREFIX}${type_name}.sql)
+  add_custom_command(
+    OUTPUT ${TYPE_PREFIX}${type_name}.const.sql ${TYPE_PREFIX}${type_name}.ddl.sql
+    COMMAND python ${PYTHON_SOURCE_DIR}/'''+db_type+'''_ddl_splitter.py
+            ${TYPE_PREFIX}${type_name}.sql.orig
+            ${TYPE_PREFIX}${type_name}.ddl.sql
+            ${TYPE_PREFIX}${type_name}.const.sql
+    DEPENDS ${DDL_LOCAL_SIGNATURE} ${TYPE_PREFIX}${type_name}.sql.orig
+    COMMENT "Splitting schema and constraints for type ${type_name} on '''+db['alias']+'''"
+    )
+  list(APPEND SQL_FILES ${TYPE_PREFIX}${type_name}.sql.orig)
+  list(APPEND SQL_CONSTRAINT_FILES ${TYPE_PREFIX}${type_name}.const.sql)
+  list(APPEND SQL_DDL_FILES ${TYPE_PREFIX}${type_name}.ddl.sql)
 endforeach()
 
 add_custom_command(
@@ -431,7 +446,7 @@ add_custom_command(
           ${DDL_SCHEMA}
           ${DDL_INSTANCE_DIR}/'''+db['ddl']+'''
           ${TYPE_PREFIX}
-  DEPENDS ${DDL_LOCAL_SIGNATURE}
+  DEPENDS ${DDL_LOCAL_SIGNATURE} ${SQL_CONSTRAINT_FILES} ${SQL_DDL_FILES}
   WORKING_DIRECTORY ${PYTHON_SOURCE_DIR}
   COMMENT "Executing '''+db['db_type']+''' on '''+db['alias']+'''"
 )

@@ -4,6 +4,7 @@ import jsonschema as _js
 import MySQLdb as _my
 import ddl as _d
 import os as _os
+import re
 from warnings import filterwarnings
 
 MYSQL_DDL_SCHEMA='''
@@ -132,10 +133,16 @@ class JsonAccessParser:
                 exit(1)
                 
             code = self._generate_mysql(cur_types,new_types)
-            for i in code:
+            for (ddl,cnst) in code:
                 cc = db.cursor()
-                cc.execute(i)
+                cc.execute(ddl)
                 cc.close()
+
+            for (ddl,cnst) in code:
+                if(cnst != ''):
+                    cc = db.cursor()
+                    cc.execute(cnst)
+                    cc.close()
 
             lc = lock.cursor()
             if is_new:
@@ -180,18 +187,35 @@ class JsonAccessParser:
             ct = cur.type_map.get(t.name,None)
             if ct is None:
                 if t.name != "essentialMetadata":
-                    f_name =_os.path.join(self._dir,self._pref + t.name + ".sql")
-                    f = open(f_name, 'r')
-                    text = f.read()
+                    f_ddl_name =_os.path.join(self._dir,self._pref + t.name + ".ddl.sql")
+                    f_cns_name =_os.path.join(self._dir,self._pref + t.name + ".const.sql")
+                    
+                    f = open(f_ddl_name, 'r')
+                    ddl = f.read()
                     f.close()
-                    code.append(text)
+                     
+                    f = open(f_cns_name, 'r')
+                    const = f.read()
+                    f.close()                   
+
+                    code.append((ddl,const))
             else:
                 # perform type upgrade operations
                 print "skipping "+t.name
                 pass
             
         return code
-                   
+
+    def _split_ddl_mysql(self,text):
+        ddl = text
+        constraints = re.findall('ALTER TABLE[a-zA-Z0-9\ \`\,_\(\)\n]*;',text)
+        
+        const_str = ''
+        for cs in constraints:
+            ddl = ddl.replace(cs,'')
+            const_str = const_str + cs + '\n'
+
+        return (ddl,const_str)
     
 
             
