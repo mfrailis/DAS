@@ -125,7 +125,7 @@ foreach(type_name ${TYPE_NAMES_ALL})
             --generate-session
             --include-regex "%${TYPE_PREFIX}${type_name}-odb.hxx%ddl/types/'''+db_type+'''/${TYPE_PREFIX}${type_name}-odb.hxx%"
             --include-regex "%(column.hpp)|(image.hpp)%../../../ddl/$1$2%"
-            --include-regex "%(.*)(column-odb.hxx)|(.*)(image-odb.hxx)%$2$4%"
+            --include-regex "%(.*/)(column-odb.hxx)|(.*/)(image-odb.hxx)%$2$4%"
             --include-regex "%aux_query.hpp%../../../internal/aux_query.hpp%"
             --include-regex "%(.*)das_object-odb.hxx%das_object-odb.hxx%"
             --include-regex "%(.*)ddl_(.+).hxx%ddl_$2.hxx%"
