@@ -23,65 +23,68 @@
     -->      
     
     
-    <type name="campaign">
-        <associated name="campaign_site" type="site" multiplicity="one" relation="shared"/>
-        <associated name="campaign_test" type="testlevel" multiplicity="one" relation="shared" />  
-    </type>
-    
-    
-    <type name="site">
+    <type name="plan">
         <metadata>
-            <keyword name="desc" type="string" />
+            <keyword name="link_redmine" type="string" />
         </metadata>
     </type>
-    
-    
-    <type name="testlevel">
-        <metadata>
-            <keyword name="desc" type="string" />
-        </metadata>
-    </type>
-    
+   
     
     <type name="session">
-        <associated name="session_campaign" type="campaign" multiplicity="one" relation="shared" />
+        <associated name="session_plan" type="plan" multiplicity="one" relation="shared" />
         <metadata>
-            <keyword name="startdate" type="int64"/>
-            <keyword name="enddate" type="int64" />
-            <keyword name="session_log" type="text"/>
+            <keyword name="link_redmine" type="string"/>
         </metadata>
     </type>
     
+ 
+    <type name="measureblock" >
+        <associated name="mblock_session" type="session" multiplicity="one" relation="shared"/>
+        <metadata>
+            <keyword name="link_redmine" type="string"/>
+        </metadata>       
+    </type>
     
+ 
+ 
     <type name="measure" >
         <associated name="measure_session" type="session" multiplicity="one" relation="shared"/>
-        <associated name="log" type="measurelogs" multiplicity="many" relation="exclusive"/>
+        <associated name="log" type="measurelog" multiplicity="many" relation="exclusive"/>
         <metadata>
-            <keyword name="run_id" type="int32"/>
-            <keyword name="obs_id" type="string"/>
+            <keyword name="runid" type="int32"/>
+            <keyword name="status" type="int32"/>
             <keyword name="startdate" type="int64"/>
-            <keyword name="enddate" type="int64"/>           
+            <keyword name="enddate" type="int64"/>   
+            <keyword name="pipelineid" type="int32"/>
+            <keyword name="link_redmine" type="string"/>
         </metadata>               
     </type>
     
     
-    <type name="measurelogs">
-        <associated name="images" type="measurelogimages" multiplicity="many" relation="exclusive"/>        
+    <type name="measurelog">
+        <associated name="images" type="measurelogimage" multiplicity="many" relation="exclusive"/>        
         <metadata>
             <keyword name="text" type="text"/>
-            <keyword name="creation_date" type="int64"/>
             <keyword name="last_update_date" type="int64"/>            
         </metadata>
     </type>
     
     
-    <type name="measurelogimages">
-        <metadata>
-            <keyword name="creation_date" type="int64"/>
-        </metadata>
+    <type name="measurelogimage">
         <data storeAs="blob">
             <image pixType="byte"/>
         </data>
+    </type>   
+    
+    
+    <type name="data_file">
+        <associated name="file_measure" type="measure" multiplicity="one" relation="shared"/>
+        <metadata>
+            <keyword name="sequence_number" type="int32"/>
+            <keyword name="filename" type="string"/>
+            <keyword name="startdate" type="int64"/>
+            <keyword name="enddate" type="int64"/>
+        </metadata>
     </type>   
     
     <!-- 
