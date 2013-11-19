@@ -15,6 +15,7 @@ namespace das {
     class Deallocator {
     public:
         virtual void operator() () {}
+        virtual ~Deallocator(){}
     };
     
     template<typename Num_type, int Length>

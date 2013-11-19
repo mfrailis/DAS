@@ -707,9 +707,9 @@ namespace das {
     }
 
     inline
-    const boost::unordered_map<std::string, StorageAccess::keyword_type_ref>&
+    const StorageAccess::keyword_map&
     StorageAccess::get_keywords(DasObject *ptr) {
-        ptr->get_keywords();
+        return ptr->get_keywords();
     }
 
     inline

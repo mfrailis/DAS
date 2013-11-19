@@ -282,7 +282,7 @@ int restore_old(const shared_ptr<D::Database> &db,
     return 0;
 }
 
-template<typename T>
+/*template<typename T>
 bool same_n(size_t size, shared_ptr<T> &assoc) {
     return size == 1;
 }
@@ -290,7 +290,7 @@ bool same_n(size_t size, shared_ptr<T> &assoc) {
 template<typename T>
 bool same_n(size_t size, vector<shared_ptr<T> > &assoc) {
     return size == assoc.size();
-}
+}*/
 
 
 int main() {

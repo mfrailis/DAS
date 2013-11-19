@@ -179,6 +179,8 @@ public:
     boost::optional<bool>&,
     boost::optional<std::string>&
     > keyword_type_ref;
+    
+    typedef boost::unordered_map<std::string, keyword_type_ref> keyword_map;
 
     const KeywordInfo&
     get_keyword_info(std::string keyword_name) throw (std::out_of_range) {
@@ -463,7 +465,7 @@ protected:
     }
 
     const
-    boost::unordered_map<std::string, keyword_type_ref>&
+    keyword_map&
     get_keywords() {
         return keywords_;
     }

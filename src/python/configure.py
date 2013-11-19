@@ -315,8 +315,8 @@ install(
     WORLD_EXECUTE 
 )
 
-add_executable(main_test ${TEST_SOURCE_DIR}/main.cpp)
-target_link_libraries(main_test das ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+#add_executable(main_test ${TEST_SOURCE_DIR}/main.cpp)
+#target_link_libraries(main_test das ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
 
 add_executable(metadata_test EXCLUDE_FROM_ALL ${TEST_SOURCE_DIR}/metadata_test.cpp)
 target_link_libraries(metadata_test das ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
@@ -355,7 +355,7 @@ add_custom_target(examples
 
 add_custom_target(tests
   DEPENDS
-    main_test
+   # main_test
     metadata_test
     association_test
     data_test

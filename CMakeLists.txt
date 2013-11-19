@@ -85,6 +85,14 @@ set(DAS_SRC
   ${CPP_SOURCE_DIR}/storage_engine_raw.cpp
 )
 
+set(UNIT_TEST_SRC
+  ${TEST_SOURCE_DIR}/unit_tpl_all.hpp
+  ${TEST_SOURCE_DIR}/unit_metadata.cpp
+  ${TEST_SOURCE_DIR}/unit_association.cpp
+  ${TEST_SOURCE_DIR}/unit_main.cpp  
+  )
+
+
 include_directories(${CPP_INCLUDE_DIR})
 include_directories(${CMAKE_INCLUDE_PATH})
 include_directories(${Boost_INCLUDE_DIR})
@@ -146,9 +154,12 @@ if(SWIG_FOUND AND PYTHONLIBS_FOUND)
   set_source_files_properties(${SWIG_SOURCE_DIR}/pydas.i PROPERTIES CPLUSPLUS ON)
   set_source_files_properties(${SWIG_SOURCE_DIR}/pydas.i PROPERTIES SWIG_FLAGS "-includeall")
   swig_add_module(pydas python ${SWIG_SOURCE_DIR}/pydas.i)
-  swig_link_libraries(pydas ${PYTHON_LIBRARIES} das ${COMMON_LIBRARIES} odb-mysql)
+  swig_link_libraries(pydas ${PYTHON_LIBRARIES} das ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARY})
 
 endif()
+
+add_executable(unit_tests ${UNIT_TEST_SRC})
+target_link_libraries(unit_tests das ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARY} boost_unit_test_framework)
 
 install(DIRECTORY include/ DESTINATION include/das)
 

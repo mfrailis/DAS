@@ -6,8 +6,7 @@
 #include <vector>
 #include <algorithm>
 #include <tr1/memory>
-#include <boost/variant.hpp>
-#include <boost/interprocess/smart_ptr/unique_ptr.hpp>
+
 #include "ddl/column.hpp"
 #include "ddl/image.hpp"
 #include "ddl/info.hpp"
@@ -15,6 +14,12 @@
 #include "internal/array.hpp"
 #include "internal/utility.hpp"
 #include "internal/database_config.hpp"
+
+#include <boost/unordered_map.hpp>
+#include <boost/variant.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/interprocess/smart_ptr/unique_ptr.hpp>
+//#include "das_object.hpp"
 
 using namespace std;
 using std::tr1::shared_ptr;
@@ -27,21 +32,40 @@ namespace das {
     class StorageTransaction;
 
     typedef std::pair<std::string, int> Extension;
-    
+
     class StorageAccess {
     public:
 
         typedef boost::variant<
-        signed char&,
-        char&,
-        short&,
-        int&,
-        long long&,
-        float&,
-        double&,
-        bool&,
-        std::string&
+        signed char,
+        char,
+        short,
+        int,
+        long long,
+        float,
+        double,
+        bool,
+        std::string,
+        boost::posix_time::ptime
+        > keyword_type;
+
+        typedef boost::variant<
+        long long, // das_id
+        std::string, // name
+        short, // version
+        boost::posix_time::ptime&, // creationDate
+        boost::optional<signed char>&,
+        boost::optional<char>&,
+        boost::optional<short>&,
+        boost::optional<int>&,
+        boost::optional<long long>&,
+        boost::optional<float>&,
+        boost::optional<double>&,
+        boost::optional<bool>&,
+        boost::optional<std::string>&
         > keyword_type_ref;
+
+        typedef boost::unordered_map<std::string, keyword_type_ref> keyword_map;
 
         typedef boost::variant<
         char*,
@@ -68,7 +92,7 @@ namespace das {
         ColumnArrayBuffer<unsigned char>,
         ColumnArrayBuffer<unsigned short>,
         ColumnArrayBuffer<unsigned int>,
-        ColumnArrayBuffer<std::string>        
+        ColumnArrayBuffer<std::string>
         > column_array_buffer_ptr;
 
         typedef boost::variant<
@@ -113,9 +137,9 @@ namespace das {
                 ) = 0;
 
         virtual void flush_buffer(ImageFromFile* img) = 0;
-        
+
         virtual bool release(const ColumnFromFile &cff) = 0;
-        
+
         virtual bool release(const ImageFromFile &iff) = 0;
 
         virtual bool buffered_only() {
@@ -132,10 +156,10 @@ namespace das {
         void append_column(const string &col_name, Array<T> &a);
 
         template <typename T, int Rank>
-        ColumnArray<T,Rank> get_column_array(const string &col_name, size_t start, size_t length);
+        ColumnArray<T, Rank> get_column_array(const string &col_name, size_t start, size_t length);
 
-        template <typename T,int Rank>
-        void append_column_array(const string &col_name, ColumnArray<T,Rank> &a);
+        template <typename T, int Rank>
+        void append_column_array(const string &col_name, ColumnArray<T, Rank> &a);
 
         /*template <typename T, int Rank>
         Array<T, Rank> get_image();*/
@@ -173,7 +197,7 @@ namespace das {
         }
 
         static
-        const boost::unordered_map<std::string, keyword_type_ref>&
+        const keyword_map&
         get_keywords(DasObject *ptr);
 
         static
@@ -239,7 +263,7 @@ namespace das {
         static
         const boost::unordered_map<std::string, StorageAccess::keyword_type_ref>&
         get_keywords(DasObject *ptr) {
-            StorageAccess::get_keywords(ptr);
+            return StorageAccess::get_keywords(ptr);
         }
 
         static
