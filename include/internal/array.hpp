@@ -187,6 +187,12 @@ namespace das {
         Array() : super() {
         }
         
+        Array(const TinyVector<int, N_Rank>& extent)
+        : super(extent), policy_(deleteDataWhenDone), dealloc_(0)
+        {
+        }
+        
+        
         ~Array() {
             if (policy_ == neverDeleteData && super::numReferences() == 1)
                 if (dealloc_)

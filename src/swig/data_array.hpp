@@ -56,6 +56,9 @@ namespace das {
 
   template<>
   const int numpy_type_map<unsigned int>::typenum = NPY_UINT;
+  
+  template<>
+  const int numpy_type_map<std::string>::typenum = NPY_OBJECT;
 
 
   // TODO: check if a reference to the DAS Array can be
@@ -95,6 +98,20 @@ namespace das {
     // No need to fix strides
     return py_array;
   }
+  
+  
+  template<>
+  inline PyObject* convert_to_numpy(das::Array<std::string>& array)
+  {
+    npy_intp size = {array.size()};
+    PyObject *py_array = PyArray_SimpleNew(1, &size, numpy_type_map<std::string>::typenum);
+    for (npy_intp i = 0; i < size; i++)
+      PyArray_SETITEM(py_array, 
+                      PyArray_GETPTR1(py_array, i),
+                      SWIG_From_std_string(array(i)));
+      
+    return py_array;
+  }
 
   
   template <typename T>
@@ -110,6 +127,25 @@ namespace das {
     NpyDeallocator *dealloc = new NpyDeallocator(py_obj);
     
     return das::Array<T>(data, shape, das::neverDeleteData, dealloc);
+  }
+  
+  
+  template<>
+  inline das::Array<std::string> convert_to_array(PyObject* py_obj)
+  {
+    das::TinyVector<int,1> shape(0);    
+    npy_intp* dimensions = PyArray_DIMS(py_obj);
+    
+    // TODO: check that dimension fits an integer
+    shape[0] = (int)dimensions[0];  
+    
+    das::Array<std::string> array(shape);
+    
+    for (int i = 0; i < array.size(); i++)
+      array[i] = SWIG_Python_str_AsChar(PyArray_GETITEM(py_obj, 
+                                                        PyArray_GETPTR1(py_obj, i)));
+    
+    return array;    
   }
 
   template <typename T>
@@ -170,6 +206,7 @@ namespace das {
     map_das_object_methods["uint8"] = das_object_func_ptr_T<unsigned char>();
     map_das_object_methods["uint16"] = das_object_func_ptr_T<unsigned short>();
     map_das_object_methods["uint32"] = das_object_func_ptr_T<unsigned int>();
+    map_das_object_methods["string"] = das_object_func_ptr_T<std::string>();
   }
 
 
