@@ -183,7 +183,7 @@ namespace das {
               Deallocator *dealloc = 0)
         : super(buffer, shape, (blitz::preexistingMemoryPolicy) flag), policy_(flag), dealloc_(dealloc)  {
         }
-
+   
         Array() : super() {
         }
         

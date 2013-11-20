@@ -24,7 +24,7 @@ set(COMMON_LIBRARIES
 )
 
 set(CMAKE_BUILD_TYPE debug)
-set(CMAKE_CXX_FLAGS_DEBUG "-g -DVDBG")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -DVDBG --coverage")
 
 set(CPP_SOURCE_DIR ${CMAKE_SOURCE_DIR}/src/cpp)
 set(CPP_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
@@ -89,6 +89,7 @@ set(UNIT_TEST_SRC
   ${TEST_SOURCE_DIR}/unit_tpl_all.hpp
   ${TEST_SOURCE_DIR}/unit_metadata.cpp
   ${TEST_SOURCE_DIR}/unit_association.cpp
+  ${TEST_SOURCE_DIR}/unit_column.cpp
   ${TEST_SOURCE_DIR}/unit_main.cpp  
   )
 
