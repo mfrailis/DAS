@@ -58,11 +58,11 @@ public:
 
     template<typename Arg_type>
     void operator() (boost::posix_time::ptime& keyword, const Arg_type& value) const {
-        std::cout << "cannot assign numbers to string" << std::endl;
+    	throw das::bad_keyword_type();
     }
     
     void operator() (boost::posix_time::ptime& keyword, const std::string& value) const {
-        std::cout << "cannot assign numbers to string" << std::endl;
+    	throw das::bad_keyword_type();
     }
 
     template<typename Key_type>
@@ -72,11 +72,11 @@ public:
     
     template<typename Key_type>
     void operator() (Key_type& keyword, const boost::posix_time::ptime& value) const {
-        std::cout << "cannot assign string to numeric type" << std::endl;
+    	throw das::bad_keyword_type();
     }
     
     void operator() (boost::optional<std::string>& keyword, const boost::posix_time::ptime& value) const {
-        std::cout << "cannot assign string to numeric type" << std::endl;
+    	throw das::bad_keyword_type();
     }
     
     
@@ -98,9 +98,7 @@ public:
     }
 
     das::optional<T> operator() (boost::posix_time::ptime& key) const {
-        das::optional<T> lhs = 0;
-        std::cout << "cannot assign string to numeric type" << std::endl;
-        return lhs;
+    	throw das::bad_keyword_type();
     }
 
 
@@ -138,8 +136,7 @@ public:
 
     template<typename Key_type>
     boost::posix_time::ptime operator() (Key_type& key) const {
-        std::cout << "cannot assign numbers to string" << std::endl;
-        return boost::posix_time::ptime();
+    	throw das::bad_keyword_type();
     }
 
     boost::posix_time::ptime operator() (boost::posix_time::ptime& key) const {
@@ -301,7 +298,7 @@ public:
     get_image_extent(int extent) {
         ImageFromFile *iff = image_from_file();
         if (iff)
-            image_from_file()->extent(extent);
+            return image_from_file()->extent(extent);
         else
             return 0;
     }

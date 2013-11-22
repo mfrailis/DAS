@@ -46,12 +46,15 @@ namespace das {
 
                 for (size_t i = 0; i < count; ++i)
                     buffer.get()[i] = buff_temp.get()[i];
+                s_ = 0;
+            }else{
+                s_ -= c_->file_size();
             }
 
             b += count;
             size_t missing = 0;
             if (count < l_) {
-                T* cached = c_->buffer().copy(b, e, 0);
+                T* cached = c_->buffer().copy(b, e, s_);
                 missing = e - cached;
             }
             if (missing > 0) {
@@ -85,12 +88,15 @@ namespace das {
 
                 if (count < to_read)
                     throw io_exception();
-
+                s_ = 0;
+            }else{
+                s_ -= c_->file_size();
             }
+            
             b += count;
             size_t missing = 0;
             if (count < l_) {
-                T* cached = c_->buffer().copy(b, e, 0);
+                T* cached = c_->buffer().copy(b, e, s_);
                 missing = e - cached;
             }
             if (missing > 0)
@@ -100,13 +106,13 @@ namespace das {
         }
 
         Array<T> operator()(std::string & native_type) const {
-            throw das::not_implemented();
+            throw das::bad_type();
         }
 
     private:
         StorageAccess *sa_;
         ColumnFromFile *c_;
-        size_t s_;
+        mutable size_t s_;
         size_t l_;
         const std::string &cn_;
     };
@@ -121,7 +127,7 @@ namespace das {
 
         template<typename T >
         Array<std::string> operator()(T & native_type) const {
-            throw das::not_implemented();
+            throw das::bad_type();
         }
 
         Array<std::string> operator()(std::string &native_type) const {
@@ -146,12 +152,15 @@ namespace das {
 
                 if (count < to_read)
                     throw io_exception();
-
+                s_ = 0;
+            }else{
+                s_ -= c_->file_size();
             }
+            
             b += count;
             size_t missing = 0;
             if (count < l_) {
-                std::string* cached = c_->buffer().copy(b, e, 0);
+                std::string* cached = c_->buffer().copy(b, e, s_);
                 missing = e - cached;
             }
             if (missing > 0)
@@ -163,7 +172,7 @@ namespace das {
     private:
         StorageAccess *sa_;
         ColumnFromFile *c_;
-        size_t s_;
+        mutable size_t s_;
         size_t l_;
         const std::string &cn_;
     };

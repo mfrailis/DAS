@@ -68,9 +68,9 @@ public:
     template<typename T,int Rank>
     void append(das::ColumnArray<T,Rank> &array);
 
-    template<class OutputIterator>
-    OutputIterator
-    copy(OutputIterator &begin, OutputIterator &end, size_t offset);
+    template<class T>
+    T*
+    copy(T* begin, T* end, size_t offset);
 
     template<typename T>
     std::vector<std::pair<T*, size_t> >

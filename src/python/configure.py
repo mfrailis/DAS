@@ -279,32 +279,32 @@ add_custom_target('''+prefix+'''all)
         f.write(
 '''
 
-
-#foreach(odb_ ${ODB_CXX})
-#  message(STATUS "odb  ${odb_}")
-#endforeach()
-
-#foreach(type_ ${TYPES_CPP})
-#  message(STATUS "type ${type_}")
-#endforeach()
-
-#foreach(das_src_ ${DAS_SRC})
-#  message(STATUS "das  ${das_src_}")
-#endforeach()
-
-#foreach(das_ql_src_ ${DAS_QL_SRC})
-#  message(STATUS "ql   ${das_ql_src_}")
-#endforeach()
-
 foreach(type_ ${TYPE_NAMES_ALL} )
   message(STATUS "Generated type ${type_}")
 endforeach()
 
-add_library(das SHARED ${DAS_QL_SRC} ${DAS_SRC} ${TYPES_CPP} ${ODB_CXX})
+add_library(DAS_SO SHARED ${DAS_QL_SRC} ${DAS_SRC} ${TYPES_CPP} ${ODB_CXX})
+add_library(DAS_A STATIC ${DAS_QL_SRC} ${DAS_SRC} ${TYPES_CPP} ${ODB_CXX})
+
+set_target_properties(DAS_SO PROPERTIES OUTPUT_NAME das)
+set_target_properties(DAS_A  PROPERTIES OUTPUT_NAME das)
 
 install(
-  TARGETS das 
+  TARGETS DAS_SO
   LIBRARY DESTINATION lib
+  PERMISSIONS
+    OWNER_READ
+    OWNER_WRITE
+    OWNER_EXECUTE
+    GROUP_READ
+    GROUP_EXECUTE
+    WORLD_READ
+    WORLD_EXECUTE 
+)
+
+install(
+  TARGETS DAS_A 
+  ARCHIVE DESTINATION lib
   PERMISSIONS
     OWNER_READ
     OWNER_WRITE
@@ -328,22 +328,22 @@ add_executable(data_test EXCLUDE_FROM_ALL ${TEST_SOURCE_DIR}/data_test.cpp)
 target_link_libraries(data_test boost_thread boost_random das ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
 
 add_executable(array_column_test EXCLUDE_FROM_ALL ${TEST_SOURCE_DIR}/array_column_test.cpp)
-target_link_libraries(array_column_test das ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+target_link_libraries(array_column_test DAS_SO ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
 
 add_executable(rollback_test EXCLUDE_FROM_ALL ${TEST_SOURCE_DIR}/rollback_test.cpp)
-target_link_libraries(rollback_test boost_thread das ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+target_link_libraries(rollback_test boost_thread DAS_SO ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
 
 add_executable(persistence_example EXCLUDE_FROM_ALL ${EXAMPLES_SOURCE_DIR}/persistence_example.cpp)
-target_link_libraries(persistence_example das ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+target_link_libraries(persistence_example DAS_SO ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
 
 add_executable(query_example EXCLUDE_FROM_ALL ${EXAMPLES_SOURCE_DIR}/query_example.cpp)
-target_link_libraries(query_example das ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+target_link_libraries(query_example DAS_SO ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
 
 add_executable(associations_example EXCLUDE_FROM_ALL ${EXAMPLES_SOURCE_DIR}/associations_example.cpp)
-target_link_libraries(associations_example das ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+target_link_libraries(associations_example DAS_SO ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
 
 add_executable(data_example EXCLUDE_FROM_ALL ${EXAMPLES_SOURCE_DIR}/data_example.cpp)
-target_link_libraries(data_example das ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+target_link_libraries(data_example DAS_SO ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
 
 add_custom_target(examples 
   DEPENDS 
@@ -454,7 +454,7 @@ add_custom_command(
     if has_gc:
         f.write('''
 add_executable(das_'''+db_str+'''_gc ${DDL_SOURCE_DIR}/'''+db_str+'''_gc.cpp)
-target_link_libraries(das_'''+db_str+'''_gc das ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+target_link_libraries(das_'''+db_str+'''_gc DAS_SO ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
 
 install(
   TARGETS das_'''+db_str+'''_gc

@@ -187,7 +187,7 @@
         </data>
     </type>
 
-<!--
+
     <type name="test_image2d">
         <data>
             <image pixType="float64"/>
@@ -196,8 +196,8 @@
 
     <type name="test_image3d">
         <data>
-            <image pixType="float32"/>
+            <image pixType="float32" dimensions="3"/>
         </data>
     </type>
--->
+
 </ddl>

@@ -163,6 +163,8 @@ ColumnBuffer::append(das::Array<T> &array) {
         throw std::exception();
     }
     das::TinyVector<int, 1> s = array.extent();
+    if(rank_ != 1)
+        throw das::bad_array_shape();
     if (!check_shape(s))
         throw das::bad_array_shape();
 
@@ -175,6 +177,8 @@ void ColumnBuffer::append(das::ColumnArray<T, Rank> &array) {
         std::cout << "buffer type uninitialized" << std::endl;
         throw std::exception();
     }
+    if(rank_ == 1)
+        throw das::bad_array_shape();      
     for (typename das::ColumnArray<T, Rank>::iterator it = array.begin();
             it != array.end();
             ++it) {
@@ -186,16 +190,16 @@ void ColumnBuffer::append(das::ColumnArray<T, Rank> &array) {
     boost::apply_visitor(ColumnBuffer_array_add<T, Rank>(array), buffer_);
 }
 
-template<class OutputIterator>
-class ColumnBuffer_copy : public boost::static_visitor<OutputIterator> {
+template<class U>
+class ColumnBuffer_copy : public boost::static_visitor<U*> {
 public:
 
-    ColumnBuffer_copy(OutputIterator &begin, OutputIterator &end, size_t offset) :
+    ColumnBuffer_copy(U* begin, U* end, size_t offset) :
     b_(begin), e_(end), o_(offset) {
     }
 
     template<typename T>
-    OutputIterator operator() (std::vector< das::ArrayStore<T> > &vec) {
+    U* operator() (std::vector< das::ArrayStore<T> > &vec) {
         typename std::vector< das::ArrayStore<T> >::iterator v_it = vec.begin();
         if (v_it == vec.end()) return b_;
         size_t first_offset = 0;
@@ -238,15 +242,78 @@ public:
         return b_;
     }
 
-    OutputIterator operator() (std::vector< das::ArrayStore<std::string> > &vec) {
-        std::cout << "string copy not implemented yet" << std::endl;
+    U* operator() (std::vector< das::ArrayStore<std::string> > &vec) {
+        std::cout << "string copy possible" << std::endl;
+        return b_;
+    }
+
+private:
+    U* b_;
+    U* e_;
+    size_t o_;
+};
+
+template<>
+class ColumnBuffer_copy<std::string> : public boost::static_visitor<std::string*> {
+public:
+
+    ColumnBuffer_copy(std::string* begin, std::string* end, size_t offset) :
+    b_(begin), e_(end), o_(offset) {
+    }
+
+    std::string* operator() (std::vector< das::ArrayStore<std::string> > &vec) {
+        typename std::vector< das::ArrayStore<std::string> >::iterator v_it = vec.begin();
+        if (v_it == vec.end()) return b_;
+        size_t first_offset = 0;
+
+        while (o_ > 0) {
+            size_t size = v_it->size();
+            if (o_ >= size) {
+                o_ -= size;
+                ++v_it;
+            } else {
+                first_offset = o_;
+                o_ = 0;
+            }
+            if (v_it == vec.end()) return b_;
+        }
+        typename das::ArrayStore<std::string>::iterator a_it = v_it->begin();
+        while (first_offset-- > 0) ++a_it;
+
+        while (a_it == v_it->end()) {
+            ++v_it;
+            if (v_it == vec.end())
+                return b_;
+            a_it = v_it->begin();
+        }
+
+
+        while (b_ != e_) {
+            *b_ = *a_it;
+            ++b_;
+            ++a_it;
+            while (a_it == v_it->end()) {
+                ++v_it;
+                if (v_it == vec.end())
+
+                    return b_;
+                a_it = v_it->begin();
+            }
+        }
+
+        return b_;
+    }
+
+    template<typename T>
+    std::string* operator() (std::vector< das::ArrayStore<T> > &vec) {
+        std::cout << "copy to string not possible" << std::endl;
 
         return b_;
     }
 
 private:
-    OutputIterator b_;
-    OutputIterator e_;
+    std::string* b_;
+    std::string* e_;
     size_t o_;
 };
 
@@ -300,14 +367,14 @@ private:
     size_t o_;
 };
 
-template<class OutputIterator >
-OutputIterator
-ColumnBuffer::copy(OutputIterator &begin, OutputIterator &end, size_t offset) {
+template<class T >
+T*
+ColumnBuffer::copy(T* begin, T* end, size_t offset) {
     if (!is_init()) {
         std::cout << "buffer type uninitialized" << std::endl;
         throw std::exception();
     }
-    ColumnBuffer_copy<OutputIterator> bcp(begin, end, offset);
+    ColumnBuffer_copy<T> bcp(begin, end, offset);
 
     return boost::apply_visitor(bcp, buffer_);
 }

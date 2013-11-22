@@ -74,8 +74,7 @@ namespace das {
             errno = 0;
             count = read(fd, b, BUFF_SIZE);
             if (count == -1) {
-                int err = errno;
-                throw io_exception(err);
+                throw io_exception(errno);
             }
             while (terms_ < o_) {
 
@@ -87,8 +86,7 @@ namespace das {
                     errno = 0;
                     count = read(fd, b, BUFF_SIZE);
                     if (count == -1) {
-                        int err = errno;
-                        throw io_exception(err);
+                        throw io_exception(errno);
                     }
                     off = 0;
                 }
@@ -107,8 +105,7 @@ namespace das {
                     errno = 0;
                     count = read(fd, b, BUFF_SIZE);
                     if (count == -1) {
-                        int err = errno;
-                        throw io_exception(err);
+                        throw io_exception(errno);
                     }
                     off = 0;
                 }
@@ -126,14 +123,12 @@ namespace das {
             errno = 0;
             off_t off = lseek(fd, o_ * sizeof (T), SEEK_SET);
             if (off == -1) {
-                int err = errno;
-                throw io_exception(err);
+                throw io_exception(errno);
             }
             errno = 0;
             ssize_t count = read(fd, buff, c_ * sizeof (T));
             if (count == -1) {
-                int err = errno;
-                throw io_exception(err);
+                throw io_exception(errno);
             }
 
             count /= sizeof (T);
@@ -664,7 +659,7 @@ namespace das {
                 std::string str = iff->fname();
                 size_t found = str.find_last_of("/");
                 if (found < std::string::npos) {
-                    storage_path = str.substr(0, found);
+                    storage_path = str.substr(0, found+1); //we need the last '/'
                 }
                 if (storage_path == "")
                     storage_path = rsa->get_default_path(true);

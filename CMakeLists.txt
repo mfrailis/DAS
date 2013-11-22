@@ -24,7 +24,7 @@ set(COMMON_LIBRARIES
 )
 
 set(CMAKE_BUILD_TYPE debug)
-set(CMAKE_CXX_FLAGS_DEBUG "-g -DVDBG")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -DVDBG -ftest-coverage -fprofile-arcs")
 
 set(CPP_SOURCE_DIR ${CMAKE_SOURCE_DIR}/src/cpp)
 set(CPP_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
@@ -90,6 +90,7 @@ set(UNIT_TEST_SRC
   ${TEST_SOURCE_DIR}/unit_metadata.cpp
   ${TEST_SOURCE_DIR}/unit_association.cpp
   ${TEST_SOURCE_DIR}/unit_column.cpp
+  ${TEST_SOURCE_DIR}/unit_image.cpp
   ${TEST_SOURCE_DIR}/unit_main.cpp  
   )
 
@@ -155,12 +156,12 @@ if(SWIG_FOUND AND PYTHONLIBS_FOUND)
   set_source_files_properties(${SWIG_SOURCE_DIR}/pydas.i PROPERTIES CPLUSPLUS ON)
   set_source_files_properties(${SWIG_SOURCE_DIR}/pydas.i PROPERTIES SWIG_FLAGS "-includeall")
   swig_add_module(pydas python ${SWIG_SOURCE_DIR}/pydas.i)
-  swig_link_libraries(pydas ${PYTHON_LIBRARIES} das ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARY})
+  swig_link_libraries(pydas ${PYTHON_LIBRARIES} DAS_SO ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARY})
 
 endif()
 
 add_executable(unit_tests ${UNIT_TEST_SRC})
-target_link_libraries(unit_tests das ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARY} boost_unit_test_framework)
+target_link_libraries(unit_tests DAS_A ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARY} boost_unit_test_framework)
 
 install(DIRECTORY include/ DESTINATION include/das)
 

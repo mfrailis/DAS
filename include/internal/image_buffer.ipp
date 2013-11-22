@@ -112,7 +112,7 @@ public:
 
         std::vector<ImageBufferEntry>::iterator buff_it = buffer_.begin();
         if (buff_it == buffer_.end()) return count;
- 
+
         const das::TinyVector<int, 11> &shape = buff_it->shape();
         if (buff_it == buffer_.end()) return count;
 
@@ -134,33 +134,33 @@ public:
 
         size_t tiles = count_[0];
         size_t tiles_count = 0;
-      
+
         size_t off_tile0 = offset_[0];
         while (tiles_count < tiles && buff_it != buffer_.end()) {
-            
-            if(buff_it->shape()[0] <= off_tile0){ // this can happen due to stride[0] value
-                DAS_LOG_DBG("offset: "<< off_tile0 << ", skipping a bucket of " << buff_it->shape()[0] << " tiles");                
+
+            if (buff_it->shape()[0] <= off_tile0) { // this can happen due to stride[0] value
+                DAS_LOG_DBG("offset: " << off_tile0 << ", skipping a bucket of " << buff_it->shape()[0] << " tiles");
                 off_tile0 -= buff_it->shape()[0];
                 ++buff_it;
                 continue;
             }
             ptrs[0] = buff_it->data<T>() + off_tile0 * dsp[0];
             size_t bucket_tiles_avaiable = 1;
-            bucket_tiles_avaiable += ((buff_it->shape()[0] - 1) - off_tile0)/stride_[0];
+            bucket_tiles_avaiable += ((buff_it->shape()[0] - 1) - off_tile0) / stride_[0];
 
-            
+
             size_t bucket_tiles = bucket_tiles_avaiable < count_[0] - tiles_count ? bucket_tiles_avaiable : count_[0] - tiles_count;
 
-            
-            DAS_LOG_DBG("----------------------------");          
-            DAS_LOG_DBG("buff_it->shape()[0]  : "<<buff_it->shape()[0]);           
-            DAS_LOG_DBG("bucket_tiles_avaiable: "<<bucket_tiles_avaiable);
-            DAS_LOG_DBG("bucket_tiles         : "<<bucket_tiles);
-            DAS_LOG_DBG("off_tile0            : "<<off_tile0);
+
             DAS_LOG_DBG("----------------------------");
-            
-            off_tile0 = (buff_it->shape()[0] - off_tile0) % stride_[0];            
-            
+            DAS_LOG_DBG("buff_it->shape()[0]  : " << buff_it->shape()[0]);
+            DAS_LOG_DBG("bucket_tiles_avaiable: " << bucket_tiles_avaiable);
+            DAS_LOG_DBG("bucket_tiles         : " << bucket_tiles);
+            DAS_LOG_DBG("off_tile0            : " << off_tile0);
+            DAS_LOG_DBG("----------------------------");
+
+            off_tile0 = (buff_it->shape()[0] - off_tile0) % stride_[0];
+
             DAS_DBG_NO_SCOPE(
                     size_t DBG_batch_elem = buff_it->num_elements();
                     const T* DBG_batch_begin = buff_it->data<T>();
@@ -245,11 +245,11 @@ ImageBuffer::copy(OutputIterator& begin,
         throw std::exception();
     }
 
-    if (size0_ < stride[0] * count[0] + offset[0])
+    if (size0_ < (stride[0] * (count[0] - 1)) + offset[0])
         throw das::bad_array_slice();
 
     for (size_t i = 1; i < 11; ++i)
-        if (iff_->extent(i) < stride[i] * count[i] + offset[i])
+        if (iff_->extent(i) < (stride[i] * (count[i] - 1)) + offset[i])
             throw das::bad_array_slice();
 
     return boost::apply_visitor(
