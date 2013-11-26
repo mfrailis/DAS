@@ -202,17 +202,7 @@ namespace das {
                         
             return s;
         }
-        
-        template<typename U >
-        ColumnArray<T,Rank> operator()(U& native_type) const {
-            using boost::interprocess::unique_ptr;
-            
-            ColumnArray<T,Rank> result;
-            result.resize(l_);
-            
-            
-            return result;
-        }
+
 
         ColumnArray<T,Rank> 
         operator()(T& native_type) const {
@@ -246,12 +236,16 @@ namespace das {
 
                 boost::get<ColumnArrayBuffer<T> >(tb).release(buffer.get(),count,shape);
 
+                s_ = 0;
+            }else{
+                s_ -= c_->file_size();
             }
+
 
             b += count;
             size_t missing = 0;
             if (count < l_) {
-                T_elem* cached = c_->buffer().copy(b, e, 0);
+                T_elem* cached = c_->buffer().copy(b, e, s_);
                 missing = e - cached;
             }
             if (missing > 0)
@@ -260,20 +254,114 @@ namespace das {
             return ColumnArray<T,Rank>(buffer.release(), l_,deleteDataWhenDone);
         
         }
+        
+        //TODO        
+        template<typename U >
+        ColumnArray<T,Rank> operator()(U& native_type) const {
+            throw das::not_implemented();
+        }
 
         ColumnArray<T,Rank> operator()(std::string & native_type) const {
-            throw das::not_implemented();
+            throw das::bad_type();
         }
 
     private:
         StorageAccess *sa_;
         ColumnFromFile *c_;
-        size_t s_;
+        mutable size_t s_;
+        size_t l_;
+        const std::string &cn_;
+    };
+
+    template<int Rank>
+    class StorageAccess_get_column_array<std::string,Rank> : public boost::static_visitor<ColumnArray<std::string, Rank> > {
+        typedef Array<std::string,Rank> T_elem;
+        public:
+
+        
+        StorageAccess_get_column_array(StorageAccess *acc, const std::string &col_name, ColumnFromFile *c, size_t start, size_t length)
+        : sa_(acc), c_(c), s_(start), l_(length), cn_(col_name) {
+        }
+
+        TinyVector<int, Rank>
+        get_shape() const{
+            das::TinyVector<int, Rank> s;
+            std::vector<int> shape = ColumnInfo::array_extent(c_->get_array_size());
+            
+            size_t rank = shape.size();
+            if(Rank != rank)
+                throw das::bad_array_size();
+            
+            for(size_t i=0; i<rank; ++i)
+                s(i) = shape[(rank-i)-1];
+                        
+            return s;
+        }
+        
+        template<typename T>
+        ColumnArray<std::string,Rank> operator()(T& native_type) const {
+            throw das::bad_type();
+        }
+
+        ColumnArray<std::string,Rank> operator()(std::string & native_type) const {
+                      using boost::interprocess::unique_ptr;
+
+            TinyVector<int, Rank> shape = get_shape();
+            
+            unique_ptr<T_elem, ArrayDeleter<T_elem> > buffer(new T_elem[l_]);
+            T_elem* b = &buffer.get()[0];
+            T_elem* e = &buffer.get()[l_]; //first index not valid
+
+
+            size_t count = 0;
+
+            // check if we need to read some (or all) data from file
+            if (c_->file_size() > s_) {
+                /*
+                 * calculate the amount of date to read from file:
+                 *  min(file_size - offset, length) 
+                 */
+                size_t to_read = c_->file_size() - s_;
+                to_read = to_read > l_ ? l_ : to_read;
+
+                StorageAccess::column_array_buffer_ptr tb = ColumnArrayBuffer<std::string>();
+
+                count = sa_->read_column_array(cn_, c_, tb, s_, to_read);
+
+                if (count < to_read)
+                    throw io_exception();
+                
+
+                boost::get<ColumnArrayBuffer<std::string> >(tb).release(buffer.get(),count,shape);
+
+                s_ = 0;
+            }else{
+                s_ -= c_->file_size();
+            }
+
+
+            b += count;
+            size_t missing = 0;
+            if (count < l_) {
+                T_elem* cached = c_->buffer().copy(b, e, s_);
+                missing = e - cached;
+            }
+            if (missing > 0)
+                throw io_exception();
+
+            return ColumnArray<std::string,Rank>(buffer.release(), l_,deleteDataWhenDone);
+        }
+
+    private:
+        StorageAccess *sa_;
+        ColumnFromFile *c_;
+        mutable size_t s_;
         size_t l_;
         const std::string &cn_;
     };
 
 
+    
     
     template<typename T>
     Array<T>
@@ -381,8 +469,12 @@ namespace das {
     void
     StorageAccess::set_image(Array<T, Rank> &t) {
         ImageFromFile iff(DdlInfo::get_instance()->get_image_info(obj_->type_name_).type);
-        obj_->image_from_file(iff);
         ImageFromFile* i = obj_->image_from_file();
+        if(i)
+            iff.fname(i->fname());
+            
+        obj_->image_from_file(iff);
+        i = obj_->image_from_file();
 
 
         /*

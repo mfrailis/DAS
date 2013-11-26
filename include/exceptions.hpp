@@ -42,7 +42,6 @@ namespace das {
 
     class not_implemented : public std::exception {
     public:
-
         virtual const char*
         what() const throw () {
             return "functionality not implemented yet";

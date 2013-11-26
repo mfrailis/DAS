@@ -2,14 +2,6 @@
 
 namespace D = das::tpl;
 
-/*template<typename T>
-void
-append(das::Array<T>& array,
-        const std::string col_name,
-        shared_ptr<test_columns>& ptr) {
-    BOOST_REQUIRE_NO_THROW(ptr->append_column(col_name, array));
-}*/
-
 void
 save(shared_ptr<test_columns>& ptr, shared_ptr<D::Database>& db) {
     BOOST_REQUIRE_NO_THROW(

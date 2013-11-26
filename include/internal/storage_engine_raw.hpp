@@ -24,7 +24,6 @@ namespace das {
             
         }
 
-        //TODO
         virtual void rollback();
 
         virtual ~RawStorageTransaction() {

@@ -52,6 +52,94 @@ private:
     int fd_;
 };
 
+/* class for managing files containing strings
+ */
+
+class StringReader {
+public:
+
+    StringReader(int fd) : fd_(fd), idx_(0), max_(0) {
+    }
+
+    void skip(size_t offset) {
+        size_t terms = 0;
+        while (terms < offset) {
+            while (terms < offset && idx_ < max_)
+                if (buf_[idx_++] == '\0')
+                    ++terms;
+            if (idx_ >= max_) {
+                errno = 0;
+                max_ = read(fd_, buf_, BUFF_SIZE);
+                if (max_ == -1) {
+                    throw das::io_exception(errno);
+                }
+                idx_ = 0;
+            }
+        }
+    }
+
+    void copy(std::string* array, size_t c_) {
+        size_t i = 0;
+        while (i < c_) {
+            while (idx_ < max_) {
+                if (buf_[idx_] == '\0') {
+                    ++idx_;
+                    ++i;
+                    break;
+                } else
+                    array[i].push_back(buf_[idx_++]);
+            }
+            if (idx_ >= max_) {
+                errno = 0;
+                max_ = read(fd_, buf_, BUFF_SIZE);
+                if (max_ == -1) {
+                    throw das::io_exception(errno);
+                }
+                idx_ = 0;
+            }
+        }
+    }
+
+    chunk_t read_size() {
+        chunk_t dim = 0;
+        if (max_ == 0) {
+            max_ = read(fd_, buf_, BUFF_SIZE);
+            if (max_ == -1) {
+                throw das::io_exception(errno);
+            }
+            idx_ = 0;
+        }
+        size_t good = max_ - idx_;
+        if (good < sizeof (chunk_t)) {
+            for (size_t i = 0; i < good; ++i)
+                ((char*) (&dim))[i] = buf_[idx_++];
+
+            max_ = read(fd_, buf_, BUFF_SIZE);
+            if (max_ == -1) {
+                throw das::io_exception(errno);
+            }
+            idx_ = 0;
+
+            if ((max_ - idx_)< sizeof (chunk_t) - good)
+                throw das::io_exception();
+
+            for (size_t i = 0; i < sizeof (chunk_t) - good; ++i)
+                ((char*) (&dim))[i + good] = buf_[idx_++];
+        } else {
+            dim = *((chunk_t*) & buf_[idx_]);
+            idx_ += sizeof (chunk_t);
+        }
+
+        return dim;
+    }
+
+private:
+    AutoFile fd_;
+    size_t idx_;
+    ssize_t max_;
+    const static size_t BUFF_SIZE = 512;
+    char buf_[BUFF_SIZE];
+};
 
 namespace das {
 
@@ -225,9 +313,60 @@ namespace das {
         }
 
         //TODO
-
         ssize_t operator() (ColumnArrayBuffer<std::string> &buff) const {
-            return 0;
+            using boost::interprocess::unique_ptr;
+
+            std::vector<int> shape = ColumnInfo::array_extent(array_size_);
+
+            errno = 0;
+            int file_desc = open(path_, O_RDONLY);
+            if (file_desc == -1)
+                throw io_exception(errno);
+
+            StringReader SR(file_desc);
+
+            size_t elems = 1;
+            if (shape[shape.size() - 1] == -1) { // last extent variable
+
+                for (int i = 0; i < shape.size() - 1; ++i)
+                    elems *= shape[i];
+
+
+                for (size_t i = 0; i < o_; ++i) {
+                    chunk_t c_size = SR.read_size();
+
+                    if (c_size % elems != 0)
+                        throw das::data_corrupted();
+
+                    SR.skip(c_size);
+                }
+
+                for (size_t i = 0; i < c_; ++i) {
+                    chunk_t c_size = SR.read_size();
+
+                    if (c_size % elems != 0)
+                        throw das::data_corrupted();
+
+                    unique_ptr<std::string, ArrayDeleter<std::string> >
+                            buffer(new std::string[c_size]);
+                    SR.copy(buffer.get(),c_size);
+                    buff.add(buffer.release(), c_size);
+                }
+
+            } else {
+                for (int i = 0; i < shape.size(); ++i)
+                    elems *= shape[i];
+
+                SR.skip(elems * o_);
+
+                for (size_t i = 0; i < c_; ++i) {
+                    unique_ptr<std::string, ArrayDeleter<std::string> > 
+                    buffer(new std::string[elems]);
+                    SR.copy(buffer.get(),elems);
+                    buff.add(buffer.release(), elems);
+                }
+            }
+            return buff.size();
         }
 
     private:
@@ -659,7 +798,7 @@ namespace das {
                 std::string str = iff->fname();
                 size_t found = str.find_last_of("/");
                 if (found < std::string::npos) {
-                    storage_path = str.substr(0, found+1); //we need the last '/'
+                    storage_path = str.substr(0, found + 1); //we need the last '/'
                 }
                 if (storage_path == "")
                     storage_path = rsa->get_default_path(true);
@@ -1032,13 +1171,13 @@ namespace das {
 
         struct stat stt;
         errno = 0;
-        if (stat(path.c_str(), &stt)){
+        if (stat(path.c_str(), &stt)) {
             switch (errno) {
                 case ENOENT:
-                    DAS_LOG_DBG(obj.id() << "T bad path: "<< path);
+                    DAS_LOG_DBG(obj.id() << "T bad path: " << path);
                     return true;
                 default:
-                    DAS_LOG_DBG(obj.id() << "F generic error");                    
+                    DAS_LOG_DBG(obj.id() << "F generic error");
                     return false;
             }
         }
@@ -1048,21 +1187,21 @@ namespace das {
         time_t diff = now - stt.st_mtime;
         if (diff > exp) {
             errno = 0;
-           if (unlink(path.c_str())){
+            if (unlink(path.c_str())) {
                 switch (errno) {
                     case ENOENT:
-                        DAS_LOG_DBG(obj.id() << "T bad path: "<< path);
+                        DAS_LOG_DBG(obj.id() << "T bad path: " << path);
                         return true;
                     default:
-                        DAS_LOG_DBG(obj.id() << "F generic error"); 
+                        DAS_LOG_DBG(obj.id() << "F generic error");
                         return false;
                 }
-           }else {
-               DAS_LOG_DBG(obj.id() << "T deleted: "<< path);
-               return true;
-           }
-        }else{
-            DAS_LOG_DBG(obj.id() << "F too young: "<< diff);
+            } else {
+                DAS_LOG_DBG(obj.id() << "T deleted: " << path);
+                return true;
+            }
+        } else {
+            DAS_LOG_DBG(obj.id() << "F too young: " << diff);
             return false;
         }
         return false;

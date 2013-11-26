@@ -163,7 +163,7 @@ ColumnBuffer::append(das::Array<T> &array) {
         throw std::exception();
     }
     das::TinyVector<int, 1> s = array.extent();
-    if(rank_ != 1)
+    if (rank_ != 1)
         throw das::bad_array_shape();
     if (!check_shape(s))
         throw das::bad_array_shape();
@@ -177,8 +177,8 @@ void ColumnBuffer::append(das::ColumnArray<T, Rank> &array) {
         std::cout << "buffer type uninitialized" << std::endl;
         throw std::exception();
     }
-    if(rank_ == 1)
-        throw das::bad_array_shape();      
+    if (rank_ == 1 && shape_(0) == 1)
+        throw das::bad_array_shape();
     for (typename das::ColumnArray<T, Rank>::iterator it = array.begin();
             it != array.end();
             ++it) {
@@ -318,14 +318,15 @@ private:
 };
 
 // column_array
+
 template<typename X, int Rank>
-class ColumnBuffer_copy< das::Array<X, Rank>* >
+class ColumnBuffer_copy< das::Array<X, Rank> >
 : public boost::static_visitor< das::Array<X, Rank>* > {
 public:
 
     typedef das::Array<X, Rank>* OutputIterator;
 
-    ColumnBuffer_copy(OutputIterator &begin, OutputIterator &end, size_t offset) :
+    ColumnBuffer_copy(OutputIterator begin, OutputIterator end, size_t offset) :
     b_(begin), e_(end), o_(offset) {
     }
 
@@ -360,6 +361,55 @@ public:
         std::cout << "string copy not implemented yet" << std::endl;
         throw das::not_implemented();
     }
+
+private:
+    OutputIterator b_;
+    OutputIterator e_;
+    size_t o_;
+};
+
+template<int Rank>
+class ColumnBuffer_copy< das::Array<std::string, Rank> >
+: public boost::static_visitor< das::Array<std::string, Rank>* > {
+public:
+
+    typedef das::Array<std::string, Rank>* OutputIterator;
+
+    ColumnBuffer_copy(OutputIterator begin, OutputIterator end, size_t offset) :
+    b_(begin), e_(end), o_(offset) {
+    }
+
+    OutputIterator 
+    operator() (std::vector< das::ArrayStore<std::string> > &vec) {
+        std::vector< das::ArrayStore<std::string> >::iterator v_it = vec.begin();
+        if (v_it == vec.end()) return b_;
+        size_t first_offset = 0;
+
+        while (o_ > 0) {
+            ++v_it;
+            --o_;
+            if (v_it == vec.end()) return b_;
+        }
+
+        while (b_ != e_) {
+            // do not reference the array in the buffer. Make a copy
+
+            b_->reference(v_it->template copy_array<std::string, Rank>());
+            ++b_;
+            ++v_it;
+            if (v_it == vec.end())
+
+                return b_;
+        }
+        return b_;
+    }
+
+    template<typename U>
+    OutputIterator
+    operator() (std::vector< das::ArrayStore<U> > &vec) {
+        throw das::bad_type();
+    }
+
 
 private:
     OutputIterator b_;

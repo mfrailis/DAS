@@ -184,7 +184,7 @@ namespace das {
         : super(buffer, shape, (blitz::preexistingMemoryPolicy) flag), policy_(flag), dealloc_(dealloc)  {
         }
    
-        Array() : super() {
+        Array() : super(), dealloc_(0) {
         }
         
         Array(const TinyVector<int, N_Rank>& extent)
@@ -217,6 +217,10 @@ namespace das {
 
         ColumnArray(item* buffer, size_t size, buffer_policy flag) :
         super(buffer, TinyVector<int, 1>(size), flag) {
+        }
+        
+        ColumnArray(const TinyVector<int, 1>& size) :
+        super(size){
         }
 
         ColumnArray() : super() {
