@@ -79,27 +79,65 @@ void thread_func(long long id) {
 }*/
 
 
-int main(){
-    typedef boost::posix_time::ptime ptime;
+int main() {
+    /*   typedef boost::posix_time::ptime ptime;
     
-    shared_ptr<test_keywords> p = test_keywords::create("test","test_level2");
+       shared_ptr<test_keywords> p = test_keywords::create("test","test_level2");
     
-    das::optional<signed char> a0 = p->get_key<signed char>("key_byte");
-    das::optional<short> a1 = p->get_key<short>("key_int16"); 
-    das::optional<int> a2 = p->get_key<int>("key_int32"); 
-    das::optional<long long> a3 = p->get_key<long long>("key_int64");
-    das::optional<float> a4 = p->get_key<float>("key_float32");
-    das::optional<double> a5 = p->get_key<double>("key_float64");
-    das::optional<bool> a6 = p->get_key<bool>("key_boolean");
-    das::optional<char> a7 = p->get_key<char>("key_char");
-    das::optional<std::string> a8 = p->get_key<std::string>("key_string");
-    das::optional<std::string> a9 = p->get_key<std::string>("key_text");
+       das::optional<signed char> a0 = p->get_key<signed char>("key_byte");
+       das::optional<short> a1 = p->get_key<short>("key_int16"); 
+       das::optional<int> a2 = p->get_key<int>("key_int32"); 
+       das::optional<long long> a3 = p->get_key<long long>("key_int64");
+       das::optional<float> a4 = p->get_key<float>("key_float32");
+       das::optional<double> a5 = p->get_key<double>("key_float64");
+       das::optional<bool> a6 = p->get_key<bool>("key_boolean");
+       das::optional<char> a7 = p->get_key<char>("key_char");
+       das::optional<std::string> a8 = p->get_key<std::string>("key_string");
+       das::optional<std::string> a9 = p->get_key<std::string>("key_text");
     
-    long long b = p->get_key<long long>("das_id");                   // das_id
-    std::string b1 = p->get_key<std::string>("name");                 // name
-    short b2 = p->get_key<short>("version");                       // version
-    ptime ct =  p->get_key<ptime>("creationDate");  // creationDate
-    
+       long long b = p->get_key<long long>("das_id");                   // das_id
+       std::string b1 = p->get_key<std::string>("name");                 // name
+       short b2 = p->get_key<short>("version");                       // version
+       ptime ct =  p->get_key<ptime>("creationDate");  // creationDate
+     */
+
+    shared_ptr<D::Database> db = D::Database::create("test_level2");
+    long long id;
+
+    {
+        shared_ptr<test_columns> ptr = test_columns::create("bug_1130_2", "test_level2");
+
+        das::Array<long long> a;
+        a.resize(10);
+        a(0) = 25;
+        ptr->append_column("column_int64", a);
+        a(9) = 15;
+
+        D::Transaction t = db->begin(das::serializable);
+        id = db->persist(ptr);
+        t.commit();
+
+    }
+    {
+                das::Array<int> a;
+        a.resize(10);
+        a(0) = 25;
+        a(9) = 15;
+
+        
+        D::Transaction t = db->begin(das::serializable);
+        D::Result<test_columns> res = db->query<test_columns>("name == 'bug_1130_2'");
+        for(D::Result<test_columns>::iterator it=res.begin(); it!=res.end();++it)
+            it->append_column("column_int32", a);
+        t.commit();
+    }
+    {
+        D::Transaction t = db->begin(das::serializable);
+        D::Result<test_columns> res = db->query<test_columns>("name == 'bug_1130_2'");
+        for(D::Result<test_columns>::iterator it=res.begin(); it!=res.end();++it)
+            cout << it->get_column_size("column_int32") << endl;
+        t.commit();
+    }
     return 0;
 }
 
