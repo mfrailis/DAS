@@ -512,6 +512,7 @@ void
 
   columns_.erase(col_name);
   columns_.insert(std::pair<std::string,'''+self._class_name+'''_config>(col_name,conf));
+  is_dirty_ = true; // it will force odb to update the columns table
 }
 
 void
@@ -714,6 +715,7 @@ ImageFromFile*
 void
 '''+self._class_name+'''::image_from_file(const ImageFromFile &iff){
   image_.reset(new ImageFromFile_'''+self._class_name+'''(iff));
+  is_dirty_ = true; // will force odb to update the reference
 }
 '''])
       self._src_body.append('''
