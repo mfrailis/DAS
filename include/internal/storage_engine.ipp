@@ -203,9 +203,9 @@ namespace das {
             return s;
         }
 
-
-        ColumnArray<T,Rank> 
-        operator()(T& native_type) const {
+        template<typename U >
+        ColumnArray<T,Rank>
+        operator()(U& native_type) const {
             using boost::interprocess::unique_ptr;
 
             TinyVector<int, Rank> shape = get_shape();
@@ -226,15 +226,14 @@ namespace das {
                 size_t to_read = c_->file_size() - s_;
                 to_read = to_read > l_ ? l_ : to_read;
 
-                StorageAccess::column_array_buffer_ptr tb = ColumnArrayBuffer<T>();
+                StorageAccess::column_array_buffer_ptr ub = ColumnArrayBuffer<U>();
 
-                count = sa_->read_column_array(cn_, c_, tb, s_, to_read);
+                count = sa_->read_column_array(cn_, c_, ub, s_, to_read);
 
                 if (count < to_read)
                     throw io_exception();
                 
-
-                boost::get<ColumnArrayBuffer<T> >(tb).release(buffer.get(),count,shape);
+                boost::get<ColumnArrayBuffer<U> >(ub).release(buffer.get(),count,shape);
 
                 s_ = 0;
             }else{
@@ -253,12 +252,6 @@ namespace das {
 
             return ColumnArray<T,Rank>(buffer.release(), l_,deleteDataWhenDone);
         
-        }
-        
-        //TODO        
-        template<typename U >
-        ColumnArray<T,Rank> operator()(U& native_type) const {
-            throw das::not_implemented();
         }
 
         ColumnArray<T,Rank> operator()(std::string & native_type) const {

@@ -158,7 +158,7 @@ namespace das {
                 U* tmp = new U[buff_[i].first];
                 for (size_t j = 0; j < buff_[i].first; ++j)
                     tmp[j] = buff_[i].second[j];
-                buffer[i] = Array<U, N_Rank>(tmp, s, deleteDataWhenDone);
+                buffer[i].reference(Array<U, N_Rank>(tmp, s, deleteDataWhenDone));
                 delete [] buff_[i].second;
             }
 

@@ -8,6 +8,8 @@ namespace D = das::tpl;
 
 using namespace std;
 //boost::mutex mtx;
+#define BOOST_REQUIRE_NO_THROW(s) s
+#define BOOST_REQUIRE_NE(x,y)
 
 void thread_func(long long id) {
     //    mtx.lock();
@@ -78,6 +80,167 @@ void thread_func(long long id) {
     return 0;
 }*/
 
+template<typename IT0, typename IT1>
+void CHECK_EQUAL_COLLECTIONS(IT0 L_begin, IT0 L_end, IT1 R_begin, IT1 R_end) {
+    IT0 L_it = L_begin;
+    IT1 R_it = R_begin;
+    size_t i = 0;
+
+    while (L_it != L_end && R_it != R_end) {
+        if (*L_it != *R_it) {
+            cout << "[" << i << "] L_it=" << *L_it << " R_it=" << *R_it << endl;
+            return;
+        }
+        ++L_it;
+        ++R_it;
+        ++i;
+    }
+
+    if (L_it != L_end)
+        cout << "[" << i << "] L_it has more elements" << endl;
+
+    if (R_it != R_end)
+        cout << "[" << i << "] R_it has more elements" << endl;
+}
+
+template<typename T, int Rank>
+void CHECK_NESTED_COLLECTIONS(
+        typename das::ColumnArray<T, Rank>::iterator L_begin,
+        typename das::ColumnArray<T, Rank>::iterator L_end,
+        typename das::ColumnArray<T, Rank>::iterator R_begin,
+        typename das::ColumnArray<T, Rank>::iterator R_end) {
+
+    using das::ColumnArray;
+
+    typedef typename ColumnArray<T, Rank>::iterator array_iterator;
+
+    size_t i = 0;
+    array_iterator L_it = L_begin;
+    array_iterator R_it = R_begin;
+    while (L_it != L_end && R_it != R_end) {
+        CHECK_EQUAL_COLLECTIONS(L_it->begin(), L_it->end(),
+                R_it->begin(), R_it->end());
+        ++L_it;
+        ++R_it;
+        ++i;
+    }
+
+    if (L_it != L_end)
+        cout << "[" << i << "] L_it has more elements" << endl;
+
+    if (R_it != R_end)
+        cout << "[" << i << "] R_it has more elements" << endl;
+
+}
+
+void
+save(shared_ptr<test_columns_array>& ptr, shared_ptr<D::Database>& db) {
+    D::Transaction t = db->begin();
+    db->attach(ptr);
+    t.commit();
+}
+
+template<typename T, int Rank>
+void
+test_case(
+        const std::string col_name,
+        shared_ptr<test_columns_array>& ptr,
+        shared_ptr<D::Database>& db,
+        das::ColumnArray<T, Rank>& base,
+        das::ColumnArray<T, Rank>& ext1
+        ) {
+    typedef typename das::ColumnArray<T, Rank>::iterator array_it;
+
+    ptr->append_column_array(col_name, base);
+
+    das::ColumnArray<T, Rank> a = ptr->get_column_array<T, Rank>(col_name);
+
+    cout << a(0).shape() << endl;
+    cout << a(1).shape() << endl;
+    cout << a(2).shape() << endl;
+
+    CHECK_NESTED_COLLECTIONS<T, Rank>(base.begin(), base.end(), a.begin(), a.end());
+
+    cout << "CHECK_NESTED_COLLECTIONS 0" << endl;
+
+    das::ColumnArray<T, Rank> a1 = ptr->get_column_array<T, Rank>(col_name, 1, 2);
+
+    cout << a1(0).shape() << endl;
+    cout << a1(1).shape() << endl;
+
+    typename das::ColumnArray<T, Rank>::iterator it = base.begin();
+    ++it;
+    CHECK_NESTED_COLLECTIONS<T, Rank>(it, base.end(), a1.begin(), a1.end());
+
+    cout << "CHECK_NESTED_COLLECTIONS 1" << endl;
+
+    save(ptr, db);
+
+
+    das::ColumnArray<T, Rank> b = ptr->get_column_array<T, Rank>(col_name);
+
+    cout << b(0).shape() << endl;
+    cout << b(1).shape() << endl;
+    cout << b(2).shape() << endl;
+
+    CHECK_NESTED_COLLECTIONS<T, Rank>(base.begin(), base.end(), b.begin(), b.end());
+    cout << "CHECK_NESTED_COLLECTIONS 2" << endl;
+
+    ptr->append_column_array(col_name, ext1);
+
+    das::ColumnArray<T, Rank> c = ptr->get_column_array<T, Rank>(col_name, 3, 4);
+
+    cout << c(0).shape() << endl;
+    cout << c(1).shape() << endl;
+    cout << c(2).shape() << endl;
+    cout << c(3).shape() << endl;
+
+    CHECK_NESTED_COLLECTIONS<T, Rank>(ext1.begin(), ext1.end(), c.begin(), c.end());
+    cout << "CHECK_NESTED_COLLECTIONS 3" << endl;
+    save(ptr, db);
+
+
+    das::ColumnArray<T, Rank> d = ptr->get_column_array<T, Rank>(col_name, 3, 4);
+
+    cout << d(0).shape() << endl;
+    cout << d(1).shape() << endl;
+    cout << d(2).shape() << endl;
+    cout << d(3).shape() << endl;
+    CHECK_NESTED_COLLECTIONS<T, Rank>(ext1.begin(), ext1.end(), d.begin(), d.end());
+    cout << "CHECK_NESTED_COLLECTIONS 4" << endl;
+    long long s = ptr->get_column_array_size(col_name);
+
+    if (s != 7)
+        cout << "dim error" << endl;
+
+}
+shared_ptr<D::Database> db;
+shared_ptr<test_columns_array> ptr;
+long long id;
+
+void ColumnFixture() {
+
+    BOOST_REQUIRE_NO_THROW(db = D::Database::create("test_level2"));
+    BOOST_REQUIRE_NO_THROW(ptr = test_columns_array::create("column_array_unit_test_0", "test_level2"));
+    BOOST_REQUIRE_NO_THROW(
+            D::Transaction t = db->begin();
+            db->persist(ptr);
+            t.commit();
+            );
+    id = ptr->das_id();
+    BOOST_REQUIRE_NE(id, 0);
+}
+
+void change() {
+    BOOST_REQUIRE_NO_THROW(ptr = test_columns_array::create("column__array_unit_test_1", "test_level2"));
+    BOOST_REQUIRE_NO_THROW(
+            D::Transaction t = db->begin();
+            db->persist(ptr);
+            t.commit();
+            );
+    id = ptr->das_id();
+    BOOST_REQUIRE_NE(id, 0);
+}
 
 int main() {
     /*   typedef boost::posix_time::ptime ptime;
@@ -101,43 +264,37 @@ int main() {
        ptime ct =  p->get_key<ptime>("creationDate");  // creationDate
      */
 
-    shared_ptr<D::Database> db = D::Database::create("test_level2");
-    long long id;
 
-    {
-        shared_ptr<test_columns> ptr = test_columns::create("bug_1130_4", "test_level2");
+    ColumnFixture();
 
-        das::Array<long long> a;
-        a.resize(10);
-        a(0) = 25;
-        ptr->append_column("column_int64", a);
-        a(9) = 15;
+    int b0[] = {0, 1, 2, 3, 4, 5};
+    int b1[] = {7, 8, 9, 10, 11, 12};
+    int b2[] = {13, 14, 15, 16, 17, 18};
 
-        D::Transaction t = db->begin(das::serializable);
-        id = db->persist(ptr);
-        t.commit();
+    int e0[] = {19, 20, 21, 22, 23, 24};
+    int e1[] = {25, 26, 27, 28, 29, 30};
+    int e2[] = {31, 32, 33, 34, 35, 36};
+    int e3[] = {37, 38, 39, 40, 41, 42};
 
-    }
-    {
-        das::Array<int> a;
-        a.resize(3);
-        a(0) = 25;
-        a(2) = 15;
+    das::ColumnArray<int, 2> base(das::shape(3));
+    base(0).reference(das::Array<int, 2>(b0, das::shape(2, 3), das::neverDeleteData));
+    base(1).reference(das::Array<int, 2>(b1, das::shape(2, 3), das::neverDeleteData));
+    base(2).reference(das::Array<int, 2>(b2, das::shape(2, 3), das::neverDeleteData));
 
-        
-        D::Transaction t = db->begin(das::serializable);
-        D::Result<test_columns> res = db->query<test_columns>("name == 'bug_1130_4'");
-        for(D::Result<test_columns>::iterator it=res.begin(); it!=res.end();++it)
-            it->append_column("column_int32", a);
-        t.commit();
-    }
-    {
-        D::Transaction t = db->begin(das::serializable);
-        D::Result<test_columns> res = db->query<test_columns>("name == 'bug_1130_4'");
-        for(D::Result<test_columns>::iterator it=res.begin(); it!=res.end();++it)
-            cout << it->get_column<int>("column_int32") << endl;
-        t.commit();
-    }
+    das::ColumnArray<int, 2> ext(4);
+    ext(0).reference(das::Array<int, 2>(e0, das::shape(2, 3), das::neverDeleteData));
+    ext(1).reference(das::Array<int, 2>(e1, das::shape(2, 3), das::neverDeleteData));
+    ext(2).reference(das::Array<int, 2>(e2, das::shape(2, 3), das::neverDeleteData));
+    ext(3).reference(das::Array<int, 2>(e3, das::shape(2, 3), das::neverDeleteData));
+
+    das::DatabaseConfig::database("test_level2").buffered_data(true);
+    test_case("column_byte", ptr, db, base, ext);
+    /*
+        change();
+        das::DatabaseConfig::database("test_level2").buffered_data(false);
+        test_case("column_byte", ptr, db, base, ext);
+     */
+
     return 0;
 }
 

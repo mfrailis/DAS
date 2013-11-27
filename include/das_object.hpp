@@ -58,28 +58,28 @@ public:
 
     template<typename Arg_type>
     void operator() (boost::posix_time::ptime& keyword, const Arg_type& value) const {
-    	throw das::bad_keyword_type();
+        throw das::bad_keyword_type();
     }
-    
+
     void operator() (boost::posix_time::ptime& keyword, const std::string& value) const {
-    	throw das::bad_keyword_type();
+        throw das::bad_keyword_type();
     }
 
     template<typename Key_type>
     void operator() (Key_type& keyword, const std::string& value) const {
         throw das::bad_keyword_type();
     }
-    
+
     template<typename Key_type>
     void operator() (Key_type& keyword, const boost::posix_time::ptime& value) const {
-    	throw das::bad_keyword_type();
+        throw das::bad_keyword_type();
     }
-    
+
     void operator() (boost::optional<std::string>& keyword, const boost::posix_time::ptime& value) const {
-    	throw das::bad_keyword_type();
+        throw das::bad_keyword_type();
     }
-    
-    
+
+
 };
 
 template<typename T>
@@ -91,25 +91,24 @@ public:
         boost::optional<T> opt(key);
         return das::optional<T>(opt);
     }
-    
+
     template<typename Key_type>
     das::optional<T> operator() (Key_type& key) const {
         return key;
     }
 
     das::optional<T> operator() (boost::posix_time::ptime& key) const {
-    	throw das::bad_keyword_type();
+        throw das::bad_keyword_type();
     }
-
 
     das::optional<T> operator() (boost::optional<std::string>& key) const {
         throw das::bad_keyword_type();
     }
-    
+
     das::optional<T> operator() (std::string& key) const {
         throw das::bad_keyword_type();
     }
-    
+
 };
 
 template<>
@@ -119,12 +118,12 @@ public:
     template<typename Key_type>
     das::optional<std::string> operator() (Key_type& key) const {
         throw das::bad_keyword_type();
-    } 
-    
+    }
+
     das::optional<std::string> operator() (std::string& key) const {
         return das::optional<std::string>(key);
     }
-    
+
     das::optional<std::string> operator() (boost::optional<std::string>& key) const {
         return das::optional<std::string>(key);
     }
@@ -136,7 +135,7 @@ public:
 
     template<typename Key_type>
     boost::posix_time::ptime operator() (Key_type& key) const {
-    	throw das::bad_keyword_type();
+        throw das::bad_keyword_type();
     }
 
     boost::posix_time::ptime operator() (boost::posix_time::ptime& key) const {
@@ -162,10 +161,10 @@ public:
     > keyword_type;
 
     typedef boost::variant<
-    long long,                   // das_id
-    std::string,                 // name
-    short,                       // version
-    boost::posix_time::ptime&,   // creationDate
+    long long, // das_id
+    std::string, // name
+    short, // version
+    boost::posix_time::ptime&, // creationDate
     boost::optional<signed char>&,
     boost::optional<char>&,
     boost::optional<short>&,
@@ -176,7 +175,7 @@ public:
     boost::optional<bool>&,
     boost::optional<std::string>&
     > keyword_type_ref;
-    
+
     typedef boost::unordered_map<std::string, keyword_type_ref> keyword_map;
 
     const KeywordInfo&
@@ -230,9 +229,12 @@ public:
     }
 
     template <typename T>
-    das::Array<T> get_column(const std::string &col_name, size_t start = 0, ssize_t length = -1) {
+    das::Array<T> get_column(
+            const std::string &col_name,
+            size_t start = 0,
+            ssize_t length = -1) {
         size_t len = length;
-        if(length == -1)
+        if (length < 0)
             len = get_column_size(col_name);
         if (sa_.get() == NULL)
             sa_.reset(das::StorageAccess::create(bundle_.alias(), this));
@@ -247,37 +249,41 @@ public:
         else
             return 0;
     }
-    
+
     template <typename T>
     void append_column(const std::string &col_name, das::Array<T> &a) {
         if (sa_.get() == NULL)
             sa_.reset(das::StorageAccess::create(bundle_.alias(), this));
         sa_->append_column<T>(col_name, a);
     }
-    
+
     template <typename T, int Rank>
-    das::ColumnArray<T,Rank>
-    get_column_array(const std::string &col_name, size_t start, size_t length) {
+    das::ColumnArray<T, Rank>
+    get_column_array(
+            const std::string &col_name,
+            size_t start = 0,
+            ssize_t length = -1) {
+        size_t len = length;
+        if (length < 0)
+            len = get_column_array_size(col_name);
+
         if (sa_.get() == NULL)
             sa_.reset(das::StorageAccess::create(bundle_.alias(), this));
-        return sa_->get_column_array<T,Rank>(col_name, start, length);
+        return sa_->get_column_array<T, Rank>(col_name, start, len);
     }
 
     long long
-    get_column_array_size(const std::string &col_name){
+    get_column_array_size(const std::string &col_name) {
         return get_column_size(col_name);
     }
 
-
-    template <typename T,int Rank>
-    void append_column_array(const std::string &col_name, das::ColumnArray<T,Rank> &a) {
+    template <typename T, int Rank>
+    void append_column_array(const std::string &col_name, das::ColumnArray<T, Rank> &a) {
         if (sa_.get() == NULL)
             sa_.reset(das::StorageAccess::create(bundle_.alias(), this));
-        sa_->append_column_array<T,Rank>(col_name, a);
+        sa_->append_column_array<T, Rank>(col_name, a);
     }
-    
-    
-    
+
     template <typename T, int Rank>
     das::Array<T, Rank> get_image(
             das::Range r0 = das::Range::all(),
@@ -540,7 +546,7 @@ private:
     std::string dbUserId_;
 
 #pragma db type("TIMESTAMP") options("DEFAULT CURRENT_TIMESTAMP()") not_null
-    boost::posix_time::ptime creationDate_;    
+    boost::posix_time::ptime creationDate_;
 
 
 #pragma db transient

@@ -11,16 +11,6 @@ save(shared_ptr<test_columns>& ptr, shared_ptr<D::Database>& db) {
             );
 }
 
-template<typename T>
-das::Array<T>
-get(const std::string col_name, shared_ptr<test_columns>& ptr) {
-    long long s = 0;
-    BOOST_REQUIRE_NO_THROW(s = ptr->get_column_size(col_name));
-    das::Array<T> array;
-    BOOST_REQUIRE_NO_THROW(array.reference(ptr->get_column<T>(col_name, 0, s)));
-    return array;
-}
-
 struct ColumnFixture {
 
     ColumnFixture() : id(0) {
@@ -68,7 +58,8 @@ test_case(
 
     BOOST_REQUIRE_NO_THROW(ptr->append_column(col_name, base));
 
-    das::Array<T> a = get<T>(col_name, ptr);
+    das::Array<T> a;
+    BOOST_REQUIRE_NO_THROW(a.reference(ptr->get_column<T>(col_name)));
 
     BOOST_CHECK_EQUAL_COLLECTIONS(base.begin(), base.end(), a.begin(), a.end());
 
@@ -85,7 +76,8 @@ test_case(
 
     BOOST_CHECK_THROW(ptr->get_column<T>(col_name,0,10),das::io_exception);
     
-    das::Array<T> b = get<T>(col_name, ptr);
+    das::Array<T> b;
+    BOOST_REQUIRE_NO_THROW(b.reference(ptr->get_column<T>(col_name)));
 
     BOOST_CHECK_EQUAL_COLLECTIONS(base.begin(), base.end(), b.begin(), b.end());
 
