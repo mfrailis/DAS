@@ -107,7 +107,10 @@ namespace das {
              * the database.
              */
             Result
-            query(const std::string& type_name, const std::string& expression, const std::string& ordering = "", bool only_last_version = false);
+            query(const std::string& type_name,
+                    const std::string& expression,
+                    const std::string& ordering = "",
+                    bool only_last_version = true);
 
 
             /**
@@ -127,7 +130,10 @@ namespace das {
              * the database query.
              */
             std::vector<long long>
-            query_id(const std::string& type_name, const std::string& expression, const std::string& ordering = "", bool only_last_version = false);
+            query_id(const std::string& type_name,
+                    const std::string& expression,
+                    const std::string& ordering = "",
+                    bool only_last_version = true);
 
 
             /**
@@ -143,7 +149,10 @@ namespace das {
              * the database query.
              */
             std::vector< std::pair<std::string, short> >
-            query_name(const std::string& type_name, const std::string& expression, const std::string& ordering, bool only_last_version = false);
+            query_name(const std::string& type_name,
+                    const std::string& expression,
+                    const std::string& ordering,
+                    bool only_last_version = true);
 
 
             bool

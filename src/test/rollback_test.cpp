@@ -105,7 +105,7 @@ int main() {
     long long id;
 
     {
-        shared_ptr<test_columns> ptr = test_columns::create("bug_1130_2", "test_level2");
+        shared_ptr<test_columns> ptr = test_columns::create("bug_1130_4", "test_level2");
 
         das::Array<long long> a;
         a.resize(10);
@@ -119,23 +119,23 @@ int main() {
 
     }
     {
-                das::Array<int> a;
-        a.resize(10);
+        das::Array<int> a;
+        a.resize(3);
         a(0) = 25;
-        a(9) = 15;
+        a(2) = 15;
 
         
         D::Transaction t = db->begin(das::serializable);
-        D::Result<test_columns> res = db->query<test_columns>("name == 'bug_1130_2'");
+        D::Result<test_columns> res = db->query<test_columns>("name == 'bug_1130_4'");
         for(D::Result<test_columns>::iterator it=res.begin(); it!=res.end();++it)
             it->append_column("column_int32", a);
         t.commit();
     }
     {
         D::Transaction t = db->begin(das::serializable);
-        D::Result<test_columns> res = db->query<test_columns>("name == 'bug_1130_2'");
+        D::Result<test_columns> res = db->query<test_columns>("name == 'bug_1130_4'");
         for(D::Result<test_columns>::iterator it=res.begin(); it!=res.end();++it)
-            cout << it->get_column_size("column_int32") << endl;
+            cout << it->get_column<int>("column_int32") << endl;
         t.commit();
     }
     return 0;
