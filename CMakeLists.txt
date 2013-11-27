@@ -24,7 +24,7 @@ set(COMMON_LIBRARIES
 )
 
 set(CMAKE_BUILD_TYPE debug)
-set(CMAKE_CXX_FLAGS_DEBUG "-g -DVDBG -ftest-coverage -fprofile-arcs")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
 
 set(CPP_SOURCE_DIR ${CMAKE_SOURCE_DIR}/src/cpp)
 set(CPP_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
