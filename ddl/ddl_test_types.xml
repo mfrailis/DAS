@@ -16,11 +16,7 @@
     <!-- 
         User defined types
     -->  
-    
-    
-    <!-- 
-        Metadata for CIWS DPS measures
-    -->      
+        
     
     
     <type name="test_keywords">

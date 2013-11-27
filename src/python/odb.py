@@ -318,8 +318,6 @@ struct das_traits<'''+self._class_name+'''>
     if(bundle_.transaction_expired())
       set_dirty_columns();
 
-    //TODO save data
-
     tb.db()->update(*this);
     is_dirty_ = false;
     DAS_LOG_DBG("done.");

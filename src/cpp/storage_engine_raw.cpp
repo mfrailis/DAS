@@ -312,7 +312,6 @@ namespace das {
             return buff.size();
         }
 
-        //TODO
         ssize_t operator() (ColumnArrayBuffer<std::string> &buff) const {
             using boost::interprocess::unique_ptr;
 
