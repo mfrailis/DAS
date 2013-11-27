@@ -230,10 +230,13 @@ public:
     }
 
     template <typename T>
-    das::Array<T> get_column(const std::string &col_name, size_t start, size_t length) {
+    das::Array<T> get_column(const std::string &col_name, size_t start = 0, ssize_t length = -1) {
+        size_t len = length;
+        if(length == -1)
+            len = get_column_size(col_name);
         if (sa_.get() == NULL)
             sa_.reset(das::StorageAccess::create(bundle_.alias(), this));
-        return sa_->get_column<T>(col_name, start, length);
+        return sa_->get_column<T>(col_name, start, len);
     }
 
     long long

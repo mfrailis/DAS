@@ -37,11 +37,11 @@ namespace das {
     enum isolation_level {
         databaseDefault, ///< keeps the isolation level configured for the database.
         readUncommitted, ///< no isolation level.
-        readCommitted,   ///< weak isolation level: non repeatable reads and phantom reads can occour.
-        repeatableRead,  ///< phantom reads can occour. Good overall performance.
-        serializable     ///< strogest isolation level. Possible low performance.
+        readCommitted, ///< weak isolation level: non repeatable reads and phantom reads can occour.
+        repeatableRead, ///< phantom reads can occour. Good overall performance.
+        serializable ///< strogest isolation level. Possible low performance.
     };
-    namespace data_gc{
+    namespace data_gc {
         template<typename T>
         class Collector;
     }
@@ -144,7 +144,7 @@ namespace das {
             Result<T>
             query(const std::string& expression,
                     const std::string& ordering = "",
-                    bool last_version_only = false);
+                    bool last_version_only = true);
 
             /**
              * If you plan to perform a possibly long computation iterating through
@@ -166,7 +166,7 @@ namespace das {
             std::vector<long long>
             query_id(const std::string& expression,
                     const std::string& ordering = "",
-                    bool last_version_only = false);
+                    bool last_version_only = true);
 
 
             /**
@@ -185,7 +185,7 @@ namespace das {
             std::vector< std::pair<std::string, short> >
             query_name(const std::string& expression,
                     const std::string& ordering,
-                    bool last_version_only = false);
+                    bool last_version_only = true);
 
             template<typename T>
             bool
