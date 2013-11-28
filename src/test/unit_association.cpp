@@ -46,13 +46,13 @@ find_id(T first, T last, long long id) {
     return it;
 }
 
-template<typename T>
-bool compare_id(const shared_ptr<T> &obj1, const shared_ptr<T> &obj2) {
-    return obj1->das_id() == obj2->das_id();
+template<typename T, typename U>
+bool compare_id(const shared_ptr<T> &obj1, const shared_ptr<U> &obj2) {
+    return obj1->das_id() == obj2->das_id() && obj1->type_name() ==  obj2->type_name();
 }
 
-template<typename T>
-bool compare_id(const vector<shared_ptr<T> > &v1, const vector<shared_ptr<T> >&v2) {
+template<typename T, typename U>
+bool compare_id(const vector<shared_ptr<T> > &v1, const vector<shared_ptr<U> >&v2) {
     if (v1.size() != v2.size())
         return false;
 
@@ -97,11 +97,13 @@ void create_association(const shared_ptr<D::Database> &db,
 template<typename T, typename Y>
 void read_update_association(const shared_ptr<D::Database> &db,
         shared_ptr<T> &ptr,
-        Y &old_assoc,
-        Y &new_assoc) {
-    Y assoc, assoc2;
+        shared_ptr<Y> &old_assoc,
+        shared_ptr<DasObject> new_assoc) {
+    shared_ptr<Y> assoc;
+    shared_ptr<DasObject> assoc2;
 
     BOOST_CHECK_THROW(assoc = ptr->association(), das::not_in_managed_context);
+    BOOST_CHECK_THROW(assoc2 = ptr->get_associated_object("association"), das::not_in_managed_context); 
     BOOST_REQUIRE_NO_THROW({
         D::Transaction t = db->begin();
         assoc = ptr->association();
@@ -109,16 +111,51 @@ void read_update_association(const shared_ptr<D::Database> &db,
     });
     BOOST_CHECK(compare_id(old_assoc, assoc));
     BOOST_REQUIRE_NO_THROW({
-        assoc2 = ptr->association();
+        assoc2 = ptr->get_associated_object("association");
     });
     BOOST_CHECK(compare_id(assoc, assoc2));
     BOOST_REQUIRE_NO_THROW({
         D::Transaction t = db->begin();
         db->attach(ptr);
-        ptr->association(new_assoc);
+        ptr->set_associated_object("association",new_assoc);
         t.commit();
     });
     BOOST_CHECK(persist_check(new_assoc));
+}
+
+template<typename T, typename Y>
+void read_update_association(const shared_ptr<D::Database> &db,
+        shared_ptr<T> &ptr,
+        std::vector<shared_ptr<Y> > &old_assoc,
+        std::vector<shared_ptr<Y> > &new_assoc) {
+    std::vector<shared_ptr<Y> > assoc;
+    std::vector<shared_ptr<DasObject> > assoc2;
+    
+    std::vector<shared_ptr<DasObject> > das_new_assoc;
+    for(typename std::vector<shared_ptr<Y> >::iterator it = new_assoc.begin();
+            it != new_assoc.end();
+            ++it)
+        das_new_assoc.push_back(*it);
+
+    BOOST_CHECK_THROW(assoc = ptr->association(), das::not_in_managed_context);
+    BOOST_CHECK_THROW(assoc2 = ptr->get_associated_objects("association"), das::not_in_managed_context); 
+    BOOST_REQUIRE_NO_THROW({
+        D::Transaction t = db->begin();
+        assoc = ptr->association();
+        t.commit();
+    });
+    BOOST_CHECK(compare_id(old_assoc, assoc));
+    BOOST_REQUIRE_NO_THROW({
+        assoc2 = ptr->get_associated_objects("association");
+    });
+    BOOST_CHECK(compare_id(assoc, assoc2));
+    BOOST_REQUIRE_NO_THROW({
+        D::Transaction t = db->begin();
+        db->attach(ptr);
+        ptr->set_associated_objects("association",das_new_assoc);
+        t.commit();
+    });
+    BOOST_CHECK(persist_check(das_new_assoc));
 }
 
 template<typename T, typename Y>

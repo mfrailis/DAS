@@ -158,6 +158,8 @@ BOOST_AUTO_TEST_CASE(check_metadata) {
 }
 
 BOOST_AUTO_TEST_CASE(check_metadata_polimorphic_interface) {
+    typedef boost::posix_time::ptime ptime;
+    
     BOOST_CHECK_NO_THROW({
         D::Transaction t = db->begin();
         ptr = db->load<test_keywords>("keywords_test_0");
@@ -177,6 +179,12 @@ BOOST_AUTO_TEST_CASE(check_metadata_polimorphic_interface) {
     BOOST_CHECK_EQUAL(ptr->key_string(), ptr->get_key<string>("key_string"));
     BOOST_CHECK_EQUAL(ptr->key_text(), ptr->get_key<string>("key_text"));
     
+    BOOST_CHECK_EQUAL(ptr->creationDate(), ptr->get_key<ptime>("creationDate"));
+    BOOST_CHECK_EQUAL(ptr->dbUserId(), ptr->get_key<string>("dbUserId"));
+    BOOST_CHECK_EQUAL(ptr->name(), ptr->get_key<string>("name"));
+    BOOST_CHECK_EQUAL(ptr->das_id(), ptr->get_key<long long>("das_id"));
+    BOOST_CHECK_EQUAL(ptr->version(), ptr->get_key<short>("version"));
+    
     restore();
     
     BOOST_CHECK_NO_THROW(ptr->set_key<signed char>("key_byte",key_byte_));
@@ -188,7 +196,7 @@ BOOST_AUTO_TEST_CASE(check_metadata_polimorphic_interface) {
     BOOST_CHECK_NO_THROW(ptr->set_key<bool>("key_boolean", key_boolean_));
     BOOST_CHECK_NO_THROW(ptr->set_key<char>("key_char", key_char_));
     BOOST_CHECK_NO_THROW(ptr->set_key<string>("key_string", key_string_));
-    BOOST_CHECK_NO_THROW(ptr->set_key<string>("key_text", key_text_));
+    BOOST_CHECK_NO_THROW(ptr->set_key("key_text", key_text_.c_str()));
     
     BOOST_CHECK_NO_THROW({
         D::Transaction t = db->begin();
@@ -214,6 +222,30 @@ BOOST_AUTO_TEST_CASE(check_metadata_polimorphic_interface) {
     BOOST_CHECK_EQUAL(ptr->key_char(), key_char_);
     BOOST_CHECK_EQUAL(ptr->key_string(), key_string_);
     BOOST_CHECK_EQUAL(ptr->key_text(), key_text_);
+    
+    ptime p;
+    
+    //check exceptions
+    BOOST_CHECK_THROW(ptr->get_key<int>("creationDate"),das::bad_keyword_type);
+    BOOST_CHECK_THROW(ptr->get_key<ptime>("name"),das::bad_keyword_type);
+    BOOST_CHECK_THROW(ptr->get_key<int>("name"),das::bad_keyword_type);
+    BOOST_CHECK_THROW(ptr->get_key<int>("key_string"),das::bad_keyword_type);
+    BOOST_CHECK_THROW(ptr->get_key<std::string>("key_float64"),das::bad_keyword_type);
+    
+    BOOST_CHECK_THROW(ptr->set_key("key_string",34),das::bad_keyword_type);
+    BOOST_CHECK_THROW(ptr->set_key("key_float64",p),das::bad_keyword_type);
+    BOOST_CHECK_THROW(ptr->set_key("key_float64","pi"),das::bad_keyword_type);
+
+    
+    BOOST_CHECK_THROW(ptr->set_key("name",12),das::read_only_keyword);
+    BOOST_CHECK_THROW(ptr->set_key("version","fsd"),das::read_only_keyword);
+    BOOST_CHECK_THROW(ptr->set_key("dbUserId",12),das::read_only_keyword);
+    BOOST_CHECK_THROW(ptr->set_key("creationDate","22 nov 2013"),das::read_only_keyword); 
+    
+    BOOST_CHECK_THROW(ptr->set_key("name","changed_name"),das::read_only_keyword);
+    BOOST_CHECK_THROW(ptr->set_key("version",22),das::read_only_keyword);
+    BOOST_CHECK_THROW(ptr->set_key("dbUserId","new_user"),das::read_only_keyword);
+    BOOST_CHECK_THROW(ptr->set_key("creationDate",p),das::read_only_keyword);    
 }
 
 BOOST_AUTO_TEST_SUITE_END()
