@@ -50,9 +50,9 @@ namespace das {
         > keyword_type;
 
         typedef boost::variant<
-        long long, // das_id
-        std::string, // name
-        short, // version
+        long long&, // das_id
+        std::string&, // name, dbUserId
+        short&, // version
         boost::posix_time::ptime&, // creationDate
         boost::optional<signed char>&,
         boost::optional<char>&,

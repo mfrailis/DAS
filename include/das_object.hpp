@@ -38,10 +38,6 @@ public:
         keyword = value;
     }
 
-    void operator() (boost::optional<std::string>& keyword, const char* value) const {
-        keyword = value;
-    }
-
     void operator() (boost::posix_time::ptime& keyword, const boost::posix_time::ptime& value) const {
         keyword = value;
     }
@@ -161,9 +157,9 @@ public:
     > keyword_type;
 
     typedef boost::variant<
-    long long, // das_id
-    std::string, // name
-    short, // version
+    long long&, // das_id
+    std::string&, // name, dbUserId
+    short&, // version
     boost::posix_time::ptime&, // creationDate
     boost::optional<signed char>&,
     boost::optional<char>&,
@@ -345,7 +341,10 @@ public:
     template<typename T>
     void
     set_key(const std::string &keyword_name, const T& value) {
-        if (keyword_name == "name" || keyword_name == "version" || keyword_name == "dbUserId")
+        if (keyword_name == "name" ||
+                keyword_name == "version" ||
+                keyword_name == "dbUserId" ||
+                keyword_name == "creationDate")
             throw das::read_only_keyword();
 
         keyword_type val = value;
@@ -354,9 +353,12 @@ public:
 
     void
     set_key(const std::string &keyword_name, const char* value) {
-        if (keyword_name == "name" || keyword_name == "version" || keyword_name == "dbUserId")
+        if (keyword_name == "name" ||
+                keyword_name == "version" ||
+                keyword_name == "dbUserId" ||
+                keyword_name == "creationDate")
             throw das::read_only_keyword();
-
+        
         keyword_type val = std::string(value);
         boost::apply_visitor(Key_set(), keywords_.at(keyword_name), val);
     }
