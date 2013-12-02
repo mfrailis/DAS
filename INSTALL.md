@@ -1,43 +1,24 @@
-INSTALL
+INSTALL                                                                                       {#install}
 =======
 
-Installation, step by step, of the das library on the CIWSdev VM.
-
+This guide will help you to set-up the CIWSdev VM in order to install the DAS system.
 
 Prerequisites
 -------------
 
-You need to install this packages from yum packet manager:
+First of all, you need to install this packages from yum packet manager:
 
-    mysql-devel
     MySQL-python
     python-ordereddict
 
 as root, you can simply type
+
     yum install MySQL-python python-ordereddict
-
-### Boost ###
-
-You need a version of boost libraries at least 1.47 which is newer then the one provided by the packet
-manager. We provide the archive boost_1_54.tar.bz2 with the compiled boost libraries.
-We suggest to install it in /opt directory.
-
-If you want to compile the boost libraries by your seelf, you can follow this commands.
-    
-   wget http://sourceforge.net/projects/boost/files/boost/1.54.0/boost_1_54_0.tar.bz2/download
-   tar jxvf boost_1_54_0.tar.bz2 
-   cd boost_1_54_0
-   ./bootstrap.sh --prefix=/opt/boost_1_54
-   ./b2
-
-then as root
-
-   ./b2 install
 
 
 ### odb compiler ###
 
-Odb compiler is a program used internally by the das system during configuration steps.
+The odb compiler is a program used internally by the DAS system during configuration steps.
 You can find the rpm package at
     
 	http://www.codesynthesis.com/download/odb/2.3/odb-2.3.0-1.i686.rpm
@@ -46,74 +27,138 @@ To install it type, as root
 
     rpm --install odb-2.3.0-1.i686.rpm
 
+## Additional libraries ##
 
+In order to work, the DAS system needs a few libraries, presented in the following sub-sections.
+For your convenience we provide the ciwsprod_install.sh script which will:
+
+  * add the needed environment variables to the user profile file
+  * download the source packages
+  * build the libraries
+  * install the libraries in the given path
+  
+to run the script just type
+  
+    ciwsprod_install.sh <lib-path>
+   
+where <lib-path> is the absolute path where the libs will be installed.
+If you choose to use this script you can skip the next sections, until [DAS system](#das_system).
+
+### Boost ###
+
+You need a version of boost libraries at least 1.47 which is newer then the one provided by the packet
+manager. Following this commands you will install the boost 1.54 libraries
+    
+    wget http://sourceforge.net/projects/boost/files/boost/1.54.0/boost_1_54_0.tar.bz2/download
+    tar jxvf boost_1_54_0.tar.bz2 
+	cd boost_1_54_0
+	./bootstrap.sh --prefix=<lib-path>/boost_1_54
+	./b2
+	./b2 install
+
+
+### mySQL connector ###
+
+The python wrapper needs mySQL library compiled with a specific __MYSQL_UNIX_ADDR__ option.
+
+    wget http://dev.mysql.com/get/Downloads/Connector-C/mysql-connector-c-6.1.2-src.tar.gz
+    tar zxvf mysql-connector-c-6.1.2-src.tar.gz
+    cd mysql-connector-c-6.1.2-src
+    cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="<lib-path>/mysqlclient" -DMYSQL_UNIX_ADDR="/var/run/mysqld/mysqld.sock"
+	make
+	make install
+	cd ..
+	
 ### odb libraries ###
 
-The current odb libraries need to be patched in order to fix a bug and work properly with the das system.
-To ease the task we provide the odb.tar.bz2 archive with odb and odb-mysql libs already patched
-and compiled. We suggest to install it in /opt directory.
+We need 3 libraries from odb suite: odb common, odb-boost and odb-mysql.
+Pplease note that you may need to configure your environment variables, such as __CPLUS_INCLUDE_PATH__
+and  __LD_LIBRARY_PATH__ in order to make boost and mySQL libs available to the odb and DAS system.
 
+    wget http://www.codesynthesis.com/download/odb/2.3/libodb-2.3.0.tar.bz2
+    tar jxvf libodb-2.3.0.tar.bz2
+	cd libodb-2.3.0
+	./configure --prefix="<lib-path>/odb"
+	make
+	make install
+	cd ..
+	
+	wget http://www.codesynthesis.com/download/odb/2.3/libodb-mysql-2.3.0.tar.bz2
+	tar jxvf libodb-mysql-2.3.0.tar.bz2
+	cd libodb-mysql-2.3.0
+	make
+	make install
+	cd ..
+	
+	wget http://www.codesynthesis.com/download/odb/2.3/libodb-boost-2.3.0.tar.bz2
+	tar jxvf libodb-boost-2.3.0.tar.bz2
+	cd libodb-boost-2.3.0
+	./configure --prefix="<lib-path>/odb"
+	make
+	make install
+	cd ..
+	
+### Blitz++ ###
+Blitz++ is a C++ class library for scientific computing which provides performance on par with
+Fortran 77/90. It uses template techniques to achieve high performance.
+We use Blitz++ as a back-end of the das::Array template class.
+	
+	wget http://sourceforge.net/projects/blitz/files/blitz/Blitz%2B%2B%200.10/blitz-0.10.tar.gz/download -O blitz-0.10.tar.gz
+	tar zxvf blitz-0.10.tar.gz
+	cd blitz-0.10
+	./configure --prefix="<lib-dir>/blitz"
+	make lib
+	make install
+	cd ..
+	
+### SWIG ###
+SWIG is a software development tool that connects programs written in C and C++ with a variety of
+high-level programming languages. We use SWIG to provide the python wrapper.
 
-### das system ###
+    wget http://prdownloads.sourceforge.net/swig/swig-2.0.11.tar.gz
+	tar zxvf swig-2.0.11.tar.gz
+	cd swig-2.0.11
+	./configure --prefix="<lib-path>/swig"
+	make
+	make install   
+	
+<a name='das_system'></a>
+## DAS system ##
 
-First retrive the lastest version of the system
+First of all, you need to set two cmake environment variables in order to allow cmake to find boost
+and odb. Assuming you've installed boost and odb in /opt and you also want to install das under /opt
+you can follow this example. If you used the ciwsprod_install.sh to install the libraries, you
+should already have these variables set.
 
-   svn checkout svn://ciws.iasfbo.inaf.it/Ciws/DAS/trunk das
+    export CMAKE_INCLUDE_PATH=/opt/boost_1_54/include:/opt/odb/include:/opt/das/include
+    export CMAKE_LIBRARY_PATH=/opt/boost_1_54/lib:/opt/odb/lib:/opt/das/lib
+   
+If you used the ciwsprod_install.sh and you still don't have those environment variables, you can
+load them from the DAS profile:
 
-Then you need to set two cmake environment variables in order to allow cmake to find boost and odb.
-Assuming you've installed boost and odb in /opt and you also want to install das under /opt you can
-follow this example
-
-   export CMAKE_INCLUDE_PATH=/opt/boost_1_54/include:/opt/odb/include:/opt/das/include
-   export CMAKE_LIBRARY_PATH=/opt/boost_1_54/lib:/opt/odb/lib:/opt/das/lib
-
-
-#### Configure das  ####
-
-The das system needs 2 configuration files in order to work:
-    configure/config.json
-    ~/.das/access.json
-
-config.json contains information needed to access the database and is read in the configuration step,
-while access.json contains the database access information and is read runtime.
-
-The access.json file looks like this:
-
-    [
-        {
-	    "alias"     : "test_level1",
-	    "user"      : "username",
-	    "password"  : "secret"
-    	},
-    	{
-	    "alias"     : "test_level2",
-	    "user"      : "username",
-	    "password"  : "secret"
-        }
-    ]
-
-
-We provide a sample configure/config.json. You may need to edit the file according to your database
-configuration. To allow the sample programs to work properly you need to edit the host property,
-which must contain a name or an IP address where to find a mysql server.
-The mysql server must contain a database named as specified in db_name property. Moreover the user
-specified in the access.json must have SELECT, UPDATE and DELETE privileges on that database.
-In order to instantiate the das-generated schemas, the user also needs CREATE permission.
+    . ~/.das/profile
 
 
 #### Build das ####
+The das system needs 3 configuration files in order to work:
+  * configure/config.json
+  * ~/.das/access.json
+  * ddl.xml
+  
+You can find the related documentation in the [CONFIGURE](md_CONFIGURE.html#das_config) section. 
 
-Firt you need run the configuration step, allowing cmake to find the needed libraries and the das system
-to validate the files edited by the user (DDL files and config.json). Fourtermore you need to specify 
-the installation directory if differes from the system one (/usr/local).
-Again, assuming you want to install the das libraries under /opt directory type
+When you've edit the configuration files, you need to run the configuration step, allowing cmake
+to find the needed libraries and the das system to validate the files edited by the user (DDL files
+and config.json). Furthermore you need to specify the installation directory if 
+differs from the system one (/usr/local). Again, assuming you want to install the das libraries
+under /opt directory, you can simply type
        
     cmake -DCMAKE_INSTALL_PREFIX=/opt/das .
 
 Note that the current building system allows only in-tree building. That is to say that you must run
 the cmake command inside the das building root directory.
 
-If the configuration was succesfully done, you can build the library executing the make command.
+If the configuration was successfully done, you can build the library executing the make command.
 
     make
 
@@ -121,14 +166,14 @@ Now, you need to instantiate the schemas on the database.
 
     make db-all
 
-To test if everything if properly set, the test program should run without throw any exceptions
+To test if everything if properly set, the unit tests should run without any error
 
-    ./build/test
+    ./unit_tests
 
 
-##### make targets #####
-Install the header files and the library in CMAKE_INSTALL_PREFIX directory, if provided on configuration
-time, in /usr/local otherwise. Note that you may need root privileges.
+#### make targets ####
+Install the header files and the library in __CMAKE_INSTALL_PREFIX__ directory, if provided on
+configuration time, in /usr/local otherwise. Note that you may need root privileges.
 
     make install
 
@@ -145,7 +190,7 @@ Compile the library
     
     make das
 
-Compile the test program. The executable file will be located in buld directory
+Compile the test program. The executable file will be located in build directory
 
     make test
 
@@ -153,17 +198,8 @@ Compile examples. The executable files will be located in build directory
 
     make examples
 
-If doxygen is installed in the system, an additional target for make is created in order to generate the 
-code documentation
+If doxygen is installed in the system, an additional target for make is created in order to generate
+the code documentation
 
     make doc
 
-Currently, it creates only the html documentation in the directory doc/html. There is only a main page
-containing an high level view of the DAS library, while the public classes and methods are not yet 
-documented inline.
-
-
-### DDL file ###
-In the source folder 'ddl' you find a first example of DDL file, 'ddl_level1_types.xml', providing
-some data type definitions, modeling the DPS measure relational model and some additional types
-representing housekeeping data and raw image frames.

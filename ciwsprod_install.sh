@@ -115,12 +115,6 @@ then
     tar jxvf libodb-2.3.0.tar.bz2
 fi
 
-if [ $? != 0 ]
-then
-    echo "ldconfig did not work"
-    exit 1
-fi
-
 cd libodb-2.3.0
 ./configure --prefix="$1/odb" && \
 make && \
