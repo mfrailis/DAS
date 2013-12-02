@@ -3,8 +3,37 @@
 # $1 contains the library and headers installation directoy eg /opt
 if [ $# -eq 0 ]
 then
-    echo "usage: $0 <lib-installation-path>"
-    exit 1
+    echo "usage: $0 [-S] <lib-installation-path>"
+    exit 0
+fi
+
+if [ "$1" == "--help" ]
+then
+    echo "usage: $0 [-S] <lib-installation-path>
+use -S flag if you need to super user priviledges (provided through sudo command) to install the libraries
+"
+    exit 0
+fi
+
+if [ "$1" == "-S" ]
+then
+    if [ $# -eq 2 ]
+    then
+	SUDO="sudo"
+	INSTALL_PATH="$2"
+    else
+	echo "usage: $0 [-S] <lib-installation-path>"
+	exit 0
+    fi	
+else
+    if [ $# -eq 1 ]
+    then
+	SUDO=""
+	INSTALL_PATH="$1"
+    else
+    	echo "usage: $0 [-S] <lib-installation-path>"
+	exit 0
+    fi
 fi
 
 touch ~/.bashrc
@@ -20,12 +49,12 @@ fi
 fi
 
 mkdir -p ~/.das
-echo export CMAKE_INCLUDE_PATH="$1/mysqlclient/include:$1/boost_1_54/include:$1/odb/include:$1/das/include:$1/blitz/include:$CMAKE_INCLUDE_PATH" > ~/.das/profile
-echo export CMAKE_LIBRARY_PATH="$1/mysqlclient/lib:$1/boost_1_54/lib:$1/odb/lib:$1/das/lib:$1/blitz/lib:$CMAKE_LIBRARY_PATH" >> ~/.das/profile
-echo export PATH="$1/swig/bin:$PATH" >> ~/.das/profile
-echo export CPLUS_INCLUDE_PATH="$1/mysqlclient/include:$1/boost_1_54/include:$1/odb/include:$1/das/include:$1/blitz/include:$CPLUS_INCLUDE_PATH" >> ~/.das/profile
-echo export LIBRARY_PATH="$1/mysqlclient/lib:$1/boost_1_54/lib:$1/odb/lib:$1/das/lib:$1/blitz/lib:$LIBRARY_PATH" >> ~/.das/profile
-echo export LD_LIBRARY_PATH="$1/mysqlclient/lib:$1/boost_1_54/lib:$1/odb/lib:$1/das/lib:$1/blitz/lib:$LD_LIBRARY_PATH" >> ~/.das/profile
+echo export CMAKE_INCLUDE_PATH="$INSTALL_PATH/mysqlclient/include:$INSTALL_PATH/boost_1_54/include:$INSTALL_PATH/odb/include:$INSTALL_PATH/das/include:$INSTALL_PATH/blitz/include:$CMAKE_INCLUDE_PATH" > ~/.das/profile
+echo export CMAKE_LIBRARY_PATH="$INSTALL_PATH/mysqlclient/lib:$INSTALL_PATH/boost_1_54/lib:$INSTALL_PATH/odb/lib:$INSTALL_PATH/das/lib:$INSTALL_PATH/blitz/lib:$CMAKE_LIBRARY_PATH" >> ~/.das/profile
+echo export PATH="$INSTALL_PATH/swig/bin:$PATH" >> ~/.das/profile
+echo export CPLUS_INCLUDE_PATH="$INSTALL_PATH/mysqlclient/include:$INSTALL_PATH/boost_1_54/include:$INSTALL_PATH/odb/include:$INSTALL_PATH/das/include:$INSTALL_PATH/blitz/include:$CPLUS_INCLUDE_PATH" >> ~/.das/profile
+echo export LIBRARY_PATH="$INSTALL_PATH/mysqlclient/lib:$INSTALL_PATH/boost_1_54/lib:$INSTALL_PATH/odb/lib:$INSTALL_PATH/das/lib:$INSTALL_PATH/blitz/lib:$LIBRARY_PATH" >> ~/.das/profile
+echo export LD_LIBRARY_PATH="$INSTALL_PATH/mysqlclient/lib:$INSTALL_PATH/boost_1_54/lib:$INSTALL_PATH/odb/lib:$INSTALL_PATH/das/lib:$INSTALL_PATH/blitz/lib:$LD_LIBRARY_PATH" >> ~/.das/profile
 
 . ~/.das/profile
 
@@ -40,9 +69,9 @@ then
 fi
 
 cd mysql-connector-c-6.1.2-src
-cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="$1/mysqlclient" -DMYSQL_UNIX_ADDR="/var/run/mysqld/mysqld.sock" . && \
+cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="$INSTALL_PATH/mysqlclient" -DMYSQL_UNIX_ADDR="/var/run/mysqld/mysqld.sock" . && \
 make && \
-make install
+$SUDO make install
 if [ $? != 0 ]
 then
     exit 1
@@ -61,7 +90,7 @@ then
 fi
 
 cd boost_1_54_0
-./bootstrap.sh --prefix="$1/boost_1_54" && \
+./bootstrap.sh --prefix="$INSTALL_PATH/boost_1_54" && \
 ./b2
 ./b2 install
 cd ..
@@ -77,9 +106,9 @@ then
 fi
 
 cd blitz-0.10
-./configure --with-boost-libdir="$1/boost_1_54/lib" --prefix="$1/blitz" && \
+./configure --with-boost-libdir="$INSTALL_PATH/boost_1_54/lib" --prefix="$INSTALL_PATH/blitz" && \
 make lib && \
-make install
+$SUDO make install
 
 if [ $? != 0 ]
 then
@@ -97,9 +126,9 @@ then
 fi
 
 cd swig-2.0.11
-./configure --prefix="$1/swig" && \
+./configure --prefix="$INSTALL_PATH/swig" && \
 make && \
-make install
+$SUDO make install
 if [ $? != 0 ]
 then
     exit 1
@@ -116,9 +145,9 @@ then
 fi
 
 cd libodb-2.3.0
-./configure --prefix="$1/odb" && \
+./configure --prefix="$INSTALL_PATH/odb" && \
 make && \
-make install
+$SUDO make install
 if [ $? != 0 ]
 then
     exit 1
@@ -135,9 +164,9 @@ then
 fi
 
 cd libodb-mysql-2.3.0
-./configure --prefix="$1/odb" && \
+./configure --prefix="$INSTALL_PATH/odb" && \
 make && \
-make install
+$SUDO make install
 if [ $? != 0 ]
 then
     exit 1
@@ -155,18 +184,18 @@ then
 fi
 
 cd libodb-boost-2.3.0
-./configure --prefix="$1/odb" && \
+./configure --prefix="$INSTALL_PATH/odb" && \
 make && \
-make install
+$SUDO make install
 if [ $? != 0 ]
 then
     exit 1
 fi
 cd ..
 
-#cmake -DCMAKE_INSTALL_PREFIX="$1/das" . && \
+#cmake -DCMAKE_INSTALL_PREFIX="$INSTALL_PATH/das" . && \
 #make -j && \
-#make install
+#$SUDO make install
 #if [ $? != 0 ]
 #then
 #    exit 1
