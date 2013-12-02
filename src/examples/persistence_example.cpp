@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
         /* m object still exists but in the detached status.
          * We can keep modifying his data
          */
-        m->obs_id("m_4567");
+        m->status(1);
         
 
     /* db goes out of scope and it will be destroyed allowing system resources
@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
     /* even now m is still valid and we can take advantage of his methods without
      * any concern about database resources
      */
-    m->run_id(12345);
+    m->runid(12345);
 
 
     {

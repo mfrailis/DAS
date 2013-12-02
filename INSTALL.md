@@ -72,8 +72,9 @@ The python wrapper needs mySQL library compiled with a specific __MYSQL_UNIX_ADD
 ### odb libraries ###
 
 We need 3 libraries from odb suite: odb common, odb-boost and odb-mysql.
-Pplease note that you may need to configure your environment variables, such as __CPLUS_INCLUDE_PATH__
-and  __LD_LIBRARY_PATH__ in order to make boost and mySQL libs available to the odb and DAS system.
+Please note that you may need to configure your environment variables, such as __CPLUS_INCLUDE_PATH__,
+__LIBRARY_PATH__ and  __LD_LIBRARY_PATH__ in order to make boost and mySQL libs available to the odb
+and DAS system.
 
     wget http://www.codesynthesis.com/download/odb/2.3/libodb-2.3.0.tar.bz2
     tar jxvf libodb-2.3.0.tar.bz2
@@ -86,6 +87,7 @@ and  __LD_LIBRARY_PATH__ in order to make boost and mySQL libs available to the 
 	wget http://www.codesynthesis.com/download/odb/2.3/libodb-mysql-2.3.0.tar.bz2
 	tar jxvf libodb-mysql-2.3.0.tar.bz2
 	cd libodb-mysql-2.3.0
+	./configure --prefix="<lib-path>/odb"
 	make
 	make install
 	cd ..
@@ -141,9 +143,10 @@ load them from the DAS profile:
 
 #### Build das ####
 The das system needs 3 configuration files in order to work:
-  * configure/config.json
+  * $DAS_ROOT/configure/config.json
+  * $DAS_ROOT/ddl/ddl.xml
   * ~/.das/access.json
-  * ddl.xml
+
   
 You can find the related documentation in the [CONFIGURE](md_CONFIGURE.html#das_config) section. 
 
@@ -162,12 +165,15 @@ If the configuration was successfully done, you can build the library executing 
 
     make
 
-Now, you need to instantiate the schemas on the database.
+Now, you need to instantiate the schemas on the database. Before running the following target, you need
+to create in the back-end DBMS a database named "test_level2" and grant to the user referenced in the
+~/.das/access.json config file the db-manager priviledges.
 
-    make db-all
+    make db-test_level2
 
-To test if everything if properly set, the unit tests should run without any error
+To test if everything if properly set, the unit tests should build and run without any error.
 
+	make unit_tests
     ./unit_tests
 
 
@@ -186,13 +192,14 @@ Instantiate the schemas in the database referred by the alias property in the co
 
     make db-<alias>
 
-Compile the library
+Compile the library as shared object
     
-    make das
+    make DAS_SO
 
-Compile the test program. The executable file will be located in build directory
-
-    make test
+Compile the library as static object
+    
+    make DAS_A
+	
 
 Compile examples. The executable files will be located in build directory
 

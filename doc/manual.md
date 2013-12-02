@@ -52,7 +52,7 @@ A ddl-object newly created is in the new state. You can freely modify and delete
 any database operations.
 
 ~~~{.cpp} 
-    shared_ptr<measure> m = measure::create("measure_name");
+    shared_ptr<measure> m = measure::create("measure_name", "db_alias");
     m->run_id(12345);
     m.reset();
 ~~~
@@ -62,8 +62,8 @@ transaction and finally you can call the method persist passing the ddl-object a
 When you have finished persisting the objects, just call the commit method on the transaction object.
 
 ~~~{.cpp} 
-    shared_ptr<measure> m1 = measure::create("measure1");
-    shared_ptr<measure> m2 = measure::create("measure2");
+    shared_ptr<measure> m1 = measure::create("measure1", "test_level1");
+    shared_ptr<measure> m2 = measure::create("measure2", "test_level1");
 	
     shared_ptr<Database> db = Database::create("test_level1");
 	
@@ -242,3 +242,8 @@ ddl-type and order may be the word ascending, descending, asc or desc.
     keyword_1 asc
 	
 	keyword_1 asc, keyword_2 desc
+
+
+
+
+

@@ -11,7 +11,6 @@ namespace D = das::tpl;
 int main(int argc, char** argv) {
     
     // first we create some ddl-objects
-    shared_ptr<campaign> camp = campaign::create("campaign_1","test_level1");
     shared_ptr<session> ss = session::create("session_1","test_level1");
 
     shared_ptr<measure> m0 = measure::create("measure_0","test_level1");
@@ -25,10 +24,7 @@ int main(int argc, char** argv) {
      *       +---+---+
      *           |
      *          ss
-     *           |
-     *          camp
      */
-    ss->session_campaign(camp);
     
     m0->measure_session(ss);
     m1->measure_session(ss);

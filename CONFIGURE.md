@@ -4,13 +4,15 @@ Configuring the system
 
 In order to configure and build the DAS system you need to edit some configuration files:
 
-  * config.json : is located in the configure directory and contains the basic information 
-	  about the database, the way the data is persisted, and the reference of the ddl files.
+  * config.json : is located in the configure directory under the DAS source directory and contains
+	  the basic information about the database, the way the data is persisted, and the reference of the
+	  ddl files.
 	  
   * access.json : is located in the .das directory in the $HOME of each user who runs the das
 	  library. This file contains the credentials for the databases which the user has access.
 	  
-  * ddl.xml : the files located in the ddl directory, in XML format which define the data model.
+  * ddl.xml : the files located in the ddl directory under the DAS source directory, in XML format which
+	  define the data model.
 
 ## config.json ##
 

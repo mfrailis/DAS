@@ -345,12 +345,16 @@ target_link_libraries(associations_example DAS_SO ${COMMON_LIBRARIES} ${ODB_MYSQ
 add_executable(data_example EXCLUDE_FROM_ALL ${EXAMPLES_SOURCE_DIR}/data_example.cpp)
 target_link_libraries(data_example DAS_SO ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARY})
 
+add_executable(column_example EXCLUDE_FROM_ALL ${EXAMPLES_SOURCE_DIR}/column_example.cpp)
+target_link_libraries(column_example DAS_SO ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARY})
+
 add_custom_target(examples 
   DEPENDS 
     persistence_example
     query_example
     associations_example
     data_example
+    column_example
 )
 
 add_custom_target(tests
