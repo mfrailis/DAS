@@ -81,7 +81,7 @@ cd ..
 
 if [ ! -f boost_1_54_0.tar.bz2 ]
 then
-    wget http://sourceforge.net/projects/boost/files/boost/1.54.0/boost_1_54_0.tar.bz2/download
+    wget http://sourceforge.net/projects/boost/files/boost/1.54.0/boost_1_54_0.tar.bz2/download -O boost_1_54_0.tar.bz2
 fi
 
 if [ ! -d boost_1_54_0 ]
