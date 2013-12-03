@@ -81,7 +81,7 @@ cd ..
 
 if [ ! -f boost_1_54_0.tar.bz2 ]
 then
-    wget http://sourceforge.net/projects/boost/files/boost/1.54.0/boost_1_54_0.tar.bz2/download -O boost_1_54_0.tar.bz2
+    wget http://sourceforge.net/projects/boost/files/boost/1.54.0/boost_1_54_0.tar.bz2/download -O boost_1_54_0.tar.bz2 || exit 1
 fi
 
 if [ ! -d boost_1_54_0 ]
@@ -92,12 +92,12 @@ fi
 cd boost_1_54_0
 ./bootstrap.sh --prefix="$INSTALL_PATH/boost_1_54" && \
 ./b2
-./b2 install
+$SUDO ./b2 install
 cd ..
 
 if [ ! -f blitz-0.10.tar.gz ]
 then
-    wget http://sourceforge.net/projects/blitz/files/blitz/Blitz%2B%2B%200.10/blitz-0.10.tar.gz/download -O blitz-0.10.tar.gz
+    wget http://sourceforge.net/projects/blitz/files/blitz/Blitz%2B%2B%200.10/blitz-0.10.tar.gz/download -O blitz-0.10.tar.gz || exit 1
 fi
 
 if [ ! -d blitz-0.10 ]
@@ -118,7 +118,7 @@ cd ..
 
 if [ ! -f swig-2.0.11.tar.gz ]
 then
-    wget http://prdownloads.sourceforge.net/swig/swig-2.0.11.tar.gz
+    wget http://prdownloads.sourceforge.net/swig/swig-2.0.11.tar.gz || exit 1
 fi
 if [ ! -d swig-2.0.11 ]
 then
@@ -137,7 +137,7 @@ cd ..
 
 if [ ! -f libodb-2.3.0.tar.bz2 ]
 then
-    wget http://www.codesynthesis.com/download/odb/2.3/libodb-2.3.0.tar.bz2
+    wget http://www.codesynthesis.com/download/odb/2.3/libodb-2.3.0.tar.bz2 || exit 1
 fi
 if [ ! -d libodb-2.3.0 ]
 then
@@ -156,7 +156,7 @@ cd ..
 
 if [ ! -f libodb-mysql-2.3.0.tar.bz2 ]
 then
-    wget http://www.codesynthesis.com/download/odb/2.3/libodb-mysql-2.3.0.tar.bz2
+    wget http://www.codesynthesis.com/download/odb/2.3/libodb-mysql-2.3.0.tar.bz2 || exit 1
 fi
 if [ ! -d libodb-mysql-2.3.0 ]
 then
@@ -176,7 +176,7 @@ cd ..
 
 if [ ! -f libodb-boost-2.3.0.tar.bz2 ]
 then
-    wget http://www.codesynthesis.com/download/odb/2.3/libodb-boost-2.3.0.tar.bz2
+    wget http://www.codesynthesis.com/download/odb/2.3/libodb-boost-2.3.0.tar.bz2 || exit 1
 fi
 if [ ! -d libodb-boost-2.3.0 ]
 then
