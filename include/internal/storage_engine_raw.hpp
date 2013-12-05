@@ -104,7 +104,6 @@ namespace das {
         virtual bool release(const ImageFromFile &iff);
 
     private:
-        void make_dirs(const std::string &s);
 
         class ResolveToken {
         public:

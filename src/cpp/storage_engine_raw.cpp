@@ -52,6 +52,71 @@ private:
     int fd_;
 };
 
+class FileUtils {
+public:
+
+    static void make_dirs(const std::string & s) {
+        struct stat stt;
+        size_t offset = 0;
+        size_t len = s.length() - 1;
+        while (offset < len) {
+            ++offset;
+            offset = s.find_first_of('/', offset);
+            if (offset < std::string::npos) {
+                std::string path(s.c_str(), offset);
+                errno = 0;
+                if (stat(path.c_str(), &stt))
+                    if (errno == ENOENT) {
+                        errno = 0;
+                        if (mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
+                            throw das::io_exception(errno);
+                    }
+            }
+        }
+    }
+
+    static void send_file(const std::string& out_path, const std::string& in_path) {
+        errno = 0;
+        AutoFile out_fd(open(out_path.c_str(),
+                O_WRONLY | O_CREAT,
+                S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH));
+        
+        if (out_fd == -1)
+            throw das::io_exception(errno);
+        
+        send_file(out_fd, in_path);
+    }
+
+    static void send_file(int out_fd, const std::string& in_path) {
+        errno = 0;
+        AutoFile in_fd(open(in_path.c_str(), O_RDONLY));
+        if (in_fd == -1)
+            throw das::io_exception(errno);
+
+        struct stat stat_buf;
+        off_t offset = 0;
+
+        fstat(in_fd, &stat_buf);
+        if (sendfile(out_fd, in_fd, &offset, stat_buf.st_size) == -1)
+            throw das::io_exception(errno);
+    }
+
+    static void rename_or_move(const std::string& old_path, const std::string& new_path) {
+        errno = 0;
+        if (rename(old_path.c_str(), new_path.c_str())) {
+            if (EXDEV == errno) {
+                send_file(new_path, old_path);
+                errno = 0;
+                if(remove(old_path.c_str())){
+                    throw das::io_exception(errno);
+                }
+            } else {
+                throw das::io_exception(errno);
+            }
+        }
+    }
+};
+
 /* class for managing files containing strings
  */
 
@@ -348,7 +413,7 @@ namespace das {
 
                     unique_ptr<std::string, ArrayDeleter<std::string> >
                             buffer(new std::string[c_size]);
-                    SR.copy(buffer.get(),c_size);
+                    SR.copy(buffer.get(), c_size);
                     buff.add(buffer.release(), c_size);
                 }
 
@@ -359,9 +424,9 @@ namespace das {
                 SR.skip(elems * o_);
 
                 for (size_t i = 0; i < c_; ++i) {
-                    unique_ptr<std::string, ArrayDeleter<std::string> > 
-                    buffer(new std::string[elems]);
-                    SR.copy(buffer.get(),elems);
+                    unique_ptr<std::string, ArrayDeleter<std::string> >
+                            buffer(new std::string[elems]);
+                    SR.copy(buffer.get(), elems);
                     buff.add(buffer.release(), elems);
                 }
             }
@@ -646,10 +711,11 @@ namespace das {
                         cffnp->persist(*(tb_.db()));
 
                         ss << cffnp->id();
-                        errno = 0;
+                        /*errno = 0;
                         if (rename(temp_path.c_str(), ss.str().c_str())) {
                             throw das::io_exception(errno);
-                        }
+                        }*/
+                        FileUtils::rename_or_move(temp_path, ss.str());
 
                     }
                 }
@@ -700,10 +766,11 @@ namespace das {
                     iffnp->persist(*(tb_.db()));
 
                     ss << iffnp->id();
-                    errno = 0;
+                    /*errno = 0;
                     if (rename(temp_path.c_str(), ss.str().c_str())) {
                         throw das::io_exception(errno);
-                    }
+                    }*/
+                    FileUtils::rename_or_move(temp_path, ss.str());
 
                 }
 
@@ -775,10 +842,16 @@ namespace das {
                         cffnp->persist(*(tb_.db()));
 
                         ss << cffnp->id();
-                        errno = 0;
+                        /*errno = 0;
                         if (rename(temp_path.c_str(), ss.str().c_str())) {
                             cffnp->temp_path(temp_path);
                             throw das::io_exception(errno);
+                        }*/
+                        try {
+                            FileUtils::rename_or_move(temp_path, ss.str());
+                        } catch (const std::exception& e) {
+                            cffnp->temp_path(temp_path);
+                            throw;
                         }
                         cffnp->rollback_path(temp_path);
                     }
@@ -840,10 +913,16 @@ namespace das {
                     iffnp->persist(*(tb_.db()));
 
                     ss << iffnp->id();
-                    errno = 0;
+                    /*errno = 0;
                     if (rename(temp_path.c_str(), ss.str().c_str())) {
                         iffnp->temp_path(temp_path);
                         throw das::io_exception(errno);
+                    }*/
+                    try {
+                        FileUtils::rename_or_move(temp_path, ss.str());
+                    } catch (const std::exception& e) {
+                        iffnp->temp_path(temp_path);
+                        throw;
                     }
                     iffnp->rollback_path(temp_path);
 
@@ -876,13 +955,22 @@ namespace das {
                         std::stringstream ss;
                         ss << cff->fname();
                         ss << cff->id();
-                        if (rename(ss.str().c_str(), cff->rollback_path().c_str())) {
+                        /*if (rename(ss.str().c_str(), cff->rollback_path().c_str())) {
                             cff->temp_path(ss.str());
                             DAS_LOG_ERR("error while renaming file (keeping the first as temp):"
                                     << ss.str() << " -> " << cff->rollback_path());
                         } else {
                             cff->temp_path(cff->rollback_path());
                             cff->rollback_path("");
+                        }*/
+                        try {
+                            FileUtils::rename_or_move(ss.str(), cff->rollback_path());
+                            cff->temp_path(cff->rollback_path());
+                            cff->rollback_path("");
+                        } catch (const das::io_exception& e) {
+                            cff->temp_path(ss.str());
+                            DAS_LOG_ERR("error while renaming file (keeping the first as temp):"
+                                    << ss.str() << " -> " << cff->rollback_path());
                         }
                     }
                 }
@@ -897,13 +985,22 @@ namespace das {
                     std::stringstream ss;
                     ss << iff->fname();
                     ss << iff->id();
-                    if (rename(ss.str().c_str(), iff->rollback_path().c_str())) {
+                    /*if (rename(ss.str().c_str(), iff->rollback_path().c_str())) {
                         iff->temp_path(ss.str());
                         DAS_LOG_ERR("error while renaming file (keeping the first as temp):"
                                 << ss.str() << " -> " << iff->rollback_path());
                     } else {
                         iff->temp_path(iff->rollback_path());
                         iff->rollback_path("");
+                    }*/
+                    try {
+                        FileUtils::rename_or_move(ss.str(), iff->rollback_path());
+                        iff->temp_path(iff->rollback_path());
+                        iff->rollback_path("");
+                    } catch (const das::io_exception& e) {
+                        iff->temp_path(ss.str());
+                        DAS_LOG_ERR("error while renaming file (keeping the first as temp):"
+                                << ss.str() << " -> " << iff->rollback_path());
                     }
                 }
             }
@@ -1513,7 +1610,7 @@ namespace das {
         if (s.find("//") != std::string::npos)
             throw bad_path();
 
-        if (m) make_dirs(s);
+        if (m) FileUtils::make_dirs(s);
         return s;
     }
 
@@ -1535,7 +1632,7 @@ namespace das {
         if (s.find("//") != std::string::npos)
             throw bad_path();
 
-        if (m) make_dirs(s);
+        if (m) FileUtils::make_dirs(s);
 
         return s;
     }
@@ -1556,26 +1653,10 @@ namespace das {
         if (s.find("//") != std::string::npos)
             throw bad_path();
 
-        if (m) make_dirs(s);
+        if (m) FileUtils::make_dirs(s);
 
         return s;
     }
 
-    void
-    RawStorageAccess::make_dirs(const std::string & s) {
-        struct stat stt;
-        size_t offset = 0;
-        size_t len = s.length() - 1;
-        while (offset < len) {
-            ++offset;
-            offset = s.find_first_of('/', offset);
-            if (offset < std::string::npos) {
-                std::string path(s.c_str(), offset);
-                if (stat(path.c_str(), &stt))
-                    if (errno == ENOENT)
-                        mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH); //TODO: handle errors and permisisons
-            }
-        }
-    }
 
 }
