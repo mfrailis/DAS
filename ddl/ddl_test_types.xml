@@ -175,7 +175,6 @@
                 <column name="column_float32" type="float32" arraysize="2"/>
                 <column name="column_float64" type="float64"/>
                 <column name="column_boolean" type="boolean"/>
-                <column name="column_char"    type="char"/>
                 <column name="column_uint8"   type="uint8"/>
                 <column name="column_uin16"   type="uint16"/>
                 <column name="column_uint32"  type="uint32"/>

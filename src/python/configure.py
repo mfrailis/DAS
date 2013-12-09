@@ -117,7 +117,10 @@ list(APPEND ODB_CXX '''+db_dir+'''/image-odb.cxx)
 
 foreach(type_name ${TYPE_NAMES_ALL})
   add_custom_command(
-    OUTPUT '''+db_dir+'''/${TYPE_PREFIX}${type_name}-odb.cxx
+    OUTPUT 
+            '''+db_dir+'''/${TYPE_PREFIX}${type_name}-odb.cxx 
+            ${DDL_HEADERS_DIR}/'''+db_type+'''/${TYPE_PREFIX}${type_name}-odb.hxx
+            ${DDL_HEADERS_DIR}/'''+db_type+'''/${TYPE_PREFIX}${type_name}-odb.ixx
     COMMAND ${ODB_COMPILER}
             --output-dir '''+db_dir+'''
             --database '''+db_type+'''
@@ -145,7 +148,7 @@ foreach(type_name ${TYPE_NAMES_ALL})
 
     COMMAND mv "'''+db_dir+'''/${TYPE_PREFIX}${type_name}-odb.hxx" "${DDL_HEADERS_DIR}/'''+db_type+'''/${TYPE_PREFIX}${type_name}-odb.hxx"
     COMMAND mv "'''+db_dir+'''/${TYPE_PREFIX}${type_name}-odb.ixx" "${DDL_HEADERS_DIR}/'''+db_type+'''/${TYPE_PREFIX}${type_name}-odb.ixx"
-    DEPENDS ${DDL_LOCAL_SIGNATURE}
+    DEPENDS ${DDL_LOCAL_SIGNATURE} ${ODB_SOURCE_DIR}/${TYPE_PREFIX}${type_name}.hpp
     COMMENT "Generating odb class for type ${type_name} for '''+db_type+''' DBMS"
     VERBATIM 
     )
