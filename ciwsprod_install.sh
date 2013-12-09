@@ -36,27 +36,48 @@ else
     fi
 fi
 
-touch ~/.bashrc
+touch ~/.profile
 
-if ! cat ~/.bashrc | grep "#DAS env" > /dev/null
+if ! cat ~/.profile | grep "#DAS env" > /dev/null
 then
-   echo "#DAS env
+   echo "
+#DAS env
 if [ -f ~/.das/profile ]
 then
     . ~/.das/profile
 fi
-" >> ~/.bashrc
+" >> ~/.profile
 fi
 
+if [ -f ~/.bash_profile ]
+then
+    if ! cat ~/.bash_profile | grep "#DAS env" > /dev/null
+    then
+	echo "
+#DAS env
+if [ -f ~/.das/profile ]
+then
+    . ~/.das/profile
+fi
+" >> ~/.bash_profile   
+    fi
+fi
+
+
 mkdir -p ~/.das
-echo export CMAKE_INCLUDE_PATH="$INSTALL_PATH/mysqlclient/include:$INSTALL_PATH/boost_1_54/include:$INSTALL_PATH/odb/include:$INSTALL_PATH/das/include:$INSTALL_PATH/blitz/include:\$CMAKE_INCLUDE_PATH" > ~/.das/profile
-echo export CMAKE_LIBRARY_PATH="$INSTALL_PATH/mysqlclient/lib:$INSTALL_PATH/boost_1_54/lib:$INSTALL_PATH/odb/lib:$INSTALL_PATH/das/lib:$INSTALL_PATH/blitz/lib:\$CMAKE_LIBRARY_PATH" >> ~/.das/profile
-echo export PATH="$INSTALL_PATH/swig/bin:\$PATH" >> ~/.das/profile
-echo export CPLUS_INCLUDE_PATH="$INSTALL_PATH/mysqlclient/include:$INSTALL_PATH/boost_1_54/include:$INSTALL_PATH/odb/include:$INSTALL_PATH/das/include:$INSTALL_PATH/blitz/include:\$CPLUS_INCLUDE_PATH" >> ~/.das/profile
-echo export LIBRARY_PATH="$INSTALL_PATH/mysqlclient/lib:$INSTALL_PATH/boost_1_54/lib:$INSTALL_PATH/odb/lib:$INSTALL_PATH/das/lib:$INSTALL_PATH/blitz/lib:\$LIBRARY_PATH" >> ~/.das/profile
-echo export LD_LIBRARY_PATH="$INSTALL_PATH/mysqlclient/lib:$INSTALL_PATH/boost_1_54/lib:$INSTALL_PATH/odb/lib:$INSTALL_PATH/das/lib:$INSTALL_PATH/blitz/lib:\$LD_LIBRARY_PATH" >> ~/.das/profile
+echo "
+export CMAKE_INCLUDE_PATH=\"$INSTALL_PATH/mysqlclient/include:$INSTALL_PATH/boost_1_54/include:$INSTALL_PATH/odb/include:$INSTALL_PATH/das/include:$INSTALL_PATH/blitz/include:\$CMAKE_INCLUDE_PATH\"
+export CMAKE_LIBRARY_PATH=\"$INSTALL_PATH/boost_1_54/lib:$INSTALL_PATH/odb/lib:$INSTALL_PATH/das/lib:$INSTALL_PATH/blitz/lib:\$CMAKE_LIBRARY_PATH\"
+export PATH=\"$INSTALL_PATH/swig/bin:\$PATH\"
+export CPLUS_INCLUDE_PATH=\"$INSTALL_PATH/boost_1_54/include:$INSTALL_PATH/odb/include:$INSTALL_PATH/das/include:$INSTALL_PATH/blitz/include:\$CPLUS_INCLUDE_PATH\"
+export LIBRARY_PATH=\"$INSTALL_PATH/boost_1_54/lib:$INSTALL_PATH/odb/lib:$INSTALL_PATH/das/lib:$INSTALL_PATH/blitz/lib:\$LIBRARY_PATH\"
+export LD_LIBRARY_PATH=\"$INSTALL_PATH/boost_1_54/lib:$INSTALL_PATH/odb/lib:$INSTALL_PATH/das/lib:$INSTALL_PATH/blitz/lib:\$LD_LIBRARY_PATH\"
+" > ~/.das/profile
 
 . ~/.das/profile
+
+mkdir -p external_libs
+cd  external_libs
 
 if [ ! -f mysql-connector-c-6.1.2-src.tar.gz ]
 then
@@ -78,6 +99,8 @@ then
 fi
 
 cd ..
+#delete shared objects
+rm $INSTALL_PATH/mysqlclient/lib/*.so*
 
 if [ ! -f boost_1_54_0.tar.bz2 ]
 then
@@ -164,7 +187,7 @@ then
 fi
 
 cd libodb-mysql-2.3.0
-./configure --prefix="$INSTALL_PATH/odb" && \
+./configure --prefix="$INSTALL_PATH/odb" LDFLAGS="-L$INSTALL_PATH/mysqlclient/lib" LIBS="-ldl -lrt" CPPFLAGS="-I$INSTALL_PATH/mysqlclient/include" && \
 make && \
 $SUDO make install
 if [ $? != 0 ]
@@ -192,7 +215,7 @@ then
     exit 1
 fi
 cd ..
-
+cd ..
 #cmake -DCMAKE_INSTALL_PREFIX="$INSTALL_PATH/das" . && \
 #make -j && \
 #$SUDO make install

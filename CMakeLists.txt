@@ -8,6 +8,7 @@ set(ODB_COMPILER_DIR  CACHE PATH "hint to where to find odb compiler executable"
 find_package(Boost 1.47 REQUIRED)
 find_package(ODB REQUIRED)
 find_package(ODB_BOOST REQUIRED)
+find_package(MySQL REQUIRED)
 find_package(Python REQUIRED)
 find_package(MySQL REQUIRED)
 find_python_module(lxml REQUIRED)
