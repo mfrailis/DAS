@@ -79,8 +79,8 @@ class DdlInfoGenerator(_odb.DdlVisitor):
             self._DdlInfo_children[ddl].append('types_["'+data_type.name+'"] = &all_types_["'+data_type.name+'"];')
 
     def visit_type_list(self,_):
-
-        f = open(_os.path.join(self._src_dir, 'ddl_info.cpp'), 'w')
+        ddl_info_path = _os.path.join(self._src_dir, 'ddl_info.cpp')
+        f = open(ddl_info_path+'.tmp', 'w')
         f.writelines('#include "'+ddl+'.hpp"\n' for ddl in set(self._db_map.values()))
         f.writelines(['#include "ddl/types/ddl_types.hpp"'])
         f.writelines(['\nvoid\n','DdlInfo::init()\n','{\n'])
@@ -93,8 +93,11 @@ class DdlInfoGenerator(_odb.DdlVisitor):
         f.writelines('  ddl_map_["'+db+'"] = '+ddl+'::get_instance();\n' for (db,ddl) in self._db_map.items())
         f.writelines(['}\n'])
         f.close()
+        
+        _odb.comp_mv(ddl_info_path,ddl_info_path+'.tmp')
 
-        f = open(_os.path.join(self._src_dir, 'database_plf.cpp'), 'w')
+        db_plf_path = _os.path.join(self._src_dir, 'database_plf.cpp')
+        f = open(db_plf_path+'.tmp', 'w')
         f.writelines(['''
 #include "plf/database.hpp"
 #include "ddl/types.hpp"
@@ -118,15 +121,18 @@ namespace das{
 }
 '''])
         f.close()
- 
+        
+        _odb.comp_mv(db_plf_path,db_plf_path+'.tmp')
+
         for ddl_name in self._DdlInfo_children.keys():
-            f = open(_os.path.join(self._src_dir, ddl_name+'.hpp'), 'w')
+            ddl_path = _os.path.join(self._src_dir, ddl_name+'.hpp')
+            f = open(ddl_path+'.tmp', 'w')
             const = ['  '+ddl_name+'()\n','  {\n']
             const.extend("    "+l+'\n' for l in self._DdlInfo_children[ddl_name])
             const.append('  }\n')
             _write_ddl_class(f,ddl_name,const)
             f.close()
-            
+            _odb.comp_mv(ddl_path,ddl_path+'.tmp')
 
     def _get_keywords(self, type_name):
         ddl_type = self._type_list.type_map[type_name]

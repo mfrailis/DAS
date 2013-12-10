@@ -6,6 +6,7 @@ import json as _j
 import jsonschema as _js
 import hashlib as _hash
 import os as _os
+import filecmp
 
 class JsonConfigParser:
     def __init__(self,schema_path):
@@ -528,7 +529,7 @@ add_custom_target(
     f.close()
  
 def generate_database_config(db_list,filename):
-    f = open(filename,'w')
+    f = open(filename+'.tmp','w')
     f.writelines(['''
 #include "internal/database_config.hpp"
 namespace das{
@@ -552,7 +553,9 @@ namespace das{
 
 }
 '''])
-    f.close()      
+    f.close()
+
+    _odb.comp_mv(filename,filename+'.tmp')
       
 def storage_engine_tree_visit(tree,path):
     src = []

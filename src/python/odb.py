@@ -40,7 +40,14 @@ class DdlVisitor:
   def visit_image(self, image):
     pass  
 
-
+def comp_mv(old_,new_):
+    if _os.path.isfile(old_):
+        if filecmp.cmp(new_,old_):
+            _os.remove(new_)
+        else:
+            _os.rename(new_,old_)
+    else:
+        _os.rename(new_,old_)
 
 class DdlOdbGenerator(DdlVisitor):
   
@@ -104,10 +111,19 @@ class DdlOdbGenerator(DdlVisitor):
 
 ''')
       lines.append('#endif')
-      f = open(_os.path.join(self._hdr_dir, "ddl_types.hpp"), 'w')
+      ddl_types_path = _os.path.join(self._hdr_dir, "ddl_types.hpp")
+      f = open(ddl_types_path+'.tmp', 'w')
       f.writelines(l + "\n" for l in lines)
       f.close()
-      
+
+      if _os.path.isfile(ddl_types_path):
+        if filecmp.cmp(ddl_types_path+'.tmp',ddl_types_path):
+          _os.remove(ddl_types_path+'.tmp')
+        else:
+          _os.rename(ddl_types_path+'.tmp',ddl_types_path)
+      else:
+        _os.rename(ddl_types_path+'.tmp',ddl_types_path)
+
   def visit_datatype(self, datatype):
     if datatype.name == "essentialMetadata":
       self.clean_env()
@@ -369,13 +385,7 @@ void
     comp_list = [(hdr_file_new,hdr_file_old),(idr_file_new,idr_file_old),(src_file_new,src_file_old)]
 
     for (n,o) in  comp_list:
-      if _os.path.isfile(o):
-        if filecmp.cmp(n,o):
-          _os.remove(n)
-        else:
-          _os.rename(n,o)
-      else:
-        _os.rename(n,o)
+      comp_mv(o,n)
 
     self.clean_env()
     
