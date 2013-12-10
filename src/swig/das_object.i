@@ -64,7 +64,7 @@ protected:
 
 
 %extend DasObject {
-  PyObject* get_column(const std::string &col_name, size_t start, size_t length)
+  PyObject* get_column(const std::string &col_name, size_t start = 0, size_t length = -1)
   {
     std::string col_type = self->get_column_info(col_name).type;
     return das::map_das_object_methods[col_type].get_column(self, col_name, 

@@ -262,7 +262,7 @@ public:
     }
 
     std::string* operator() (std::vector< das::ArrayStore<std::string> > &vec) {
-        typename std::vector< das::ArrayStore<std::string> >::iterator v_it = vec.begin();
+        std::vector< das::ArrayStore<std::string> >::iterator v_it = vec.begin();
         if (v_it == vec.end()) return b_;
         size_t first_offset = 0;
 
@@ -277,7 +277,7 @@ public:
             }
             if (v_it == vec.end()) return b_;
         }
-        typename das::ArrayStore<std::string>::iterator a_it = v_it->begin();
+        das::ArrayStore<std::string>::iterator a_it = v_it->begin();
         while (first_offset-- > 0) ++a_it;
 
         while (a_it == v_it->end()) {

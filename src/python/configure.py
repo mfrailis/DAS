@@ -6,6 +6,7 @@ import json as _j
 import jsonschema as _js
 import hashlib as _hash
 import os as _os
+import filecmp
 
 class JsonConfigParser:
     def __init__(self,schema_path):
@@ -117,7 +118,10 @@ list(APPEND ODB_CXX '''+db_dir+'''/image-odb.cxx)
 
 foreach(type_name ${TYPE_NAMES_ALL})
   add_custom_command(
-    OUTPUT '''+db_dir+'''/${TYPE_PREFIX}${type_name}-odb.cxx
+    OUTPUT 
+            '''+db_dir+'''/${TYPE_PREFIX}${type_name}-odb.cxx 
+            ${DDL_HEADERS_DIR}/'''+db_type+'''/${TYPE_PREFIX}${type_name}-odb.hxx
+            ${DDL_HEADERS_DIR}/'''+db_type+'''/${TYPE_PREFIX}${type_name}-odb.ixx
     COMMAND ${ODB_COMPILER}
             --output-dir '''+db_dir+'''
             --database '''+db_type+'''
@@ -145,7 +149,7 @@ foreach(type_name ${TYPE_NAMES_ALL})
 
     COMMAND mv "'''+db_dir+'''/${TYPE_PREFIX}${type_name}-odb.hxx" "${DDL_HEADERS_DIR}/'''+db_type+'''/${TYPE_PREFIX}${type_name}-odb.hxx"
     COMMAND mv "'''+db_dir+'''/${TYPE_PREFIX}${type_name}-odb.ixx" "${DDL_HEADERS_DIR}/'''+db_type+'''/${TYPE_PREFIX}${type_name}-odb.ixx"
-    DEPENDS ${DDL_LOCAL_SIGNATURE}
+    DEPENDS ${DDL_LOCAL_SIGNATURE} ${ODB_SOURCE_DIR}/${TYPE_PREFIX}${type_name}.hpp
     COMMENT "Generating odb class for type ${type_name} for '''+db_type+''' DBMS"
     VERBATIM 
     )
@@ -316,34 +320,37 @@ install(
 )
 
 #add_executable(main_test ${TEST_SOURCE_DIR}/main.cpp)
-#target_link_libraries(main_test das ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+#target_link_libraries(main_test DAS_SO ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARY})
 
 add_executable(metadata_test EXCLUDE_FROM_ALL ${TEST_SOURCE_DIR}/metadata_test.cpp)
-target_link_libraries(metadata_test das ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+target_link_libraries(metadata_test DAS_SO ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARY})
 
 add_executable(association_test EXCLUDE_FROM_ALL ${TEST_SOURCE_DIR}/association_test.cpp)
-target_link_libraries(association_test das ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+target_link_libraries(association_test DAS_SO ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARY})
 
 add_executable(data_test EXCLUDE_FROM_ALL ${TEST_SOURCE_DIR}/data_test.cpp)
-target_link_libraries(data_test boost_thread boost_random das ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+target_link_libraries(data_test boost_thread boost_random DAS_SO ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARY})
 
 add_executable(array_column_test EXCLUDE_FROM_ALL ${TEST_SOURCE_DIR}/array_column_test.cpp)
-target_link_libraries(array_column_test DAS_SO ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+target_link_libraries(array_column_test DAS_SO ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARY})
 
 add_executable(rollback_test EXCLUDE_FROM_ALL ${TEST_SOURCE_DIR}/rollback_test.cpp)
-target_link_libraries(rollback_test boost_thread DAS_SO ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+target_link_libraries(rollback_test boost_thread DAS_SO ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARY})
 
 add_executable(persistence_example EXCLUDE_FROM_ALL ${EXAMPLES_SOURCE_DIR}/persistence_example.cpp)
-target_link_libraries(persistence_example DAS_SO ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+target_link_libraries(persistence_example DAS_SO ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARY})
 
 add_executable(query_example EXCLUDE_FROM_ALL ${EXAMPLES_SOURCE_DIR}/query_example.cpp)
-target_link_libraries(query_example DAS_SO ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+target_link_libraries(query_example DAS_SO ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARY})
 
 add_executable(associations_example EXCLUDE_FROM_ALL ${EXAMPLES_SOURCE_DIR}/associations_example.cpp)
-target_link_libraries(associations_example DAS_SO ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+target_link_libraries(associations_example DAS_SO ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARY})
 
 add_executable(data_example EXCLUDE_FROM_ALL ${EXAMPLES_SOURCE_DIR}/data_example.cpp)
-target_link_libraries(data_example DAS_SO ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARIES})
+target_link_libraries(data_example DAS_SO ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARY})
+
+add_executable(column_example EXCLUDE_FROM_ALL ${EXAMPLES_SOURCE_DIR}/column_example.cpp)
+target_link_libraries(column_example DAS_SO ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARY})
 
 add_custom_target(examples 
   DEPENDS 
@@ -351,6 +358,7 @@ add_custom_target(examples
     query_example
     associations_example
     data_example
+    column_example
 )
 
 add_custom_target(tests
@@ -521,7 +529,7 @@ add_custom_target(
     f.close()
  
 def generate_database_config(db_list,filename):
-    f = open(filename,'w')
+    f = open(filename+'.tmp','w')
     f.writelines(['''
 #include "internal/database_config.hpp"
 namespace das{
@@ -545,7 +553,9 @@ namespace das{
 
 }
 '''])
-    f.close()      
+    f.close()
+
+    _odb.comp_mv(filename,filename+'.tmp')
       
 def storage_engine_tree_visit(tree,path):
     src = []

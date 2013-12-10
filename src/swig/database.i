@@ -11,7 +11,6 @@
 %include <std_shared_ptr.i>
 %shared_ptr(das::tpl::Database)
 
-
 %nodefaultctor das::tpl::Database;
 %copyctor das::tpl::Database;
 namespace das {
@@ -39,5 +38,4 @@ namespace das {
 
   }
  }
-
 

@@ -8,7 +8,9 @@ set(ODB_COMPILER_DIR  CACHE PATH "hint to where to find odb compiler executable"
 find_package(Boost 1.47 REQUIRED)
 find_package(ODB REQUIRED)
 find_package(ODB_BOOST REQUIRED)
+find_package(MySQL REQUIRED)
 find_package(Python REQUIRED)
+find_package(MySQL REQUIRED)
 find_python_module(lxml REQUIRED)
 find_python_module(MySQLdb REQUIRED)
 find_python_module(collections)
@@ -24,7 +26,7 @@ set(COMMON_LIBRARIES
 )
 
 set(CMAKE_BUILD_TYPE debug)
-set(CMAKE_CXX_FLAGS_DEBUG "-g -DVDBG -ftest-coverage -fprofile-arcs")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
 
 set(CPP_SOURCE_DIR ${CMAKE_SOURCE_DIR}/src/cpp)
 set(CPP_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
@@ -101,6 +103,7 @@ include_directories(${CMAKE_INCLUDE_PATH})
 include_directories(${Boost_INCLUDE_DIR})
 include_directories(${ODB_INCLUDE_DIR})
 include_directories(${BLITZ_INCLUDE_DIR})
+include_directories(${MYSQL_INCLUDE_DIR})
 #include_directories(${ODB_SOURCE_DIR})
 
 set(ODB_COMMON_TYPES ${ODB_SOURCE_DIR}/ddl_types.hpp)

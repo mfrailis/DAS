@@ -141,8 +141,10 @@ namespace das {
     
     das::Array<std::string> array(shape);
     
+    // TODO: deallocate char array memory after assigning it to the das::array
+    // to avoid a memory leak
     for (int i = 0; i < array.size(); i++)
-      array[i] = SWIG_Python_str_AsChar(PyArray_GETITEM(py_obj, 
+      array(i) = SWIG_Python_str_AsChar(PyArray_GETITEM(py_obj, 
                                                         PyArray_GETPTR1(py_obj, i)));
     
     return array;    
@@ -159,11 +161,11 @@ namespace das {
   
   template <typename T>
   void append_numpy_column(DasObject *obj, const std::string &col_name,
-                           PyObject* py_array)
+                           PyObject* py_obj)
   {
     int typenum = numpy_type_map<T>::typenum;
-    PyObject* npy_array = PyArray_FromArray((PyArrayObject*) py_array, PyArray_DescrFromType(typenum),
-                                            NPY_CARRAY);
+    PyObject* npy_array = PyArray_FromAny( py_obj, PyArray_DescrFromType(typenum),
+                                           1, 1, 0, 0);
     das::Array<T> array = convert_to_array<T>(npy_array);
     obj->append_column(col_name, array);
   }
