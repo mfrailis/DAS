@@ -8,13 +8,23 @@ namespace das {
 
 
     typedef odb::object_not_persistent object_not_persistent;
-
+    
     class incompatible_array_shape : public std::exception {
     public:
 
         virtual const char*
         what() const throw () {
             return "incompatible array shapes";
+        }
+
+    };
+    
+    class bad_object : public std::exception {
+    public:
+
+        virtual const char*
+        what() const throw () {
+            return "object improperly initialized";
         }
 
     };
@@ -203,7 +213,7 @@ namespace das {
 
         virtual const char*
         what() const throw () {
-            return "types non compatible";
+            return "non compatible types";
         }
 
     }; //TODO

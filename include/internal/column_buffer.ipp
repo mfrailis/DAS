@@ -8,8 +8,7 @@ template<int Rank>
 bool
 ColumnBuffer::check_shape(das::TinyVector<int, Rank> &s) {
     if (!is_init()) {
-        std::cout << "buffer type uninitialized" << std::endl;
-        throw std::exception();
+        throw das::bad_object();
     }
 
     if (rank_ != Rank)
@@ -57,7 +56,6 @@ public:
     }
 
     void operator() (std::vector< das::ArrayStore<std::string> > &vec) const {
-        std::cout << "conversion to string is not supported" << std::endl;
         throw das::bad_type();
     }
 
@@ -80,7 +78,6 @@ public:
 
     template<typename Y>
     void operator() (std::vector< das::ArrayStore<Y> > &vec) const {
-        std::cout << "conversion from string is not supported" << std::endl;
         throw das::bad_type();
     }
 private:
@@ -122,7 +119,6 @@ public:
     }
 
     void operator() (std::vector< das::ArrayStore<std::string> > &vec) const {
-        std::cout << "conversion to string is not supported" << std::endl;
         throw das::bad_type();
     }
 
@@ -147,7 +143,6 @@ public:
 
     template<typename Y>
     void operator() (std::vector< das::ArrayStore<Y> > &vec) const {
-        std::cout << "conversion from string is not supported" << std::endl;
         throw das::bad_type();
     }
 
@@ -159,8 +154,7 @@ template<typename T>
 void
 ColumnBuffer::append(das::Array<T> &array) {
     if (!is_init()) {
-        std::cout << "buffer type uninitialized" << std::endl;
-        throw std::exception();
+        throw das::bad_object();
     }
     das::TinyVector<int, 1> s = array.extent();
     if (rank_ != 1)
@@ -174,8 +168,7 @@ ColumnBuffer::append(das::Array<T> &array) {
 template<typename T, int Rank>
 void ColumnBuffer::append(das::ColumnArray<T, Rank> &array) {
     if (!is_init()) {
-        std::cout << "buffer type uninitialized" << std::endl;
-        throw std::exception();
+        throw das::bad_object();
     }
     if (rank_ == 1 && shape_(0) == 1)
         throw das::bad_array_shape();
@@ -243,7 +236,6 @@ public:
     }
 
     U* operator() (std::vector< das::ArrayStore<std::string> > &vec) {
-        std::cout << "string copy possible" << std::endl;
         return b_;
     }
 
@@ -306,8 +298,6 @@ public:
 
     template<typename T>
     std::string* operator() (std::vector< das::ArrayStore<T> > &vec) {
-        std::cout << "copy to string not possible" << std::endl;
-
         return b_;
     }
 
@@ -357,8 +347,6 @@ public:
     }
 
     OutputIterator operator() (std::vector< das::ArrayStore<std::string> > &vec) {
-
-        std::cout << "string copy not implemented yet" << std::endl;
         throw das::not_implemented();
     }
 
@@ -421,8 +409,7 @@ template<class T >
 T*
 ColumnBuffer::copy(T* begin, T* end, size_t offset) {
     if (!is_init()) {
-        std::cout << "buffer type uninitialized" << std::endl;
-        throw std::exception();
+        throw das::bad_object();
     }
     ColumnBuffer_copy<T> bcp(begin, end, offset);
 
@@ -436,9 +423,7 @@ public:
     template<typename U>
     std::vector<std::pair<T*, size_t> >
     operator() (std::vector< das::ArrayStore<U> > &vec) const {
-
-        std::cout << "type and type pointer mismatch" << std::endl;
-        throw std::exception();
+        throw das::bad_type();
     }
 
     std::vector<std::pair<T*, size_t> >

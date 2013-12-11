@@ -118,9 +118,10 @@ int yywrap(void)
   return 1;
 }
 void yyerror(const char *str)
-{
+{/*
   std::cout << "line " << yy_mylinenumber << std::endl ;
   fprintf(stderr,"error: %s\n",str);
+*/
 }
 
 

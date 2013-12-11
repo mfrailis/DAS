@@ -94,6 +94,7 @@ set(UNIT_TEST_SRC
   ${TEST_SOURCE_DIR}/unit_column.cpp
   ${TEST_SOURCE_DIR}/unit_column_array.cpp  
   ${TEST_SOURCE_DIR}/unit_image.cpp
+  ${TEST_SOURCE_DIR}/unit_query.cpp 
   ${TEST_SOURCE_DIR}/unit_main.cpp  
   )
 

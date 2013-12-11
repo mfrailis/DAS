@@ -1,6 +1,7 @@
 #include "internal/qlvisitor.hpp"
 #include "exceptions.hpp"
 #include "bnfc/Parser.H"
+#include "internal/log.hpp"
 
 
 #include <boost/tokenizer.hpp>
@@ -13,21 +14,27 @@ struct OrdTokenizer {
             std::string::const_iterator& next,
             std::string::const_iterator& end,
             std::pair<std::string, std::string> &p) {
-        bool has_key = false;
         std::string keyword, direction;
-        while (next != end)if (*next == ' ')next++;
+        
+        while (next != end)
+            if (*next == ' ')
+                next++;
             else break;
+        
         while (next != end) {
             if (*next == ' ') {
-                has_key = true;
                 break;
             } else {
                 keyword.push_back(*next);
                 next++;
             }
         }
-        while (next != end)if (*next == ' ')next++;
+        
+        while (next != end)
+            if (*next == ' ')
+                next++;
             else break;
+        
         while (next != end) {
             if (*next == ',') {
                 next++;
@@ -39,7 +46,8 @@ struct OrdTokenizer {
         }
         p.first = keyword;
         p.second = direction;
-        return has_key;
+
+        return !keyword.empty() && !direction.empty();
     }
 
     void reset() {
@@ -58,6 +66,10 @@ std::string QLVisitor::parse_ord(const std::string &expression) {
             std::pair<std::string, std::string>
             >
             tok(expression);
+
+    if (tok.begin() == tok.end())
+        throw das::bad_ordering_clause();
+
     for (boost::tokenizer<
             OrdTokenizer,
             std::string::const_iterator,
@@ -65,11 +77,19 @@ std::string QLVisitor::parse_ord(const std::string &expression) {
             >::iterator ord = tok.begin();
             ord != tok.end();
             ++ord) {
-        info_->get_keyword_info(base_type_, (*ord).first); //we just need to verify if exists
-        if ((*ord).second == "asc" || (*ord).second == "ascending")
-            clause.append((*ord).first + " asc, ");
-        else if ((*ord).second == "desc" || (*ord).second == "descending" || (*ord).second == "des")
-            clause.append((*ord).first + " desc, ");
+        std::string first, second;
+        try {
+            first = (*ord).first;
+            second = (*ord).second;
+            info_->get_keyword_info(base_type_, first); //we just need to verify if exists           
+        } catch (const std::out_of_range& e) {
+            throw das::bad_ordering_clause();
+        }
+        
+        if (second == "asc" || second == "ascending")
+            clause.append(first + " asc, ");
+        else if (second == "desc" || second == "descending" || second == "des")
+            clause.append(first + " desc, ");
         else
             throw das::bad_ordering_clause();
     }
@@ -92,9 +112,8 @@ void QLVisitor::visitConstInt(ConstInt *p) {
     else
         stack.top().type_ = t_long;
 
-#ifdef VDBG
-    std::cout << "long long (" << x << ") coerced to " << type_to_string(stack.top().type_) << std::endl;
-#endif
+    DAS_LOG_DBG( "long long (" << x << ") coerced to " << type_to_string(stack.top().type_) );
+
 
     std::stringstream ss;
     ss << x;
@@ -109,9 +128,9 @@ void QLVisitor::visitConstFloat(ConstFloat *p) {
     else
         stack.top().type_ = t_double;
 
-#ifdef VDBG
-    std::cout << "double (" << x << ") coerced to " << type_to_string(stack.top().type_) << std::endl;
-#endif
+
+    DAS_LOG_DBG( "double (" << x << ") coerced to " << type_to_string(stack.top().type_) );
+
 
     std::stringstream ss;
     ss << x;
@@ -618,13 +637,13 @@ std::string QLVisitor::parse_exp(const std::string &expression, bool last_versio
         std::stringstream ss;
         if (last_version_only) {
             ss << "(" << base_type_ << ".name," << base_type_ << ".version)  IN (" << std::endl
-                    << "  SELECT "<< base_type_ << ".name, MAX(" << base_type_ << ".version)" << std::endl
-                    << "  FROM "<< base_type_ << std::endl
+                    << "  SELECT " << base_type_ << ".name, MAX(" << base_type_ << ".version)" << std::endl
+                    << "  FROM " << base_type_ << std::endl
                     << "  WHERE ";
         }
         ss << stack.top().direct_code_;
         if (last_version_only) {
-            ss << "  GROUP BY "<<base_type_<<".name" << std::endl << ")" << std::endl;
+            ss << "  GROUP BY " << base_type_ << ".name" << std::endl << ")" << std::endl;
         }
         stack.pop();
         delete parse_tree;
