@@ -161,12 +161,12 @@ if(SWIG_FOUND AND PYTHONLIBS_FOUND)
   set_source_files_properties(${SWIG_SOURCE_DIR}/pydas.i PROPERTIES CPLUSPLUS ON)
   set_source_files_properties(${SWIG_SOURCE_DIR}/pydas.i PROPERTIES SWIG_FLAGS "-includeall")
   swig_add_module(pydas python ${SWIG_SOURCE_DIR}/pydas.i)
-  swig_link_libraries(pydas ${PYTHON_LIBRARIES} DAS_SO ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARY})
+  swig_link_libraries(pydas ${PYTHON_LIBRARIES} DAS_SO)
 
 endif()
 
 add_executable(unit_tests ${UNIT_TEST_SRC})
-target_link_libraries(unit_tests DAS_A ${COMMON_LIBRARIES} ${ODB_MYSQL_LIBRARY} boost_unit_test_framework)
+target_link_libraries(unit_tests DAS_A boost_unit_test_framework)
 
 install(DIRECTORY include/ DESTINATION include/das)
 
