@@ -185,6 +185,12 @@ public:
         return DdlInfo::get_instance()->
                 get_column_info(type_name_, column_name);
     }
+ 
+    const ImageInfo&
+    get_image_info() throw (std::out_of_range) {
+        return DdlInfo::get_instance()->
+                get_image_info(type_name_);
+    }
 
     bool is_dirty() const {
         return is_dirty_;
