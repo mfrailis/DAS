@@ -118,35 +118,32 @@ namespace das {
 
             return das::Array<T, Rank>(data, shape, das::neverDeleteData, dealloc);
         }
-    };
 
-    template <typename T>
-    class Convert<T, 1> {
-    public:
-
-        inline PyObject* to_numpy(das::Array<T>& array) const {
-            das::Array<T>* array_ptr = new das::Array<T>(array);
-            npy_intp size = {array.size()};
-            PyObject *py_array = PyArray_SimpleNewFromData(1, &size, numpy_type_map<T>::typenum,
-                    array.data());
-            // The next operation is necessary so that the C++ array is deleted using
-            // delete and not free
-            ((PyArrayObject*) py_array)->base = PyCapsule_New(array_ptr, 0, delete_array<T>);
-            // No need to fix strides
-            return py_array;
-        }
-
-        inline das::Array<T> to_array(PyObject* py_obj) const {
-            das::TinyVector<int, 1> shape(0);
+        inline das::ColumnArray<T, Rank> to_column_array(PyObject* py_obj) const {
+            /* prerequisites: py_obj must hold a C_CONTIGUOUS data which as
+             * to be referred from different das::Array in the same
+             * das::ColumnArray
+             */
+            das::TinyVector<int, Rank> shape;
             npy_intp* dimensions = PyArray_DIMS(py_obj);
 
-            // TODO: check that dimension fits an integer
-            shape[0] = (int) dimensions[0];
+            size_t offset = 1;
+            for (size_t i = 0; i < Rank; ++i) {
+                shape[i] = (int) dimensions[i + 1];
+                offset *= dimensions[i + 1];
+            }
 
             T* data = (T*) PyArray_DATA(py_obj);
-            NpyDeallocator *dealloc = new NpyDeallocator(py_obj);
+            das::ColumnArray<T, Rank> carray(das::shape(dimensions[0]));
+            for (npy_intp i = 0; i < dimensions[0]; ++i) {
+                Py_INCREF(py_obj);
+                NpyDeallocator *dealloc = new NpyDeallocator(py_obj);
+                carray(i).reference(das::Array<T, Rank>(
+                        data + (i * offset), shape,
+                        das::neverDeleteData, dealloc));
+            }
+            return carray;
 
-            return das::Array<T>(data, shape, das::neverDeleteData, dealloc);
         }
     };
 
@@ -184,52 +181,7 @@ namespace das {
         }
     };
 
-    template <typename T>
-    PyObject* get_numpy_column(DasObject *obj, const std::string &col_name,
-            size_t start, size_t length) {
-        das::Array<T> column = obj->get_column<T>(col_name, start, length);
-        return Convert<T, 1>().to_numpy(column);
-    }
-
-    template <typename T>
-    void append_numpy_column(DasObject *obj, const std::string &col_name,
-            PyObject* py_obj) {
-        int typenum = numpy_type_map<T>::typenum;
-        PyObject* npy_array = PyArray_FromAny(py_obj, PyArray_DescrFromType(typenum),
-                1, 1, 0, 0);
-        das::Array<T> array = Convert<T, 1>().to_array(npy_array);
-        obj->append_column(col_name, array);
-    }
-
-    template <typename T, int Rank>
-    PyObject* get_numpy_image(DasObject *obj,
-            das::Range r0 = das::Range::all(),
-            das::Range r1 = das::Range::all(),
-            das::Range r2 = das::Range::all(),
-            das::Range r3 = das::Range::all(),
-            das::Range r4 = das::Range::all(),
-            das::Range r5 = das::Range::all(),
-            das::Range r6 = das::Range::all(),
-            das::Range r7 = das::Range::all(),
-            das::Range r8 = das::Range::all(),
-            das::Range r9 = das::Range::all(),
-            das::Range r10 = das::Range::all()) {
-        das::Array<T, Rank> image = obj->get_image<T, Rank>(
-                r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10);
-        std::cout << "das::Array" << endl << image << std::endl;
-        return Convert<T, Rank>().to_numpy(image);
-    }
-
-    template <typename T, int Rank>
-    void append_numpy_tiles(DasObject *obj, PyObject* npy_array, bool set) {
-        das::Array<T, Rank> array = Convert<T, Rank>().to_array(npy_array);
-        if(set)
-            obj->set_image(array);
-        else
-            obj->append_tiles(array);
-    }
-
-    struct das_object_image_fun_ptr {
+    struct das_object_extent_fun_ptr {
         PyObject* (*get_image)(DasObject *obj,
                 das::Range r0,
                 das::Range r1,
@@ -243,28 +195,124 @@ namespace das {
                 das::Range r9,
                 das::Range r10);
 
-        void (*append_tiles)(DasObject*, PyObject*,bool);
+        void (*append_tiles)(DasObject*, PyObject*, bool);
+
+        void (*append_column_array)(DasObject *obj, const std::string &col_name,
+                PyObject* py_array);
+        
+        
 
     };
 
-    template <typename T, int R>
-    struct das_object_image_fun_ptr_T_R : public das_object_image_fun_ptr {
+    template <typename T, int Rank>
+    struct das_object_extent_fun_ptr_T_R : public das_object_extent_fun_ptr {
 
-        das_object_image_fun_ptr_T_R() {
-            get_image = get_numpy_image<T, R>;
-            append_tiles = append_numpy_tiles<T, R>;
+        das_object_extent_fun_ptr_T_R() {
+            get_image = get_numpy_image;
+            append_tiles = append_numpy_tiles;
+            append_column_array = append_numpy_column_array;
+        }
+
+        static void append_numpy_tiles(DasObject *obj, PyObject* npy_array, bool set) {
+            das::Array<T, Rank> array = Convert<T, Rank>().to_array(npy_array);
+            if (set)
+                obj->set_image(array);
+            else
+                obj->append_tiles(array);
+        }
+
+        static PyObject* get_numpy_image(DasObject *obj,
+                das::Range r0 = das::Range::all(),
+                das::Range r1 = das::Range::all(),
+                das::Range r2 = das::Range::all(),
+                das::Range r3 = das::Range::all(),
+                das::Range r4 = das::Range::all(),
+                das::Range r5 = das::Range::all(),
+                das::Range r6 = das::Range::all(),
+                das::Range r7 = das::Range::all(),
+                das::Range r8 = das::Range::all(),
+                das::Range r9 = das::Range::all(),
+                das::Range r10 = das::Range::all()) {
+            das::Array<T, Rank> image = obj->get_image<T, Rank>(
+                    r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10);
+            std::cout << "das::Array" << endl << image << std::endl;
+            return Convert<T, Rank>().to_numpy(image);
+        }
+
+        static void append_numpy_column_array(DasObject *obj,
+                const std::string &col_name, PyObject* py_array) {
+            PyObject* npy_array = NULL;
+            int typenum = numpy_type_map<T>::typenum;
+
+            npy_array = PyArray_FromAny(py_array, NULL, 1, Rank + 1, 0, NULL);
+            if (npy_array == NULL)
+                return; // a value error will raise
+
+            int ndim = PyArray_NDIM(npy_array);
+            if (ndim == Rank) {// single numpy array to append
+                npy_array = PyArray_FromAny(py_array,
+                        PyArray_DescrFromType(typenum),
+                        Rank, Rank, NPY_C_CONTIGUOUS, 0);
+                if (npy_array) {
+                    das::ColumnArray<T, Rank> carray(das::shape(1));
+                    carray(0).reference(Convert<T, Rank>().to_array(npy_array));
+                    obj->append_column_array(col_name, carray);
+                    return;
+                }
+            } else if (ndim == Rank + 1) {
+                /* array of numpy arrays with same shape
+                 * as say a single numpy array with ndim=Rank+1
+                 */
+                npy_array = PyArray_FromAny(py_array,
+                        PyArray_DescrFromType(typenum),
+                        Rank + 1, Rank + 1,
+                        NPY_C_CONTIGUOUS, 0);
+                if (npy_array) {
+                    das::ColumnArray<T, Rank> carray =
+                            Convert<T, Rank>().to_column_array(npy_array);
+                    obj->append_column_array(col_name, carray);
+                    return;
+                }
+            } else if (ndim == 1) {
+                // numpy array of objects
+                npy_array = PyArray_FromAny(py_array,
+                        PyArray_DescrFromType(NPY_OBJECT),
+                        1, 1, 0, 0);
+                if (npy_array) {
+                    npy_intp size = PyArray_DIMS(npy_array)[0];
+                    das::ColumnArray<T, Rank> carray(das::shape(size));
+                    for (npy_intp i = 0; i < size; ++i) {
+                        PyObject* ptr = PyArray_GETITEM(npy_array,
+                                PyArray_GETPTR1(npy_array, i));
+                        if (ptr) {
+                            PyObject* elem = PyArray_FromAny(ptr,
+                                    PyArray_DescrFromType(typenum), Rank, Rank, 0, 0);
+                            if (elem) {
+                                das::Array<T, Rank> element =
+                                        Convert<T, Rank>().to_array(elem);
+                                carray(i).reference(element);
+                            } else
+                                throw das::bad_array_shape();
+                        } else
+                            throw das::bad_array_shape();
+                    }
+                    obj->append_column_array(col_name, carray);
+                    return;
+                }
+            }
+            throw das::bad_array_shape();
         }
 
     };
-    
-    template<int R>
-    struct das_object_image_fun_ptr_T_R<std::string,R> : public das_object_image_fun_ptr {
 
-        das_object_image_fun_ptr_T_R() {
+    template<int R>
+    struct das_object_extent_fun_ptr_T_R<std::string, R> : public das_object_extent_fun_ptr {
+
+        das_object_extent_fun_ptr_T_R() {
             get_image = get_image_error;
             append_tiles = append_tiles_error;
         }
-        
+
         static PyObject* get_image_error(DasObject *obj,
                 das::Range r0,
                 das::Range r1,
@@ -276,18 +324,18 @@ namespace das {
                 das::Range r7,
                 das::Range r8,
                 das::Range r9,
-                das::Range r10){
+                das::Range r10) {
             throw das::bad_type();
         }
 
-        static void append_tiles_error (DasObject* obj, PyObject* py_array,bool set){
+        static void append_tiles_error(DasObject* obj, PyObject* py_array, bool set) {
             throw das::bad_type();
         }
 
     };
 
     struct das_object_func_ptr {
-        typedef boost::unordered_map<int, das_object_image_fun_ptr> ext_ptr_map;
+        typedef boost::unordered_map<int, das_object_extent_fun_ptr> ext_ptr_map;
         PyObject* (*get_column)(DasObject *obj, const std::string &col_name,
                 size_t start, size_t length);
 
@@ -295,16 +343,18 @@ namespace das {
                 PyObject* py_array);
 
         void append_tiles(DasObject *obj, PyObject* py_array) {
-            append_tiles_impl(image_map, obj, py_array,false);
-        }
-        
-        void set_image(DasObject *obj, PyObject* py_array) {
-            append_tiles_impl(image_map, obj, py_array,true);
+            append_tiles_impl(extent_map, obj, py_array, false);
         }
 
-        ext_ptr_map image_map;
+        void set_image(DasObject *obj, PyObject* py_array) {
+            append_tiles_impl(extent_map, obj, py_array, true);
+        }
+
+
+
+        ext_ptr_map extent_map;
     protected:
-        void (*append_tiles_impl)(ext_ptr_map&, DasObject*, PyObject*,bool);
+        void (*append_tiles_impl)(ext_ptr_map&, DasObject*, PyObject*, bool);
         PyObject* (*get_image_impl)(
                 ext_ptr_map&, DasObject*, das::Range, das::Range, das::Range,
                 das::Range, das::Range, das::Range, das::Range, das::Range,
@@ -315,21 +365,21 @@ namespace das {
     struct das_object_func_ptr_T : public das_object_func_ptr {
 
         das_object_func_ptr_T() {
-            get_column = get_numpy_column<T>;
-            append_column = append_numpy_column<T>;
+            get_column = get_numpy_column;
+            append_column = append_numpy_column;
             append_tiles_impl = append_tiles_;
 
-            image_map[1] = das_object_image_fun_ptr_T_R<T, 1>();
-            image_map[2] = das_object_image_fun_ptr_T_R<T, 2>();
-            image_map[3] = das_object_image_fun_ptr_T_R<T, 3>();
-            image_map[4] = das_object_image_fun_ptr_T_R<T, 4>();
-            image_map[5] = das_object_image_fun_ptr_T_R<T, 5>();
-            image_map[6] = das_object_image_fun_ptr_T_R<T, 6>();
-            image_map[7] = das_object_image_fun_ptr_T_R<T, 7>();
-            image_map[8] = das_object_image_fun_ptr_T_R<T, 8>();
-            image_map[9] = das_object_image_fun_ptr_T_R<T, 9>();
-            image_map[10] = das_object_image_fun_ptr_T_R<T, 10>();
-            image_map[11] = das_object_image_fun_ptr_T_R<T, 11>();
+            extent_map[1] = das_object_extent_fun_ptr_T_R<T, 1>();
+            extent_map[2] = das_object_extent_fun_ptr_T_R<T, 2>();
+            extent_map[3] = das_object_extent_fun_ptr_T_R<T, 3>();
+            extent_map[4] = das_object_extent_fun_ptr_T_R<T, 4>();
+            extent_map[5] = das_object_extent_fun_ptr_T_R<T, 5>();
+            extent_map[6] = das_object_extent_fun_ptr_T_R<T, 6>();
+            extent_map[7] = das_object_extent_fun_ptr_T_R<T, 7>();
+            extent_map[8] = das_object_extent_fun_ptr_T_R<T, 8>();
+            extent_map[9] = das_object_extent_fun_ptr_T_R<T, 9>();
+            extent_map[10] = das_object_extent_fun_ptr_T_R<T, 10>();
+            extent_map[11] = das_object_extent_fun_ptr_T_R<T, 11>();
         }
 
         static void append_tiles_(
@@ -340,7 +390,22 @@ namespace das {
             int typenum = numpy_type_map<T>::typenum;
             PyObject* npy_array = PyArray_FromAny(py_obj,
                     PyArray_DescrFromType(typenum), 1, 11, 0, 0);
-            map.at(PyArray_NDIM(npy_array)).append_tiles(obj, npy_array,set);
+            map.at(PyArray_NDIM(npy_array)).append_tiles(obj, npy_array, set);
+        }
+
+        static PyObject* get_numpy_column(DasObject *obj, const std::string &col_name,
+                size_t start, size_t length) {
+            das::Array<T> column = obj->get_column<T>(col_name, start, length);
+            return Convert<T, 1>().to_numpy(column);
+        }
+
+        static void append_numpy_column(DasObject *obj, const std::string &col_name,
+                PyObject* py_obj) {
+            int typenum = numpy_type_map<T>::typenum;
+            PyObject* npy_array = PyArray_FromAny(py_obj, PyArray_DescrFromType(typenum),
+                    1, 1, 0, 0);
+            das::Array<T> array = Convert<T, 1>().to_array(npy_array);
+            obj->append_column(col_name, array);
         }
     };
 
@@ -358,7 +423,8 @@ namespace das {
         map_das_object_methods["uint8"] = das_object_func_ptr_T<unsigned char>();
         map_das_object_methods["uint16"] = das_object_func_ptr_T<unsigned short>();
         map_das_object_methods["uint32"] = das_object_func_ptr_T<unsigned int>();
-        map_das_object_methods["string"] = das_object_func_ptr_T<std::string>();
+        //TODO
+       // map_das_object_methods["string"] = das_object_func_ptr_T<std::string>();
     }
 
 
