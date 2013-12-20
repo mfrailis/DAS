@@ -64,9 +64,15 @@ namespace das {
   // TODO: check if a reference to the DAS Array can be
   // substituted directly with a reference to the C++ raw array
   template <typename T>
+#ifdef Py_CAPSULE_H
   void delete_array(PyObject* capsule)
   {
     das::Array<T> *array = static_cast<das::Array<T>* > (PyCapsule_GetPointer(capsule, 0));
+#else
+  void delete_array(void *cobj)
+  {
+    das::Array<T> *array = static_cast<das::Array<T>* > (cobj);
+#endif
     delete array;
   }
   
@@ -94,7 +100,11 @@ namespace das {
                                                    array.data());
     // The next operation is necessary so that the C++ array is deleted using
     // delete and not free
+#ifdef Py_CAPSULE_H
     ((PyArrayObject*) py_array)->base = PyCapsule_New(array_ptr, 0, delete_array<T>);
+#else
+    ((PyArrayObject*) py_array)->base = PyCObject_FromVoidPtr(array_ptr, delete_array<T>);
+#endif
     // No need to fix strides
     return py_array;
   }
@@ -107,7 +117,7 @@ namespace das {
     PyObject *py_array = PyArray_SimpleNew(1, &size, numpy_type_map<std::string>::typenum);
     for (npy_intp i = 0; i < size; i++)
       PyArray_SETITEM(py_array, 
-                      PyArray_GETPTR1(py_array, i),
+				      PyArray_GETPTR1(py_array, i),
                       SWIG_From_std_string(array(i)));
       
     return py_array;
