@@ -3,15 +3,15 @@
 	"host"          : "localhost",
 	"port"          : 3306,
 	"db_type"  	: "mysql",
-	"alias"         : "test_level2",
-	"db_name"  	: "test_level2",
-	"ddl"	     	: "ddl_test_types.xml",
+	"alias"         : "ciws",
+	"db_name"  	: "ciws_prototype",
+	"ddl"	     	: "das_ddl_prototype.xml",
 	"storage_engine": {
 	    "name"          : "Raw",
-	    "root_dir"      : "%$HOME$/DAS/test_level2/",
+	    "root_dir"      : "/mnt/DBs/data/ciws",
 	    "default_path"  : "%F/%t/%n/%v/",
 	    "custom_path"   : "%s/%B/%n/%v",
-	    "temp_path"      : "%$HOME$/DAS/temp/%$LOGNAME$",
+	    "temp_path"      : "/mnt/DBs/data/temp/%$LOGNAME$",
 	    "unref_data_expiration_time" : 86400
 	}
     }

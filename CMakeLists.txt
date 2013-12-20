@@ -165,7 +165,7 @@ if(SWIG_FOUND AND PYTHONLIBS_FOUND)
 
 endif()
 
-add_executable(unit_tests ${UNIT_TEST_SRC})
+add_executable(unit_tests EXCLUDE_FROM_ALL ${UNIT_TEST_SRC})
 target_link_libraries(unit_tests DAS_A boost_unit_test_framework)
 
 install(DIRECTORY include/ DESTINATION include/das)
