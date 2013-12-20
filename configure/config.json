@@ -8,10 +8,10 @@
 	"ddl"	     	: "das_ddl_prototype.xml",
 	"storage_engine": {
 	    "name"          : "Raw",
-	    "root_dir"      : "/mnt/DBs/data/ciws",
+	    "root_dir"      : "%$HOME$%/data/ciws",
 	    "default_path"  : "%F/%t/%n/%v/",
 	    "custom_path"   : "%s/%B/%n/%v",
-	    "temp_path"      : "/mnt/DBs/data/temp/%$LOGNAME$",
+	    "temp_path"      : "%$HOME$/data/temp/%$LOGNAME$",
 	    "unref_data_expiration_time" : 86400
 	}
     }
