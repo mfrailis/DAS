@@ -157,7 +157,10 @@ foreach(type_name ${TYPE_NAMES_ALL})
 endforeach()
         
 add_custom_command(
-OUTPUT '''+db_dir+'''/das_object-odb.cxx
+OUTPUT 
+    '''+db_dir+'''/das_object-odb.cxx
+    ${DDL_HEADERS_DIR}/'''+db_type+'''/das_object-odb.hxx
+    ${DDL_HEADERS_DIR}/'''+db_type+'''/das_object-odb.ixx
 COMMAND ${ODB_COMPILER}
     --output-dir '''+db_dir+'''
     --database '''+db_type+'''
@@ -188,7 +191,10 @@ VERBATIM
 )
 
 add_custom_command(
-OUTPUT '''+db_dir+'''/aux_query-odb.cxx
+OUTPUT 
+    '''+db_dir+'''/aux_query-odb.cxx
+    ${DDL_HEADERS_DIR}/'''+db_type+'''/aux_query-odb.hxx
+    ${DDL_HEADERS_DIR}/'''+db_type+'''/aux_query-odb.ixx
 COMMAND ${ODB_COMPILER}
     --output-dir '''+db_dir+'''
     --database '''+db_type+'''
@@ -213,7 +219,10 @@ VERBATIM
 )
 
 add_custom_command(
-OUTPUT '''+db_dir+'''/column-odb.cxx
+OUTPUT 
+    '''+db_dir+'''/column-odb.cxx
+    ${DDL_HEADERS_DIR}/'''+db_type+'''/column-odb.hxx
+    ${DDL_HEADERS_DIR}/'''+db_type+'''/column-odb.ixx
 COMMAND ${ODB_COMPILER}
     --output-dir '''+db_dir+'''
     --database '''+db_type+'''
@@ -235,7 +244,10 @@ VERBATIM
 )
 
 add_custom_command(
-OUTPUT '''+db_dir+'''/image-odb.cxx
+OUTPUT 
+    '''+db_dir+'''/image-odb.cxx
+    ${DDL_HEADERS_DIR}/'''+db_type+'''/image-odb.hxx
+    ${DDL_HEADERS_DIR}/'''+db_type+'''/image-odb.ixx
 COMMAND ${ODB_COMPILER}
     --output-dir '''+db_dir+'''
     --database '''+db_type+'''
