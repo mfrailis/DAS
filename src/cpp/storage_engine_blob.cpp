@@ -6,6 +6,108 @@
 #include "internal/log.hpp"
 #include "../../include/internal/database_config.hpp"
 #include <vector>
+#include <stdio.h>
+#include <string.h>
+
+enum SeekEnum {
+    se_SET = 0, se_CUR = 1
+};
+
+class BufferStream {
+public:
+
+    BufferStream(ColumnFromBlob::blob_type& blob) : blob_(blob), off_(0) {
+        size_ = blob_.size();
+    }
+
+    void
+    read(void* dest, size_t count) {
+        if (off_ + count > size_)
+            throw das::io_exception();
+
+        char * data = &(blob_.front());
+        memcpy(dest, data + off_, count);
+        off_ += count;
+    }
+
+    void
+    seek(size_t count, SeekEnum mode) {
+        size_t o = off_;
+        switch (mode) {
+            case se_SET:
+                o = count;
+                break;
+            case se_CUR:
+                o += count;
+                break;
+            default: //unimplemented mode
+                throw das::io_exception();
+
+        }
+        if (o > size_)
+            throw das::io_exception();
+        off_ = o;
+    }
+
+
+private:
+    ColumnFromBlob::blob_type& blob_;
+    size_t off_;
+    size_t size_;
+};
+
+/* class for managing files containing strings
+ */
+
+class BlobStringReader {
+public:
+
+    BlobStringReader(ColumnFromBlob::blob_type& blob)
+    : blob_(blob), off_(0) {
+        size_ = blob_.size();
+    }
+
+    void skip(size_t offset) {
+        size_t terms = 0;
+        while (terms < offset) {
+            if (off_ >= size_)
+                throw das::io_exception();
+            while (terms < offset && off_ < size_)
+                if (blob_[off_++] == '\0')
+                    ++terms;
+        }
+    }
+
+    void copy(std::string* array, size_t c_) {
+        size_t i = 0;
+        while (i < c_) {
+            if (off_ > size_)
+                throw das::io_exception();
+            if (blob_[off_] == '\0') {
+                ++off_;
+                ++i;
+            } else {
+                array[i].push_back(blob_[off_++]);
+            }
+        }
+    }
+
+    chunk_t read_size() {
+        chunk_t dim = 0;
+        if (off_ + sizeof (chunk_t) > size_)
+            throw das::io_exception();
+        char* data = &(blob_.front());
+        memcpy(&dim, data + off_, sizeof (chunk_t));
+        off_ += sizeof (chunk_t);
+
+        return dim;
+    }
+
+private:
+    ColumnFromBlob::blob_type& blob_;
+    size_t off_;
+    size_t size_;
+};
 
 namespace das {
 
@@ -171,10 +273,10 @@ namespace das {
 
         template<typename T>
         ssize_t operator() (T* buff) const {
-            T* data = (T*) &blob_.front(); 
+            T* data = (T*) & blob_.front();
 
             data += o_;
-            for(size_t i= 0; i<c_; ++i)
+            for (size_t i = 0; i < c_; ++i)
                 buff[i] = data[i];
 
             return c_;
@@ -184,8 +286,8 @@ namespace das {
         size_t o_;
         size_t c_;
         ColumnFromBlob::blob_type& blob_;
-    };  
-    
+    };
+
     size_t
     BlobStorageAccess::read_column(
             const std::string &col_name,
@@ -195,7 +297,7 @@ namespace das {
             size_t count
             ) {
 
-        ColumnFromBlob * c = dynamic_cast<ColumnFromBlob *>(col);
+        ColumnFromBlob * c = dynamic_cast<ColumnFromBlob *> (col);
 
         return boost::apply_visitor(
                 BlobStorageAccess_read_column(offset, count, c->blob()),
@@ -205,7 +307,7 @@ namespace das {
     class BlobStorageAccess_read_column_array : public boost::static_visitor<ssize_t> {
     public:
 
-        BlobStorageAccess_read_column_array(size_t offset, size_t count, const std::string &array_size,  ColumnFromBlob::blob_type& blob)
+        BlobStorageAccess_read_column_array(size_t offset, size_t count, const std::string &array_size, ColumnFromBlob::blob_type& blob)
         : o_(offset), c_(count), array_size_(array_size), blob_(blob) {
         }
 
@@ -215,11 +317,7 @@ namespace das {
 
             std::vector<int> shape = ColumnInfo::array_extent(array_size_);
 
-            errno = 0;
-            AutoFile fd(open(path_, O_RDONLY));
-            if (fd == -1)
-                throw io_exception(errno);
-
+            BufferStream bs(blob_);
             size_t elems = 1;
             if (shape[shape.size() - 1] == -1) { // last extent variable
 
@@ -229,33 +327,23 @@ namespace das {
 
                 for (size_t i = 0; i < o_; ++i) {
                     chunk_t c_size = 0;
-                    errno = 0;
-                    ssize_t count = read(fd, &c_size, sizeof (chunk_t));
-                    if (count != sizeof (chunk_t))
-                        throw io_exception(errno);
+                    bs.read(&c_size, sizeof (chunk_t));
 
                     if (c_size % elems != 0)
                         throw das::data_corrupted();
 
-                    off_t off = lseek(fd, c_size * sizeof (T), SEEK_CUR);
-                    if (off == -1)
-                        throw io_exception(errno);
+                    bs.seek(c_size * sizeof (T), se_CUR);
                 }
 
                 for (size_t i = 0; i < c_; ++i) {
                     chunk_t c_size = 0;
-                    errno = 0;
-                    ssize_t count = read(fd, &c_size, sizeof (chunk_t));
-                    if (count != sizeof (chunk_t))
-                        throw io_exception(errno);
+                    bs.read(&c_size, sizeof (chunk_t));
 
                     if (c_size % elems != 0)
                         throw das::data_corrupted();
 
                     unique_ptr<T, ArrayDeleter<T> > buffer(new T[c_size]);
-                    count = read(fd, buffer.get(), c_size * sizeof (T));
-                    if (count != c_size * sizeof (T))
-                        throw io_exception(errno);
+                    bs.read(buffer.get(), c_size * sizeof (T));
 
                     buff.add(buffer.release(), c_size);
                 }
@@ -264,18 +352,12 @@ namespace das {
                 for (int i = 0; i < shape.size(); ++i)
                     elems *= shape[i];
 
-                errno = 0;
-                off_t off = lseek(fd, o_ * elems * sizeof (T), SEEK_SET);
-                if (off == -1) {
-                    throw io_exception(errno);
-                }
+                bs.seek(o_ * elems * sizeof (T), se_SET);
 
                 for (size_t i = 0; i < c_; ++i) {
                     unique_ptr<T, ArrayDeleter<T> > buffer(new T[elems]);
-                    errno = 0;
-                    ssize_t count = read(fd, buffer.get(), elems * sizeof (T));
-                    if (count != elems * sizeof (T))
-                        throw io_exception(errno);
+
+                    bs.read(buffer.get(), elems * sizeof (T));
 
                     buff.add(buffer.release(), elems);
                 }
@@ -288,12 +370,7 @@ namespace das {
 
             std::vector<int> shape = ColumnInfo::array_extent(array_size_);
 
-            errno = 0;
-            int file_desc = open(path_, O_RDONLY);
-            if (file_desc == -1)
-                throw io_exception(errno);
-
-            StringReader SR(file_desc);
+            BlobStringReader SR(blob_);
 
             size_t elems = 1;
             if (shape[shape.size() - 1] == -1) { // last extent variable
@@ -344,9 +421,7 @@ namespace das {
         size_t c_;
         std::string array_size_;
         ColumnFromBlob::blob_type& blob_;
-        const static size_t BUFF_SIZE = 512;
     };
-
 
     size_t
     BlobStorageAccess::read_column_array(
@@ -356,10 +431,10 @@ namespace das {
             size_t offset,
             size_t count
             ) {
-        ColumnFromBlob * c = dynamic_cast<ColumnFromBlob *>(col);
+        ColumnFromBlob * c = dynamic_cast<ColumnFromBlob *> (col);
         return boost::apply_visitor(
-                    BlobStorageAccess_read_column_array(offset, count, c->get_array_size(), c->blob()),
-                    buffer);
+                BlobStorageAccess_read_column_array(offset, count, c->get_array_size(), c->blob()),
+                buffer);
     }
 
     void
