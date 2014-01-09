@@ -21,6 +21,8 @@
 #include <boost/interprocess/smart_ptr/unique_ptr.hpp>
 //#include "das_object.hpp"
 
+typedef unsigned long long chunk_t;
+
 using namespace std;
 using std::tr1::shared_ptr;
 using std::tr1::weak_ptr;
@@ -108,7 +110,7 @@ namespace das {
 
         virtual size_t read_column(
                 const std::string &col_name,
-                ColumnFromFile* col,
+                Column* col,
                 column_buffer_ptr buffer,
                 size_t offset,
                 size_t count
@@ -116,7 +118,7 @@ namespace das {
 
         virtual size_t read_column_array(
                 const std::string &col_name,
-                ColumnFromFile* col,
+                Column* col,
                 column_array_buffer_ptr &buffer,
                 size_t offset,
                 size_t count
@@ -124,7 +126,7 @@ namespace das {
 
         virtual void flush_buffer(
                 const std::string &col_name,
-                ColumnFromFile* col
+                Column* col
                 ) = 0;
 
 
@@ -136,11 +138,15 @@ namespace das {
                 const das::TinyVector<int, 11> &stride
                 ) = 0;
 
+        virtual Column* create_column(
+                const std::string &type,
+                const std::string &array_size) = 0;
+
         virtual void flush_buffer(ImageFromFile* img) = 0;
 
-        virtual bool release(const ColumnFromFile &cff) = 0;
+        virtual bool release(Column *cff) = 0;
 
-        virtual bool release(const ImageFromFile &iff) = 0;
+        virtual bool release(ImageFromFile *iff) = 0;
 
         virtual bool buffered_only() {
             return true;
@@ -203,16 +209,16 @@ namespace das {
         static
         void
         get_columns_from_file(DasObject *ptr,
-                std::map<std::string, ColumnFromFile*> &map);
+                std::map<std::string, Column*> &map);
 
         static
         void
         column_from_file(DasObject *ptr,
                 const std::string &col_name,
-                const ColumnFromFile &cf);
+                const Column &cf);
 
         static
-        ColumnFromFile*
+        Column*
         column_from_file(DasObject *ptr,
                 const std::string &col_name);
 
@@ -269,7 +275,7 @@ namespace das {
         static
         void
         get_columns_from_file(DasObject *ptr,
-                std::map<std::string, ColumnFromFile*> &map) {
+                std::map<std::string, Column*> &map) {
             StorageAccess::get_columns_from_file(ptr, map);
         }
 
@@ -277,12 +283,12 @@ namespace das {
         void
         column_from_file(DasObject *ptr,
                 const std::string &col_name,
-                const ColumnFromFile &cf) {
+                const Column &cf) {
             StorageAccess::column_from_file(ptr, col_name, cf);
         }
 
         static
-        ColumnFromFile*
+        Column*
         column_from_file(DasObject *ptr,
                 const std::string &col_name) {
             return StorageAccess::column_from_file(ptr, col_name);

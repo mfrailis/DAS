@@ -22,7 +22,7 @@ namespace das {
     class StorageAccess_get_column : public boost::static_visitor<Array<T> > {
     public:
 
-        StorageAccess_get_column(StorageAccess *acc, const std::string &col_name, ColumnFromFile *c, size_t start, size_t length)
+        StorageAccess_get_column(StorageAccess *acc, const std::string &col_name, Column *c, size_t start, size_t length)
         : sa_(acc), c_(c), s_(start), l_(length), cn_(col_name) {
         }
 
@@ -34,8 +34,8 @@ namespace das {
             T* b = &buffer.get()[0];
             T* e = &buffer.get()[l_]; //first index not valid
             size_t count = 0;
-            if (c_->file_size() > s_) {
-                size_t size = c_->file_size() - s_;
+            if (c_->store_size() > s_) {
+                size_t size = c_->store_size() - s_;
                 unique_ptr<U, ArrayDeleter<U> > buff_temp(new U[size]);
                 StorageAccess::column_buffer_ptr tb = buff_temp.get();
 
@@ -48,7 +48,7 @@ namespace das {
                     buffer.get()[i] = buff_temp.get()[i];
                 s_ = 0;
             }else{
-                s_ -= c_->file_size();
+                s_ -= c_->store_size();
             }
 
             b += count;
@@ -74,12 +74,12 @@ namespace das {
             size_t count = 0;
 
             // check if we need to read some (or all) data from file
-            if (c_->file_size() > s_) {
+            if (c_->store_size() > s_) {
                 /*
                  * calculate the amount of date to read from file:
                  *  min(file_size - offset, length) 
                  */
-                size_t to_read = c_->file_size() - s_;
+                size_t to_read = c_->store_size() - s_;
                 to_read = to_read > l_ ? l_ : to_read;
 
                 StorageAccess::column_buffer_ptr tb = buffer.get();
@@ -90,7 +90,7 @@ namespace das {
                     throw io_exception();
                 s_ = 0;
             }else{
-                s_ -= c_->file_size();
+                s_ -= c_->store_size();
             }
             
             b += count;
@@ -111,7 +111,7 @@ namespace das {
 
     private:
         StorageAccess *sa_;
-        ColumnFromFile *c_;
+        Column *c_;
         mutable size_t s_;
         size_t l_;
         const std::string &cn_;
@@ -121,7 +121,7 @@ namespace das {
     class StorageAccess_get_column<std::string> : public boost::static_visitor<Array<std::string> > {
     public:
 
-        StorageAccess_get_column(StorageAccess *acc, const std::string &col_name, ColumnFromFile *c, size_t start, size_t length)
+        StorageAccess_get_column(StorageAccess *acc, const std::string &col_name, Column *c, size_t start, size_t length)
         : sa_(acc), c_(c), s_(start), l_(length), cn_(col_name) {
         }
 
@@ -139,12 +139,12 @@ namespace das {
             size_t count = 0;
 
             // check if we need to read some (or all) data from file
-            if (c_->file_size() > s_) {
+            if (c_->store_size() > s_) {
                 /*
                  * calculate the amount of data to read from file:
                  *  min(file_size - offset, length) 
                  */
-                size_t to_read = c_->file_size() - s_;
+                size_t to_read = c_->store_size() - s_;
                 to_read = to_read > l_ ? l_ : to_read;
                 StorageAccess::column_buffer_ptr tb = buffer.get();
 
@@ -154,7 +154,7 @@ namespace das {
                     throw io_exception();
                 s_ = 0;
             }else{
-                s_ -= c_->file_size();
+                s_ -= c_->store_size();
             }
             
             b += count;
@@ -171,7 +171,7 @@ namespace das {
 
     private:
         StorageAccess *sa_;
-        ColumnFromFile *c_;
+        Column *c_;
         mutable size_t s_;
         size_t l_;
         const std::string &cn_;
@@ -184,7 +184,7 @@ namespace das {
         public:
 
         
-        StorageAccess_get_column_array(StorageAccess *acc, const std::string &col_name, ColumnFromFile *c, size_t start, size_t length)
+        StorageAccess_get_column_array(StorageAccess *acc, const std::string &col_name, Column *c, size_t start, size_t length)
         : sa_(acc), c_(c), s_(start), l_(length), cn_(col_name) {
         }
 
@@ -218,12 +218,12 @@ namespace das {
             size_t count = 0;
 
             // check if we need to read some (or all) data from file
-            if (c_->file_size() > s_) {
+            if (c_->store_size() > s_) {
                 /*
                  * calculate the amount of date to read from file:
                  *  min(file_size - offset, length) 
                  */
-                size_t to_read = c_->file_size() - s_;
+                size_t to_read = c_->store_size() - s_;
                 to_read = to_read > l_ ? l_ : to_read;
 
                 StorageAccess::column_array_buffer_ptr ub = ColumnArrayBuffer<U>();
@@ -237,7 +237,7 @@ namespace das {
 
                 s_ = 0;
             }else{
-                s_ -= c_->file_size();
+                s_ -= c_->store_size();
             }
 
 
@@ -260,7 +260,7 @@ namespace das {
 
     private:
         StorageAccess *sa_;
-        ColumnFromFile *c_;
+        Column *c_;
         mutable size_t s_;
         size_t l_;
         const std::string &cn_;
@@ -272,7 +272,7 @@ namespace das {
         public:
 
         
-        StorageAccess_get_column_array(StorageAccess *acc, const std::string &col_name, ColumnFromFile *c, size_t start, size_t length)
+        StorageAccess_get_column_array(StorageAccess *acc, const std::string &col_name, Column *c, size_t start, size_t length)
         : sa_(acc), c_(c), s_(start), l_(length), cn_(col_name) {
         }
 
@@ -309,12 +309,12 @@ namespace das {
             size_t count = 0;
 
             // check if we need to read some (or all) data from file
-            if (c_->file_size() > s_) {
+            if (c_->store_size() > s_) {
                 /*
                  * calculate the amount of date to read from file:
                  *  min(file_size - offset, length) 
                  */
-                size_t to_read = c_->file_size() - s_;
+                size_t to_read = c_->store_size() - s_;
                 to_read = to_read > l_ ? l_ : to_read;
 
                 StorageAccess::column_array_buffer_ptr tb = ColumnArrayBuffer<std::string>();
@@ -329,7 +329,7 @@ namespace das {
 
                 s_ = 0;
             }else{
-                s_ -= c_->file_size();
+                s_ -= c_->store_size();
             }
 
 
@@ -347,7 +347,7 @@ namespace das {
 
     private:
         StorageAccess *sa_;
-        ColumnFromFile *c_;
+        Column *c_;
         mutable size_t s_;
         size_t l_;
         const std::string &cn_;
@@ -359,7 +359,7 @@ namespace das {
     template<typename T>
     Array<T>
     StorageAccess::get_column(const string& col_name, size_t start, size_t length) {
-        ColumnFromFile *c = obj_->column_from_file(col_name); //throw if bad name
+        Column *c = obj_->column_ptr(col_name); //throw if bad name
         if (!c || length == 0) { //no data, throw exception
             throw empty_column();
         }
@@ -374,13 +374,14 @@ namespace das {
     template<typename T>
     void
     StorageAccess::append_column(const string &col_name, Array<T> &a) {
-        ColumnFromFile *c = obj_->column_from_file(col_name); //throw if bad name
+        Column *c = obj_->column_ptr(col_name); //throw if bad name
 
         if (!c) {
             const ColumnInfo& info = DdlInfo::get_instance()->get_column_info(obj_->type_name_, col_name);
-            ColumnFromFile cff(info.type, info.array_size);
-            obj_->column_from_file(col_name, cff);
-            c = obj_->column_from_file(col_name);
+            Column* cff = create_column(info.type, info.array_size);
+            obj_->column_ptr(col_name, *cff);
+            c = obj_->column_ptr(col_name);
+            delete cff;
         }
 
         /*
@@ -401,13 +402,14 @@ namespace das {
     template <typename T, int Rank>
     void
     StorageAccess::append_column_array(const string &col_name, ColumnArray<T,Rank> &a) {
-        ColumnFromFile *c = obj_->column_from_file(col_name); //throw if bad name
+        Column *c = obj_->column_ptr(col_name); //throw if bad name
 
         if (!c) {
             const ColumnInfo& info = DdlInfo::get_instance()->get_column_info(obj_->type_name_, col_name);
-            ColumnFromFile cff(info.type, info.array_size);
-            obj_->column_from_file(col_name, cff);
-            c = obj_->column_from_file(col_name);
+            Column* cff=create_column(info.type, info.array_size);
+            obj_->column_ptr(col_name, *cff);
+            c = obj_->column_ptr(col_name);
+            delete cff;
         }
 
         /*
@@ -422,9 +424,9 @@ namespace das {
 
     template <typename T, int Rank>
     ColumnArray<T,Rank>
-    StorageAccess::get_column_array(const string &col_name, size_t start, size_t length) {
+    StorageAccess::get_column_array(const std::string &col_name, size_t start, size_t length) {
 
-        ColumnFromFile *c = obj_->column_from_file(col_name); //throw if bad name
+        Column *c = obj_->column_ptr(col_name); //throw if bad name
         if (!c || length == 0) { //no data, throw exception
             throw empty_column();
         }
@@ -809,7 +811,7 @@ namespace das {
     inline
     void
     StorageAccess::get_columns_from_file(DasObject *ptr,
-            std::map<std::string, ColumnFromFile*> &map) {
+            std::map<std::string, Column*> &map) {
         return ptr->get_columns_from_file(map);
     }
 
@@ -817,15 +819,15 @@ namespace das {
     void
     StorageAccess::column_from_file(DasObject *ptr,
             const std::string &col_name,
-            const ColumnFromFile &cf) {
-        ptr->column_from_file(col_name, cf);
+            const Column &c) {
+        ptr->column_ptr(col_name, c);
     }
 
     inline
-    ColumnFromFile*
+    Column*
     StorageAccess::column_from_file(DasObject *ptr,
             const std::string &col_name) {
-        return ptr->column_from_file(col_name);
+        return ptr->column_ptr(col_name);
     }
 
     inline

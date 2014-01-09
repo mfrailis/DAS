@@ -8,7 +8,6 @@
 
 
 namespace das {
-    typedef std::pair<std::string, int> Extension;
 
     class RawStorageTransaction : public StorageTransaction {
     public:
@@ -58,7 +57,7 @@ namespace das {
 
         virtual size_t read_column(
                 const std::string &col_name,
-                ColumnFromFile* col,
+                Column* col,
                 column_buffer_ptr buffer,
                 size_t offset,
                 size_t count);
@@ -66,13 +65,13 @@ namespace das {
 
         virtual size_t read_column_array(
                 const std::string &col_name,
-                ColumnFromFile* col,
+                Column* col,
                 column_array_buffer_ptr &buffer,
                 size_t offset,
                 size_t count
                 );
 
-        virtual void flush_buffer(const std::string &col_name, ColumnFromFile* col);
+        virtual void flush_buffer(const std::string &col_name, Column* col);
 
         virtual size_t read_image(
                 ImageFromFile* col,
@@ -81,7 +80,12 @@ namespace das {
                 const das::TinyVector<int, 11> &count,
                 const das::TinyVector<int, 11> &stride
                 );
-
+        
+        virtual Column* create_column(
+                const std::string &type,
+                const std::string &array_size){
+            return new ColumnFromFile(type,array_size);
+        }
         virtual void flush_buffer(ImageFromFile* img);
 
         virtual bool buffered_only() {
@@ -99,9 +103,9 @@ namespace das {
         get_temp_path(const bool& mkdirs = false);
 
         
-        virtual bool release(const ColumnFromFile &cff);
+        virtual bool release(Column *c);
         
-        virtual bool release(const ImageFromFile &iff);
+        virtual bool release(ImageFromFile *i);
 
     private:
 
@@ -163,7 +167,7 @@ namespace das {
         };
         
         template<class T>
-        bool drop(const T& obj);
+        bool drop(T* obj);
 
         typedef std::vector<ResolveToken*> token_vec;
         token_vec tmp_path_;

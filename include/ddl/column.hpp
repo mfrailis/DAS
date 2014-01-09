@@ -9,65 +9,63 @@
 #include "../internal/column_buffer.hpp"
 #include "../exceptions.hpp"
 
-#pragma db object abstract
+//#pragma db value abstract
+
 class Column {
 public:
 
-    Column(const long long& size,
-            const std::string &type,
-            const std::string &array_size)
-    : size_(size), type_(type), array_size_(array_size) {
-    }
-
     Column(const std::string &type, const std::string &array_size)
-    : size_(0), type_(type), array_size_(array_size) {
+    : buff_(type, array_size) {
     }
 
     virtual
     long long
-    size() const {
-        return size_;
-    }
-    
-    const std::string&
-    get_array_size() const{
-        return array_size_;
-    }
-    
-    const std::string&
-    get_type() const {
-        return type_;
-    }
+    size() const = 0;
 
-protected:
+    virtual
+    const std::string&
+    get_array_size() const = 0;
+
+
+    virtual
+    const std::string&
+    get_type() const = 0;
+    
+    virtual
+    const long long&
+    store_size() const = 0;
+    
+    virtual
+    void
+    store_size(const long long &size)=0;
+
+    ColumnBuffer&
+    buffer() {
+        return buff_;
+    }
         
+protected:
+
     virtual
     void
-    set_type(const std::string &type) {
-        type_ = type;
-    }
-    
+    set_type(const std::string &type) = 0;
+
     virtual
     void
-    set_array_size(const std::string &array_size) {
-        array_size_ = array_size;
-    }
-    
-    long long size_;
-#pragma db get(get_type) set(set_type)
-    std::string type_;
-    
-#pragma db get(get_array_size) set(set_array_size)    
-    std::string array_size_;
+    set_array_size(const std::string &array_size) = 0;
 
     Column() {
     }
+
+
+    ColumnBuffer buff_;
 private:
     friend class odb::access;
 
 };
 
 #pragma db object abstract
+
 class ColumnFromFile : public Column {
 public:
 
@@ -75,19 +73,20 @@ public:
             const std::string &type,
             const std::string &array_size,
             const std::string &fname)
-    : Column(size, type,array_size), fname_(fname), id_(0), buff_(type,array_size) {
+    : Column(type, array_size), size_(size), type_(type), array_size_(array_size), fname_(fname), id_(0) {
     }
 
     ColumnFromFile(const std::string &type, const std::string& array_size)
-    : Column(type,array_size), id_(0), buff_(type,array_size) {
+    : Column(type, array_size), size_(0), type_(type), array_size_(array_size), id_(0) {
     }
-    
+
     const std::string&
-    fname() const{
+    fname() const {
         return fname_;
     }
+
     const std::string&
-    temp_path() const{
+    temp_path() const {
         return temp_path_;
     }
 
@@ -96,60 +95,79 @@ public:
         temp_path_ = fname;
     }
 
-    ColumnBuffer&
-    buffer() {
-        return buff_;
-    }
-    
+
+
     bool
-    is_new(){return id_ == 0;}
-    
+    is_new() {
+        return id_ == 0;
+    }
+
     virtual
     void
-    persist(odb::database &db){
+    persist(odb::database &db) {
         throw das::abstract_das_object();
     }
 
     const
     long long&
-    id() const{
+    id() const {
         return id_;
     }
-    
+
+    virtual
+    const std::string&
+    get_array_size() const {
+        return array_size_;
+    }
+
+    virtual
+    const std::string&
+    get_type() const {
+        return type_;
+    }
+
     virtual
     long long
     size() const {
         return size_ + buff_.size();
     }
-    
+
+    virtual
     const long long&
-    file_size() const {
+    store_size() const {
         return size_;
     }
 
-
+    virtual
     void
-    file_size(const long long &size) {
+    store_size(const long long &size) {
         size_ = size;
     }
-    
+
     const std::string&
-    rollback_path(){
+    rollback_path() {
         return rollback_path_;
     }
-    
+
     void
-    rollback_path(const std::string& path){
-       rollback_path_ = path; 
+    rollback_path(const std::string& path) {
+        rollback_path_ = path;
     }
 protected:
+    long long size_;
+#pragma db get(get_type) set(set_type)
+    std::string type_;
+
+#pragma db get(get_array_size) set(set_array_size)    
+    std::string array_size_;
+
     virtual
     void
     set_type(const std::string &type) {
         type_ = type;
         buff_.init_type(type);
     }
-    
+
     virtual
     void
     set_array_size(const std::string &array_size) {
@@ -157,11 +175,10 @@ protected:
         buff_.init_shape(array_size);
     }
 
-#pragma db transient
-    ColumnBuffer buff_;
 
     // implemented for odb library pourposes
-    ColumnFromFile() : id_(0){
+
+    ColumnFromFile() : id_(0) {
     }
 private:
 
@@ -171,36 +188,97 @@ private:
     std::string temp_path_;
 #pragma db transient
     std::string rollback_path_;
-    
+
     friend class odb::access;
 
     std::string fname_;
 };
 
-#pragma db object no_id
+#pragma db value abstract
+
 class ColumnFromBlob : public Column {
 public:
-
+    typedef std::vector<char> blob_type;
     ColumnFromBlob(const long long &size,
             const std::string &type,
             const std::string &array_size)
-    : Column(size, type, array_size) {
+    : Column(type, array_size), size_(size), type_(type), array_size_(array_size) {
     }
 
     ColumnFromBlob(const std::string &type, const std::string& array_size)
-    : Column(type,array_size) {
+    : Column(type, array_size),size_(0), type_(type), array_size_(array_size) {
     }
-
-
-
-private:
-    friend class odb::access;
 
     ColumnFromBlob() {
     }
 
+    virtual
+    const std::string&
+    get_array_size() const {
+        return array_size_;
+    }
+
+    virtual
+    const std::string&
+    get_type() const {
+        return type_;
+    }
+
+    virtual
+    void
+    persist(odb::database &db) {
+    }
+
+    virtual
+    long long
+    size() const {
+        return size_ + buff_.size();
+    }
+
+    virtual
+    const long long&
+    store_size() const {
+        return size_;
+    }
+
+    virtual
+    void
+    store_size(const long long &size) {
+        size_ = size;
+    }
+    blob_type&
+    blob(){
+        return buffer_;
+    }
+    
+protected:
+    
+    long long size_;
+#pragma db get(get_type) set(set_type)
+    std::string type_;
+
+#pragma db get(get_array_size) set(set_array_size)    
+    std::string array_size_;
+    
+    virtual
+    void
+    set_type(const std::string &type) {
+        type_ = type;
+        buff_.init_type(type);
+    }
+
+    virtual
+    void
+    set_array_size(const std::string &array_size) {
+        array_size_ = array_size;
+        buff_.init_shape(array_size);
+    }
+    
+    friend class odb::access;
+
+
 #pragma db mysql:type("MEDIUMBLOB") oracle:type("BLOB") pgsql:type("BYTEA") sqlite:type("BLOB") mssql:type("varbinary")
-    std::vector<char> buffer_;
+    blob_type buffer_;
 
 };
 #endif

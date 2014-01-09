@@ -49,6 +49,7 @@ class DdlInfoGenerator(_odb.DdlVisitor):
         self._get_associations(data_type.name)
         
         if data_type.name != "essentialMetadata":
+            self._init_types.append('all_types_["'+data_type.name+'"].store_as_ = "'+self._get_store_as(data_type.name)+'";')
             self._init_types.append('all_types_["'+data_type.name+'"].ctor_.reset(new TypeCtorImp<'+data_type.name+'>);')
             self._init_types.append('all_types_["'+data_type.name+'"].type_ = &typeid('+data_type.name+');')
 
@@ -150,12 +151,21 @@ namespace das{
         if ddl_type.ancestor != ddl_type.name:
             self._get_columns(ddl_type.ancestor)
 
-    def _get_associations(self, type_name): #TODO
+    def _get_associations(self, type_name):
         ddl_type = self._type_list.type_map[type_name]
         for (ass_name,association) in ddl_type.associated.items():
             self._associations.append((ass_name,association))
         if ddl_type.ancestor != ddl_type.name:
             self._get_associations(ddl_type.ancestor)
+
+    def _get_store_as(self,type_name):
+        ddl_type = self._type_list.type_map[type_name]
+        if ddl_type.data is not None:
+            return ddl_type.data.store_as
+        elif ddl_type.ancestor != ddl_type.name:
+            return self._get_store_as(ddl_type.ancestor)
+        else:
+            return "none"
 
 def _write_ddl_class(f, ddl_name, constructor):
     source = [

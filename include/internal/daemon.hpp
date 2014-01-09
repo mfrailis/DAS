@@ -27,7 +27,7 @@ namespace das {
                 std::string q_str = "id NOT IN (SELECT " + fk + " FROM " + tb + ")";
                 result r = db->query<DataType>(q_str);
                 for(typename result::iterator it = r.begin(); it != r.end(); ++it){
-                    if(sa->release(*it))
+                    if(sa->release(&(*it)))
                         db->erase(*it);
                 }
                 t.commit();

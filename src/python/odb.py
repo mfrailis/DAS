@@ -87,6 +87,7 @@ class DdlOdbGenerator(DdlVisitor):
     self._traits_data_type   = "void"
     self._traits_data_config_table  = ''
     self._traits_foreign_key = ''
+    self._traits_store_as_file = 'true'
 
   def name(self,name):
     self._class_name=name
@@ -255,6 +256,7 @@ struct das_traits<'''+self._class_name+'''>
     static const std::string name;
     static const std::string data_config_table;
     static const std::string foreign_key;
+    static const bool store_as_file;
 };
 ''')
 
@@ -273,6 +275,7 @@ struct das_traits<'''+self._class_name+'''>
     s.writelines(['const std::string das_traits<'+self._class_name+'>::name = "'+self._class_name+'";\n'])
     s.writelines(['const std::string das_traits<'+self._class_name+'>::data_config_table = "'+self._traits_data_config_table+'";\n'])
     s.writelines(['const std::string das_traits<'+self._class_name+'>::foreign_key = "'+self._traits_foreign_key+'";\n'])
+    s.writelines(['const bool das_traits<'+self._class_name+'>::store_as_file = '+self._traits_store_as_file+';\n'])
     # public constructor with name argument
     s.writelines([self._class_name+"::"+self._class_name+" (const std::string &name, const std::string &db_alias)\n"])
     if self._init_list:
@@ -466,16 +469,16 @@ void
       self._traits_data_type = 'ColumnFromFile_'+self._class_name
       self._traits_data_config_table = self._class_name+'_columns'
       self._traits_foreign_key = 'value_cff'
-      self._protected_section.append('virtual ColumnFromFile* column_from_file(const std::string &col_name);')
-      self._protected_section.append('virtual void column_from_file(const std::string &col_name, const ColumnFromFile &cf);')
-      self._protected_section.append('virtual void get_columns_from_file(std::map<std::string,ColumnFromFile*> &map);')
+      self._protected_section.append('virtual Column* column_ptr(const std::string &col_name);')
+      self._protected_section.append('virtual void column_ptr(const std::string &col_name, const Column &cf);')
+      self._protected_section.append('virtual void get_columns_from_file(std::map<std::string,Column*> &map);')
       self._protected_section.append('virtual void save_data(const std::string &path, das::TransactionBundle &tb);')
       self._protected_section.append('virtual void save_data(das::TransactionBundle &tb);')
       self._src_body.append('''
 void
-'''+self._class_name+'''::get_columns_from_file(std::map<std::string,ColumnFromFile*> &map){''')
+'''+self._class_name+'''::get_columns_from_file(std::map<std::string,Column*> &map){''')
       for col in self._get_all_columns(self._class_name,[]):
-        self._src_body.append('\n  map.insert(std::pair<std::string,ColumnFromFile*>("'+col+'",NULL));')
+        self._src_body.append('\n  map.insert(std::pair<std::string,Column*>("'+col+'",NULL));')
       self._src_body.append('''
 
   for(boost::unordered_map<std::string,'''+self._class_name+'''_config>::iterator i = columns_.begin(); i != columns_.end(); ++i)
@@ -519,8 +522,8 @@ void
 }
 
 
-ColumnFromFile*
-'''+self._class_name+'''::column_from_file(const std::string &col_name){
+Column*
+'''+self._class_name+'''::column_ptr(const std::string &col_name){
   get_column_info(col_name); // will throw if not present
 
   boost::unordered_map<std::string,'''+self._class_name+'''_config>::iterator i = columns_.find(col_name);
@@ -533,7 +536,8 @@ ColumnFromFile*
 }
 
 void
-'''+self._class_name+'''::column_from_file(const std::string &col_name, const ColumnFromFile &cf){
+'''+self._class_name+'''::column_ptr(const std::string &col_name, const Column &c){
+  const ColumnFromFile& cf = dynamic_cast<const ColumnFromFile&>(c);
   get_column_info(col_name); // will throw if not present
   '''+self._class_name+'''_config conf(col_name);
   conf.column_from_file(cf);
@@ -620,8 +624,159 @@ ColumnFromFile_'''+self._class_name+'''::persist(odb::database &db){
 }
 ''')
     else:   
-      self._private_section.append("boost::unordered_map<ColumnFromBlob> columns_;")
-    
+      self._src_header.append('#include "internal/storage_engine_blob.hpp"')
+      self._private_section.append("boost::unordered_map<std::string,ColumnFromBlob_"+self._class_name+"> columns_;")
+      self._protected_section.append('virtual Column* column_ptr(const std::string &col_name);')
+      self._protected_section.append('virtual void column_ptr(const std::string &col_name, const Column &cf);')
+      self._protected_section.append('virtual void get_columns_from_file(std::map<std::string,Column*> &map);')
+      self._protected_section.append('virtual void save_data(const std::string &path, das::TransactionBundle &tb);')
+      self._protected_section.append('virtual void save_data(das::TransactionBundle &tb);')
+      self._src_body.append('''
+void
+'''+self._class_name+'''::get_columns_from_file(std::map<std::string,Column*> &map){''')
+      for col in self._get_all_columns(self._class_name,[]):
+        self._src_body.append('\n  map.insert(std::pair<std::string,Column*>("'+col+'",NULL));')
+      self._src_body.append('''
+
+  for(boost::unordered_map<std::string,ColumnFromBlob_'''+self._class_name+'''>::iterator i = columns_.begin(); i != columns_.end(); ++i)
+    map[i->first] = &(i->second);
+}
+
+void
+'''+self._class_name+'''::save_data(const std::string &path, das::TransactionBundle &tb){
+  /* we need to remove empty columns in orded to avoid exceptions when odb will eventually
+   * try to load them. This also helps to keep the database clean
+   */ 
+  boost::unordered_map<std::string,ColumnFromBlob_'''+self._class_name+'''>::iterator it = columns_.begin();
+  while(it != columns_.end()){
+    if(it->second.size() == 0)
+      it = columns_.erase(it);
+    else
+      ++it;
+  }
+  shared_ptr<das::StorageTransaction> e(new das::BlobStorageTransaction(tb)); //RIVEDI
+  e->add(this);
+  e->save(path);
+  tb.add(e);
+}
+
+void
+'''+self._class_name+'''::save_data(das::TransactionBundle &tb){
+  /* we need to remove empty columns in orded to avoid exceptions when odb will eventually
+   * try to load them. This also helps to keep the database clean
+   */ 
+  boost::unordered_map<std::string,ColumnFromBlob_'''+self._class_name+'''>::iterator it = columns_.begin();
+  while(it != columns_.end()){
+    if(it->second.size() == 0)
+      it = columns_.erase(it);
+    else
+      ++it;
+  }
+  shared_ptr<das::StorageTransaction> e(new das::BlobStorageTransaction(tb)); //RIVEDI
+  e->add(this);
+  e->save();
+  tb.add(e);
+
+}
+
+
+Column*
+'''+self._class_name+'''::column_ptr(const std::string &col_name){
+  get_column_info(col_name); // will throw if not present
+
+  boost::unordered_map<std::string,ColumnFromBlob_'''+self._class_name+'''>::iterator i = columns_.find(col_name);
+
+  if(i == columns_.end())
+    return NULL;
+  else
+    return &(i->second);
+
+}
+
+void
+'''+self._class_name+'''::column_ptr(const std::string &col_name, const Column &c){
+  get_column_info(col_name); // will throw if not present
+  const ColumnFromBlob& cb = dynamic_cast<const ColumnFromBlob&>(c);
+
+  columns_.erase(col_name);
+  columns_.insert(std::pair<std::string,ColumnFromBlob_'''+self._class_name+'''>(col_name,cb));
+  is_dirty_ = true; // it will force odb to update the columns table
+}
+
+void
+'''+self._class_name+'''::set_dirty_columns()
+{/*
+  for(std::vector<'''+self._class_name+'''_config>::iterator i = columns_.begin(); i != columns_.end(); ++i)
+    i.modify();
+*/}
+''')
+      self._data_types = ['''
+#pragma db value
+class ColumnFromBlob_'''+self._class_name+''' : public ColumnFromBlob
+{
+public:
+  ColumnFromBlob_'''+self._class_name+'''(const long long &size,
+	     const std::string &type,
+             const std::string &array_size)
+  : ColumnFromBlob(size,type,array_size) {}
+
+  ColumnFromBlob_'''+self._class_name+'''(const std::string &type, const std::string &array_size)
+  : ColumnFromBlob(type,array_size) {}
+
+  ColumnFromBlob_'''+self._class_name+'''(const ColumnFromBlob &cfb)
+  : ColumnFromBlob(cfb){}
+
+  virtual
+  void
+  persist(odb::database &db);
+private:
+  ColumnFromBlob_'''+self._class_name+'''(){}
+  friend class odb::access;
+};
+/*
+#pragma db value
+class '''+self._class_name+'''_config : public ColumnConfig
+{
+public:
+  '''+self._class_name+'''_config(const std::string &col_name)
+    : col_name_(col_name) {}
+
+  virtual
+  ColumnFromFile *
+  column_from_file() const{
+    // null if there's no data in this column
+    return cff_.get();
+  }
+
+  virtual
+  void
+  column_from_file(const ColumnFromFile &cff){
+    cff_.reset(new ColumnFromFile_'''+self._class_name+'''(cff));
+  }
+
+  virtual
+  const std::string&
+  column_name() const {
+    return col_name_;
+  }
+
+private:
+  friend class odb::access;
+  std::string col_name_;
+  // might become lazy
+  shared_ptr<ColumnFromFile_'''+self._class_name+'''> cff_;
+  '''+self._class_name+'''_config(){}
+
+
+};
+*/
+''']
+      self._src_body.append('''
+void
+ColumnFromBlob_'''+self._class_name+'''::persist(odb::database &db){
+  //db.persist(*this);
+}
+''')    
 # if we prepare the vector, this will be stored in th db even without data reference
 #  def visit_column(self,column):
 #    if self._store_as == 'File':
@@ -633,8 +788,10 @@ ColumnFromFile_'''+self._class_name+'''::persist(odb::database &db){
   def visit_data(self,data):
     if data.store_as == 'blob':
       self._store_as = 'Blob'
+      self._traits_store_as_file = 'false'
     else:
       self._store_as = 'File'
+      self._traits_store_as_file = 'true'
 
   def visit_image(self,image):
     self._public_section.append('virtual bool is_image() const { return true; }')

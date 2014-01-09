@@ -352,6 +352,9 @@ target_link_libraries(array_column_test DAS_SO)
 add_executable(rollback_test EXCLUDE_FROM_ALL ${TEST_SOURCE_DIR}/rollback_test.cpp)
 target_link_libraries(rollback_test boost_thread DAS_SO)
 
+add_executable(scratch EXCLUDE_FROM_ALL ${TEST_SOURCE_DIR}/scratch.cpp)
+target_link_libraries(scratch DAS_SO)
+
 add_executable(persistence_example EXCLUDE_FROM_ALL ${EXAMPLES_SOURCE_DIR}/persistence_example.cpp)
 target_link_libraries(persistence_example DAS_SO)
 

@@ -23,7 +23,6 @@
 
 using namespace std;
 
-typedef unsigned long long chunk_t;
 
 /* class for auto managing file descriptors.
  * Avoids dangling opened files
@@ -211,8 +210,8 @@ namespace das {
     class RawStorageAccess_read_column : public boost::static_visitor<ssize_t> {
     public:
 
-        RawStorageAccess_read_column(size_t offset, size_t count, /*size_t max_str,*/ const char* path)
-        : o_(offset), c_(count), path_(path)/*, b_max_(max_str + 1)*/ {
+        RawStorageAccess_read_column(size_t offset, size_t count, const char* path)
+        : o_(offset), c_(count), path_(path) {
         }
 
         ssize_t operator() (std::string* buff) const {
@@ -291,7 +290,6 @@ namespace das {
     private:
         size_t o_;
         size_t c_;
-        //size_t b_max_;
         const char *path_;
         const static size_t BUFF_SIZE = 512;
     };
@@ -510,12 +508,12 @@ namespace das {
     };
 
     size_t
-    RawStorageAccess::read_column(const std::string &col_name, ColumnFromFile* c,
+    RawStorageAccess::read_column(const std::string &col_name, Column* col,
             column_buffer_ptr buffer, size_t offset, size_t count) {
-        //size_t max_str_l = DdlInfo::get_instance()->get_column_info(type_name(obj_), col_name).max_string_length;
+        ColumnFromFile * c = dynamic_cast<ColumnFromFile *>(col);
         if (c->temp_path() != "")
             return boost::apply_visitor(
-                RawStorageAccess_read_column(offset, count, /*max_str_l,*/ c->temp_path().c_str()),
+                RawStorageAccess_read_column(offset, count, c->temp_path().c_str()),
                 buffer);
         else
             if (c->fname() != "") {
@@ -523,7 +521,7 @@ namespace das {
             ss << c->fname() << c->id();
 
             return boost::apply_visitor(
-                    RawStorageAccess_read_column(offset, count, /*max_str_l,*/ ss.str().c_str()),
+                    RawStorageAccess_read_column(offset, count, ss.str().c_str()),
                     buffer);
         }
 
@@ -531,11 +529,11 @@ namespace das {
     }
 
     size_t
-    RawStorageAccess::read_column_array(const std::string &col_name, ColumnFromFile* c,
+    RawStorageAccess::read_column_array(const std::string &col_name, Column* col,
             column_array_buffer_ptr &buffer, size_t offset, size_t count) {
 
         using boost::interprocess::unique_ptr;
-
+        ColumnFromFile * c = dynamic_cast<ColumnFromFile *>(col);
         if (c->temp_path() != "")
             return boost::apply_visitor(
                 RawStorageAccess_read_column_array(offset, count, c->get_array_size(), c->temp_path().c_str()),
@@ -553,15 +551,6 @@ namespace das {
         return 0;
     }
 
-    /*
-    size_t
-    RawStorageAccess::append(std::fstream &stream, column_buffer_ptr buffer, size_t count) {
-        return boost::apply_visitor(
-                RawStorageAccess_append_column(stream, count),
-                buffer);
-
-    }
-     */
     RawStorageTransaction::RawStorageTransaction(TransactionBundle &tb)
     : tb_(tb) {
     }
@@ -584,8 +573,7 @@ namespace das {
         RawStorageAccess_FlushColumnBuffer(
                 ColumnFromFile *c,
                 RawStorageAccess *s)
-        : c_(c), s_(s) {
-
+        : c_(c),s_(s) {
         }
 
         template<typename T>
@@ -619,8 +607,8 @@ namespace das {
                     size += it->second;
             }
 
-            size += c_->file_size();
-            c_->file_size(size);
+            size += c_->store_size();
+            c_->store_size(size);
             c_->buffer().clear();
         }
 
@@ -677,16 +665,16 @@ namespace das {
     RawStorageTransaction::save(const std::string &path) {
         for (std::vector<DasObject*>::iterator obj_it = objs_.begin();
                 obj_it != objs_.end(); ++obj_it) {
-            std::map<std::string, ColumnFromFile*> map;
+            std::map<std::string, Column*> map;
             DasObject* obj = *obj_it;
 
             if (obj->is_table()) {
                 StorageTransaction::get_columns_from_file(obj, map);
                 RawStorageAccess *rsa = dynamic_cast<RawStorageAccess*> (storage_access(obj));
-                for (std::map<std::string, ColumnFromFile*>::iterator m_it = map.begin();
+                for (std::map<std::string, Column*>::iterator m_it = map.begin();
                         m_it != map.end(); ++m_it) {
                     std::string c_name = m_it->first;
-                    ColumnFromFile* cff = m_it->second;
+                    ColumnFromFile* cff = dynamic_cast<ColumnFromFile*>(m_it->second);
 
 
                     if (cff == NULL) // empty column, skip
@@ -704,10 +692,10 @@ namespace das {
 
                         ss << m_it->first << "_";
 
-                        ColumnFromFile cffn(cff->file_size(), cff->get_type(), cff->get_array_size(), ss.str());
+                        ColumnFromFile cffn(cff->store_size(), cff->get_type(), cff->get_array_size(), ss.str());
                         column_from_file(obj, c_name, cffn);
 
-                        ColumnFromFile *cffnp = column_from_file(obj, c_name);
+                        ColumnFromFile *cffnp = dynamic_cast<ColumnFromFile*>(column_from_file(obj, c_name));
                         cffnp->persist(*(tb_.db()));
 
                         ss << cffnp->id();
@@ -783,7 +771,7 @@ namespace das {
     RawStorageTransaction::save() {
         for (std::vector<DasObject*>::iterator obj_it = objs_.begin();
                 obj_it != objs_.end(); ++obj_it) {
-            std::map<std::string, ColumnFromFile*> map;
+            std::map<std::string, Column*> map;
             DasObject* obj = *obj_it;
             if (obj->is_table()) {
                 StorageTransaction::get_columns_from_file(obj, map);
@@ -795,9 +783,9 @@ namespace das {
                  * if some column was previously stored, use that path for storing
                  *  new and updated data
                  */
-                for (std::map<std::string, ColumnFromFile*>::iterator m_it = map.begin();
+                for (std::map<std::string, Column*>::iterator m_it = map.begin();
                         m_it != map.end(); ++m_it) {
-                    ColumnFromFile* cff = m_it->second;
+                    ColumnFromFile* cff = dynamic_cast<ColumnFromFile*>(m_it->second);
 
                     if (cff == NULL || cff->fname() == "")
                         continue;
@@ -818,10 +806,10 @@ namespace das {
                 if (storage_path == "")
                     storage_path = rsa->get_default_path(true);
 
-                for (std::map<std::string, ColumnFromFile*>::iterator m_it = map.begin();
+                for (std::map<std::string, Column*>::iterator m_it = map.begin();
                         m_it != map.end(); ++m_it) {
                     std::string c_name = m_it->first;
-                    ColumnFromFile* cff = m_it->second;
+                    ColumnFromFile* cff = dynamic_cast<ColumnFromFile*>(m_it->second);
 
                     if (cff == NULL) // empty column, skip
                         continue;
@@ -835,10 +823,10 @@ namespace das {
                         ss << storage_path;
                         ss << m_it->first << "_";
 
-                        ColumnFromFile cffn(cff->file_size(), cff->get_type(), cff->get_array_size(), ss.str());
+                        ColumnFromFile cffn(cff->store_size(), cff->get_type(), cff->get_array_size(), ss.str());
                         column_from_file(obj, c_name, cffn);
 
-                        ColumnFromFile *cffnp = column_from_file(obj, c_name);
+                        ColumnFromFile *cffnp = dynamic_cast<ColumnFromFile*>(column_from_file(obj, c_name));
                         cffnp->persist(*(tb_.db()));
 
                         ss << cffnp->id();
@@ -936,7 +924,7 @@ namespace das {
     RawStorageTransaction::rollback() {
         for (std::vector<DasObject*>::iterator obj_it = objs_.begin();
                 obj_it != objs_.end(); ++obj_it) {
-            std::map<std::string, ColumnFromFile*> map;
+            std::map<std::string, Column*> map;
             DasObject* obj = *obj_it;
             if (obj->is_table()) {
                 StorageTransaction::get_columns_from_file(obj, map);
@@ -944,9 +932,9 @@ namespace das {
 
                 std::string storage_path;
 
-                for (std::map<std::string, ColumnFromFile*>::iterator m_it = map.begin();
+                for (std::map<std::string, Column*>::iterator m_it = map.begin();
                         m_it != map.end(); ++m_it) {
-                    ColumnFromFile* cff = m_it->second;
+                    ColumnFromFile* cff = dynamic_cast<ColumnFromFile*>(m_it->second);
 
                     if (cff == NULL) // empty column, skip
                         continue;
@@ -1008,7 +996,8 @@ namespace das {
     }
 
     void
-    RawStorageAccess::flush_buffer(const std::string &col_name, ColumnFromFile* col) {
+    RawStorageAccess::flush_buffer(const std::string &col_name, Column* c) {
+        ColumnFromFile* col = dynamic_cast<ColumnFromFile*>(c);
         if (col->buffer().empty()) return;
         if (col->temp_path() == "") {
 
@@ -1258,11 +1247,11 @@ namespace das {
     }
 
     template<class T>
-    bool RawStorageAccess::drop(const T& obj) {
+    bool RawStorageAccess::drop(T* obj) {
         time_t exp = info.storage_engine.get<time_t> ("unref_data_expiration_time");
 
         std::stringstream ss;
-        ss << obj.fname() << obj.id();
+        ss << obj->fname() << obj->id();
         std::string path = ss.str();
 
         struct stat stt;
@@ -1270,10 +1259,10 @@ namespace das {
         if (stat(path.c_str(), &stt)) {
             switch (errno) {
                 case ENOENT:
-                    DAS_LOG_DBG(obj.id() << "T bad path: " << path);
+                    DAS_LOG_DBG(obj->id() << "T bad path: " << path);
                     return true;
                 default:
-                    DAS_LOG_DBG(obj.id() << "F generic error");
+                    DAS_LOG_DBG(obj->id() << "F generic error");
                     return false;
             }
         }
@@ -1286,29 +1275,30 @@ namespace das {
             if (unlink(path.c_str())) {
                 switch (errno) {
                     case ENOENT:
-                        DAS_LOG_DBG(obj.id() << "T bad path: " << path);
+                        DAS_LOG_DBG(obj->id() << "T bad path: " << path);
                         return true;
                     default:
-                        DAS_LOG_DBG(obj.id() << "F generic error");
+                        DAS_LOG_DBG(obj->id() << "F generic error");
                         return false;
                 }
             } else {
-                DAS_LOG_DBG(obj.id() << "T deleted: " << path);
+                DAS_LOG_DBG(obj->id() << "T deleted: " << path);
                 return true;
             }
         } else {
-            DAS_LOG_DBG(obj.id() << "F too young: " << diff);
+            DAS_LOG_DBG(obj->id() << "F too young: " << diff);
             return false;
         }
         return false;
     }
 
-    bool RawStorageAccess::release(const ColumnFromFile & cff) {
+    bool RawStorageAccess::release(Column *c) {
+        ColumnFromFile* cff = dynamic_cast<ColumnFromFile*>(c);
         return drop(cff);
     }
 
-    bool RawStorageAccess::release(const ImageFromFile & iff) {
-        return drop(iff);
+    bool RawStorageAccess::release(ImageFromFile * i) {
+        return drop(i);
     }
 
     inline

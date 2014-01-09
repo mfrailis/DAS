@@ -83,8 +83,8 @@ set(DAS_SRC
   ${CPP_SOURCE_DIR}/database_config.cpp
   ${CPP_SOURCE_DIR}/column_buffer.cpp
   ${CPP_SOURCE_DIR}/image_buffer.cpp
-#remove from now on
   ${CPP_SOURCE_DIR}/storage_engine_raw.cpp
+  ${CPP_SOURCE_DIR}/storage_engine_blob.cpp
 )
 
 set(UNIT_TEST_SRC
@@ -92,6 +92,7 @@ set(UNIT_TEST_SRC
   ${TEST_SOURCE_DIR}/unit_metadata.cpp
   ${TEST_SOURCE_DIR}/unit_association.cpp
   ${TEST_SOURCE_DIR}/unit_column.cpp
+  ${TEST_SOURCE_DIR}/unit_column_blob.cpp
   ${TEST_SOURCE_DIR}/unit_column_array.cpp  
   ${TEST_SOURCE_DIR}/unit_image.cpp
   ${TEST_SOURCE_DIR}/unit_query.cpp 
