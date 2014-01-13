@@ -74,7 +74,7 @@ namespace das {
         virtual void flush_buffer(const std::string &col_name, Column* col);
 
         virtual size_t read_image(
-                ImageFromFile* col,
+                Image* img,
                 image_buffer_ptr buffer,
                 const das::TinyVector<int, 11> &offset,
                 const das::TinyVector<int, 11> &count,
@@ -85,8 +85,14 @@ namespace das {
                 const std::string &type,
                 const std::string &array_size){
             return new ColumnFromFile(type,array_size);
+        }  
+        
+        virtual Image* create_image(
+                const std::string &pixel_type){
+            return new ImageFile(pixel_type);
         }
-        virtual void flush_buffer(ImageFromFile* img);
+        
+        virtual void flush_buffer(Image* img);
 
         virtual bool buffered_only() {
             return false;
@@ -105,7 +111,7 @@ namespace das {
         
         virtual bool release(Column *c);
         
-        virtual bool release(ImageFromFile *i);
+        virtual bool release(Image *i);
 
     private:
 

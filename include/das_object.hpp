@@ -301,8 +301,8 @@ public:
 
     unsigned int
     get_image_extent(int extent) {
-        ImageFromFile *iff = image_from_file();
-        if (iff)
+        Image *i = image_from_file();
+        if (i)
             return image_from_file()->extent(extent);
         else
             return 0;
@@ -457,11 +457,11 @@ protected:
         throw das::no_external_data();
     }
 
-    virtual ImageFromFile* image_from_file() {
+    virtual Image* image_from_file() {
         throw das::no_external_data();
     }
 
-    virtual void image_from_file(const ImageFromFile &cf) {
+    virtual void image_from_file(const Image &cf) {
         throw das::no_external_data();
     }
 

@@ -1,5 +1,6 @@
 #include "internal/image_buffer.hpp"
 #include "ddl/image.hpp"
+#include "internal/log.hpp"
 #include <iostream>
 
 unsigned int
@@ -39,7 +40,7 @@ ImageBuffer::init(const std::string &type) {
 
 bool ImageBuffer::empty() {
     if(!is_init_){
-        std::cout << "buffer type uninitialized" << std::endl;
+        DAS_LOG_DBG( "buffer type uninitialized" );
         throw std::exception();   
     }
     

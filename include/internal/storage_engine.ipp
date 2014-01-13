@@ -441,11 +441,11 @@ namespace das {
     template <typename T, int Rank>
     void
     StorageAccess::append_tiles(Array<T, Rank> &t) {
-        ImageFromFile *i = obj_->image_from_file(); //throw if type does not provide image data
+        Image *i = obj_->image_from_file(); //throw if type does not provide image data
 
         if (!i) {
-            ImageFromFile iff(DdlInfo::get_instance()->get_image_info(obj_->type_name_).type);
-            obj_->image_from_file(iff);
+            Image * iff = create_image(DdlInfo::get_instance()->get_image_info(obj_->type_name_).type);
+            obj_->image_from_file(*iff);
             i = obj_->image_from_file();
         }
 
@@ -463,12 +463,12 @@ namespace das {
     template <typename T, int Rank>
     void
     StorageAccess::set_image(Array<T, Rank> &t) {
-        ImageFromFile iff(DdlInfo::get_instance()->get_image_info(obj_->type_name_).type);
-        ImageFromFile* i = obj_->image_from_file();
+        Image* iff = create_image(DdlInfo::get_instance()->get_image_info(obj_->type_name_).type);
+        Image* i = obj_->image_from_file();
         if(i)
-            iff.fname(i->fname());
+            iff->reset(i); /*iff.fname(i->fname());*/
             
-        obj_->image_from_file(iff);
+        obj_->image_from_file(*iff);
         i = obj_->image_from_file();
 
 
@@ -489,7 +489,7 @@ namespace das {
 
         StorageAccess_get_image(
                 StorageAccess *acc,
-                ImageFromFile *i,
+                Image *i,
                 const TinyVector<int, 11> &offset,
                 const TinyVector<int, 11> &count,
                 const TinyVector<int, 11> &stride,
@@ -671,82 +671,12 @@ namespace das {
 
     private:
         StorageAccess *sa_;
-        ImageFromFile *i_;
+        Image *i_;
         const TinyVector<int, 11> &cnt_;
         const TinyVector<int, 11> &off_;
         const TinyVector<int, 11> &str_;
         const TinyVector<int, Rank> shape_;
     };
-
-    /*template <typename T, int Rank>
-     Array<T, Rank>
-     StorageAccess::get_image(
-             const TinyVector<int, Rank> &offset,
-             const TinyVector<int, Rank> &count,
-             const TinyVector<int, Rank> &stride
-             ) {
-         using boost::interprocess::unique_ptr;
-
-         TinyVector<int, 11> cnt_(0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
-         TinyVector<int, 11> off_(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-         TinyVector<int, 11> str_(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-
-         size_t elems = 1;
-         for (size_t i = 0; i < Rank; ++i) {
-             elems *= count[i];
-             cnt_[i] = count[i];
-             off_[i] = offset[i];
-             str_[i] = stride[i];
-         }
-         DAS_LOG_DBG("IMAGE copy: " << elems << " elements");
-         unique_ptr<T, ArrayDeleter<T> > buffer(new T[elems]);
-         T* begin = buffer.get();
-
-
-         ImageFromFile *i = obj_->image_from_file();
-         if (i == NULL)
-             throw das::empty_image();
-
-         image_type type = DdlInfo::get_instance()->
-                 get_image_info(type_name(obj_)).type_var_;
-
-         return boost::apply_visitor(StorageAccess_get_image<T, Rank>(this, i, off_, cnt_, str_, count), type);
-
-     }*/
-
-    /* template <typename T, int Rank>
-     Array<T, Rank>
-     StorageAccess::get_image() {
-         using boost::interprocess::unique_ptr;
-         ImageFromFile *i_ = obj_->image_from_file();
-         if (i_ == NULL)
-             throw das::empty_image();
-
-         if (Rank != i_->rank())
-             throw das::bad_array_slice();
-
-         TinyVector<int, 11> cnt_(0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
-         TinyVector<int, 11> off_(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-         TinyVector<int, 11> str_(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-
-         TinyVector<int, Rank> shape;
-         size_t elems = 1;
-         for (size_t i = 0; i < Rank; ++i) {
-             cnt_[i] = i_->extent(i);
-             str_[i] = 1;
-             shape[i] = cnt_[i];
-             elems *= cnt_[i];
-         }
-
-         DAS_LOG_DBG("IMAGE copy: " << elems << " elements");
-         unique_ptr<T, ArrayDeleter<T> > buffer(new T[elems]);
-         T* begin = buffer.get();
-
-         image_type type = DdlInfo::get_instance()->
-                 get_image_info(type_name(obj_)).type_var_;
-
-         return boost::apply_visitor(StorageAccess_get_image<T, Rank>(this, i_, off_, cnt_, str_, shape), type);
-     }*/
 
     template <typename T, int Rank>
     Array<T, Rank>
@@ -765,7 +695,7 @@ namespace das {
             ) {
         using boost::interprocess::unique_ptr;
 
-        ImageFromFile *i_ = obj_->image_from_file();
+        Image *i_ = obj_->image_from_file();
         if (i_ == NULL)
             throw das::empty_image();
 
@@ -831,15 +761,15 @@ namespace das {
     }
 
     inline
-    ImageFromFile *
+    Image *
     StorageAccess::image_from_file(DasObject *ptr) {
         return ptr->image_from_file();
     }
 
     inline
     void
-    StorageAccess::image_from_file(DasObject *ptr, const ImageFromFile &iff) {
-        ptr->image_from_file(iff);
+    StorageAccess::image_from_file(DasObject *ptr, const Image &i) {
+        ptr->image_from_file(i);
     }
 
     inline

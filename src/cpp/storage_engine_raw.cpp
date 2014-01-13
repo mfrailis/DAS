@@ -621,7 +621,7 @@ namespace das {
     public:
 
         RawStorageAccess_FlushImageBuffer(
-                ImageFromFile *i,
+                ImageFile *i,
                 RawStorageAccess *s)
         : i_(i), s_(s) {
 
@@ -657,7 +657,7 @@ namespace das {
         }
 
     private:
-        ImageFromFile* i_;
+        ImageFile* i_;
         RawStorageAccess* s_;
     };
 
@@ -708,7 +708,7 @@ namespace das {
                     }
                 }
             } else if (obj->is_image()) {
-                ImageFromFile* iff = image_from_file(obj);
+                ImageFile* iff = dynamic_cast<ImageFile*>(image_from_file(obj));
 
                 if (iff == NULL)// empty image, skip
                     continue;
@@ -724,7 +724,7 @@ namespace das {
                     else
                         ss << rsa->get_custom_path(path, true);
 
-                    ImageFromFile iffn(iff->pixel_type(), ss.str());
+                    ImageFile iffn(iff->pixel_type(), ss.str());
                     unsigned int e0 = iff->file_tiles();
                     unsigned int e1 = iff->extent(1);
                     unsigned int e2 = iff->extent(2);
@@ -739,7 +739,7 @@ namespace das {
 
                     image_from_file(obj, iffn);
 
-                    ImageFromFile *iffnp = image_from_file(obj);
+                    ImageFile *iffnp = dynamic_cast<ImageFile*>(image_from_file(obj));
                     iffnp->file_tiles(e0);
                     iffnp->extent(1, e1);
                     iffnp->extent(2, e2);
@@ -847,7 +847,7 @@ namespace das {
             } else if (obj->is_image()) {
                 std::string storage_path;
 
-                ImageFromFile* iff = image_from_file(obj);
+                ImageFile* iff = dynamic_cast<ImageFile*>(image_from_file(obj));
                 if (iff == NULL) //image empty, skip
                     continue;
 
@@ -869,7 +869,7 @@ namespace das {
 
                     ss << storage_path;
 
-                    ImageFromFile iffn(iff->pixel_type(), ss.str());
+                    ImageFile iffn(iff->pixel_type(), ss.str());
 
                     unsigned int e0 = iff->file_tiles();
                     unsigned int e1 = iff->extent(1);
@@ -885,7 +885,7 @@ namespace das {
 
                     image_from_file(obj, iffn);
 
-                    ImageFromFile *iffnp = image_from_file(obj);
+                    ImageFile *iffnp = dynamic_cast<ImageFile*>(image_from_file(obj));
                     iffnp->file_tiles(e0);
                     iffnp->extent(1, e1);
                     iffnp->extent(2, e2);
@@ -965,7 +965,7 @@ namespace das {
             } else if (obj->is_image()) {
                 std::string storage_path;
 
-                ImageFromFile* iff = image_from_file(obj);
+                ImageFile* iff = dynamic_cast<ImageFile*>(image_from_file(obj));
                 if (iff == NULL) //image empty, skip
                     continue;
 
@@ -1043,7 +1043,8 @@ namespace das {
 
     void
 
-    RawStorageAccess::flush_buffer(ImageFromFile* img) {
+    RawStorageAccess::flush_buffer(Image* i) {
+        ImageFile * img = dynamic_cast<ImageFile*>(i);
         if (img->buffer().empty()) return;
         if (img->temp_path() == "") {
             std::stringstream tmp;
@@ -1089,7 +1090,7 @@ namespace das {
     public:
 
         RawStorageAccess_read_image(
-                const ImageFromFile *i,
+                const ImageFile *i,
                 const das::TinyVector<int, 11> &offset,
                 const das::TinyVector<int, 11> &count,
                 const das::TinyVector<int, 11> &stride,
@@ -1210,7 +1211,7 @@ namespace das {
         }
 
     private:
-        const ImageFromFile *i_;
+        const ImageFile *i_;
         const das::TinyVector<int, 11> &off_;
         const das::TinyVector<int, 11> &cnt_;
         const das::TinyVector<int, 11> &str_;
@@ -1220,13 +1221,13 @@ namespace das {
 
     size_t
     RawStorageAccess::read_image(
-            ImageFromFile* i,
+            Image* img,
             image_buffer_ptr buffer,
             const das::TinyVector<int, 11> &offset,
             const das::TinyVector<int, 11> &count,
             const das::TinyVector<int, 11> &stride
             ) {
-
+        ImageFile* i = dynamic_cast<ImageFile*>(img);
         if (i->temp_path() != "")
             return boost::apply_visitor(
                 RawStorageAccess_read_image(i, offset, count, stride, i->temp_path().c_str()),
@@ -1297,8 +1298,9 @@ namespace das {
         return drop(cff);
     }
 
-    bool RawStorageAccess::release(ImageFromFile * i) {
-        return drop(i);
+    bool RawStorageAccess::release(Image * i) {
+        ImageFile* img = dynamic_cast<ImageFile*>(i);
+        return drop(img);
     }
 
     inline

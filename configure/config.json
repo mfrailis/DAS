@@ -8,10 +8,10 @@
 	"ddl"	     	: "ddl_test_types.xml",
 	"storage_engine": {
 	    "name"          : "Raw",
-	    "root_dir"      : "%$HOME$/DAS/test_level2/",
+	    "root_dir"      : "/mnt/DBs/data/test_level2/store",
 	    "default_path"  : "%F/%t/%n/%v/",
 	    "custom_path"   : "%s/%B/%n/%v",
-	    "temp_path"      : "%$HOME$/DAS/temp/%$LOGNAME$",
+	    "temp_path"      : "/mnt/DBs/data/test_level2/temp/%$LOGNAME$",
 	    "unref_data_expiration_time" : 86400
 	}
     }

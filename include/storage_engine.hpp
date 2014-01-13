@@ -131,7 +131,7 @@ namespace das {
 
 
         virtual size_t read_image(
-                ImageFromFile* col,
+                Image* img,
                 image_buffer_ptr buffer,
                 const das::TinyVector<int, 11> &offset,
                 const das::TinyVector<int, 11> &count,
@@ -142,11 +142,14 @@ namespace das {
                 const std::string &type,
                 const std::string &array_size) = 0;
 
-        virtual void flush_buffer(ImageFromFile* img) = 0;
+        virtual Image* create_image(
+                const std::string &pixel_type) = 0;
+
+        virtual void flush_buffer(Image* img) = 0;
 
         virtual bool release(Column *cff) = 0;
 
-        virtual bool release(ImageFromFile *iff) = 0;
+        virtual bool release(Image *iff) = 0;
 
         virtual bool buffered_only() {
             return true;
@@ -223,12 +226,12 @@ namespace das {
                 const std::string &col_name);
 
         static
-        ImageFromFile *
+        Image *
         image_from_file(DasObject *ptr);
 
         static
         void
-        image_from_file(DasObject *ptr, const ImageFromFile &iff);
+        image_from_file(DasObject *ptr, const Image &iff);
 
         static
         const std::string&
@@ -295,14 +298,14 @@ namespace das {
         }
 
         static
-        ImageFromFile *
+        Image *
         image_from_file(DasObject *ptr) {
             return StorageAccess::image_from_file(ptr);
         }
 
         static
         void
-        image_from_file(DasObject *ptr, const ImageFromFile &iff) {
+        image_from_file(DasObject *ptr, const Image &iff) {
             StorageAccess::image_from_file(ptr, iff);
         }
 

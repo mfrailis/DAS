@@ -6,6 +6,9 @@ import association_many_exclusive as _a_me
 import association_one_shared as _a_os
 import association_one_exclusive as _a_oe
 
+import _file_interface as _file_s
+import _blob_interface as _blob_s
+
 class DdlVisitor:
   def name(self,name):
     pass
@@ -464,319 +467,23 @@ void
     self._header.append('#include <odb/vector.hxx>')
     
     self._public_section.append('virtual bool is_table() const { return true; }')
-
+    self._protected_section.append('virtual Column* column_ptr(const std::string &col_name);')
+    self._protected_section.append('virtual void column_ptr(const std::string &col_name, const Column &cf);')
+    self._protected_section.append('virtual void get_columns_from_file(std::map<std::string,Column*> &map);')
+    self._protected_section.append('virtual void save_data(const std::string &path, das::TransactionBundle &tb);')
+    self._protected_section.append('virtual void save_data(das::TransactionBundle &tb);')
     if self._store_as == 'File':
       self._traits_data_type = 'ColumnFromFile_'+self._class_name
       self._traits_data_config_table = self._class_name+'_columns'
       self._traits_foreign_key = 'value_cff'
-      self._protected_section.append('virtual Column* column_ptr(const std::string &col_name);')
-      self._protected_section.append('virtual void column_ptr(const std::string &col_name, const Column &cf);')
-      self._protected_section.append('virtual void get_columns_from_file(std::map<std::string,Column*> &map);')
-      self._protected_section.append('virtual void save_data(const std::string &path, das::TransactionBundle &tb);')
-      self._protected_section.append('virtual void save_data(das::TransactionBundle &tb);')
-      self._src_body.append('''
-void
-'''+self._class_name+'''::get_columns_from_file(std::map<std::string,Column*> &map){''')
-      for col in self._get_all_columns(self._class_name,[]):
-        self._src_body.append('\n  map.insert(std::pair<std::string,Column*>("'+col+'",NULL));')
-      self._src_body.append('''
-
-  for(boost::unordered_map<std::string,'''+self._class_name+'''_config>::iterator i = columns_.begin(); i != columns_.end(); ++i)
-    map[i->first] = i->second.column_from_file();
-}
-
-void
-'''+self._class_name+'''::save_data(const std::string &path, das::TransactionBundle &tb){
-  /* we need to remove empty columns in orded to avoid exceptions when odb will eventually
-   * try to load them. This also helps to keep the database clean
-   */ 
-  boost::unordered_map<std::string,'''+self._class_name+'''_config>::iterator it = columns_.begin();
-  while(it != columns_.end()){
-    if(it->second.column_from_file()->size() == 0)
-      it = columns_.erase(it);
-    else
-      ++it;
-  }
-  shared_ptr<das::StorageTransaction> e = das::StorageTransaction::create(bundle_.alias(),tb);
-  e->add(this);
-  e->save(path);
-  tb.add(e);
-}
-
-void
-'''+self._class_name+'''::save_data(das::TransactionBundle &tb){
-  /* we need to remove empty columns in orded to avoid exceptions when odb will eventually
-   * try to load them. This also helps to keep the database clean
-   */ 
-  boost::unordered_map<std::string,'''+self._class_name+'''_config>::iterator it = columns_.begin();
-  while(it != columns_.end()){
-    if(it->second.column_from_file()->size() == 0)
-      it = columns_.erase(it);
-    else
-      ++it;
-  }
-  shared_ptr<das::StorageTransaction> e = das::StorageTransaction::create(bundle_.alias(),tb);
-  e->add(this);
-  e->save();
-  tb.add(e);
-}
-
-
-Column*
-'''+self._class_name+'''::column_ptr(const std::string &col_name){
-  get_column_info(col_name); // will throw if not present
-
-  boost::unordered_map<std::string,'''+self._class_name+'''_config>::iterator i = columns_.find(col_name);
-
-  if(i == columns_.end())
-    return NULL;
-  else
-    return i->second.column_from_file();
-
-}
-
-void
-'''+self._class_name+'''::column_ptr(const std::string &col_name, const Column &c){
-  const ColumnFromFile& cf = dynamic_cast<const ColumnFromFile&>(c);
-  get_column_info(col_name); // will throw if not present
-  '''+self._class_name+'''_config conf(col_name);
-  conf.column_from_file(cf);
-
-  columns_.erase(col_name);
-  columns_.insert(std::pair<std::string,'''+self._class_name+'''_config>(col_name,conf));
-  is_dirty_ = true; // it will force odb to update the columns table
-}
-
-void
-'''+self._class_name+'''::set_dirty_columns()
-{/*
-  for(std::vector<'''+self._class_name+'''_config>::iterator i = columns_.begin(); i != columns_.end(); ++i)
-    i.modify();
-*/}
-''')
+      self._src_body.extend(_file_s.column_body_src(self._class_name,self._get_all_columns(self._class_name,[])))
       self._private_section.append("boost::unordered_map<std::string,"+self._class_name+"_config> columns_;")
-      self._data_types = ['''
-#pragma db object session(false)
-class ColumnFromFile_'''+self._class_name+''' : public ColumnFromFile
-{
-public:
-  ColumnFromFile_'''+self._class_name+'''(const long long &size,
-	     const std::string &type,
-             const std::string &array_size,
-	     const std::string &fname)
-  : ColumnFromFile(size,type,array_size,fname) {}
-
-  ColumnFromFile_'''+self._class_name+'''(const std::string &type, const std::string &array_size)
-  : ColumnFromFile(type,array_size) {}
-
-  ColumnFromFile_'''+self._class_name+'''(const ColumnFromFile &cff)
-  : ColumnFromFile(cff){}
-
-  virtual
-  void
-  persist(odb::database &db);
-private:
-  ColumnFromFile_'''+self._class_name+'''(){}
-  friend class odb::access;
-};
-
-#pragma db value
-class '''+self._class_name+'''_config : public ColumnConfig
-{
-public:
-  '''+self._class_name+'''_config(const std::string &col_name)
-    : col_name_(col_name) {}
-
-  virtual
-  ColumnFromFile *
-  column_from_file() const{
-    // null if there's no data in this column
-    return cff_.get();
-  }
-
-  virtual
-  void
-  column_from_file(const ColumnFromFile &cff){
-    cff_.reset(new ColumnFromFile_'''+self._class_name+'''(cff));
-  }
-
-  virtual
-  const std::string&
-  column_name() const {
-    return col_name_;
-  }
-
-private:
-  friend class odb::access;
-  std::string col_name_;
-  // might become lazy
-  shared_ptr<ColumnFromFile_'''+self._class_name+'''> cff_;
-  '''+self._class_name+'''_config(){}
-
-
-};
-
-''']
-      self._src_body.append('''
-void
-ColumnFromFile_'''+self._class_name+'''::persist(odb::database &db){
-  db.persist(*this);
-}
-''')
+      self._data_types = _file_s.column_data_types(self._class_name)
     else:   
       self._src_header.append('#include "internal/storage_engine_blob.hpp"')
       self._private_section.append("boost::unordered_map<std::string,ColumnFromBlob_"+self._class_name+"> columns_;")
-      self._protected_section.append('virtual Column* column_ptr(const std::string &col_name);')
-      self._protected_section.append('virtual void column_ptr(const std::string &col_name, const Column &cf);')
-      self._protected_section.append('virtual void get_columns_from_file(std::map<std::string,Column*> &map);')
-      self._protected_section.append('virtual void save_data(const std::string &path, das::TransactionBundle &tb);')
-      self._protected_section.append('virtual void save_data(das::TransactionBundle &tb);')
-      self._src_body.append('''
-void
-'''+self._class_name+'''::get_columns_from_file(std::map<std::string,Column*> &map){''')
-      for col in self._get_all_columns(self._class_name,[]):
-        self._src_body.append('\n  map.insert(std::pair<std::string,Column*>("'+col+'",NULL));')
-      self._src_body.append('''
-
-  for(boost::unordered_map<std::string,ColumnFromBlob_'''+self._class_name+'''>::iterator i = columns_.begin(); i != columns_.end(); ++i)
-    map[i->first] = &(i->second);
-}
-
-void
-'''+self._class_name+'''::save_data(const std::string &path, das::TransactionBundle &tb){
-  /* we need to remove empty columns in orded to avoid exceptions when odb will eventually
-   * try to load them. This also helps to keep the database clean
-   */ 
-  boost::unordered_map<std::string,ColumnFromBlob_'''+self._class_name+'''>::iterator it = columns_.begin();
-  while(it != columns_.end()){
-    if(it->second.size() == 0)
-      it = columns_.erase(it);
-    else
-      ++it;
-  }
-  shared_ptr<das::StorageTransaction> e(new das::BlobStorageTransaction(tb)); //RIVEDI
-  e->add(this);
-  e->save(path);
-  tb.add(e);
-}
-
-void
-'''+self._class_name+'''::save_data(das::TransactionBundle &tb){
-  /* we need to remove empty columns in orded to avoid exceptions when odb will eventually
-   * try to load them. This also helps to keep the database clean
-   */ 
-  boost::unordered_map<std::string,ColumnFromBlob_'''+self._class_name+'''>::iterator it = columns_.begin();
-  while(it != columns_.end()){
-    if(it->second.size() == 0)
-      it = columns_.erase(it);
-    else
-      ++it;
-  }
-  shared_ptr<das::StorageTransaction> e(new das::BlobStorageTransaction(tb)); //RIVEDI
-  e->add(this);
-  e->save();
-  tb.add(e);
-
-}
-
-
-Column*
-'''+self._class_name+'''::column_ptr(const std::string &col_name){
-  get_column_info(col_name); // will throw if not present
-
-  boost::unordered_map<std::string,ColumnFromBlob_'''+self._class_name+'''>::iterator i = columns_.find(col_name);
-
-  if(i == columns_.end())
-    return NULL;
-  else
-    return &(i->second);
-
-}
-
-void
-'''+self._class_name+'''::column_ptr(const std::string &col_name, const Column &c){
-  get_column_info(col_name); // will throw if not present
-  const ColumnFromBlob& cb = dynamic_cast<const ColumnFromBlob&>(c);
-
-  columns_.erase(col_name);
-  columns_.insert(std::pair<std::string,ColumnFromBlob_'''+self._class_name+'''>(col_name,cb));
-  is_dirty_ = true; // it will force odb to update the columns table
-}
-
-void
-'''+self._class_name+'''::set_dirty_columns()
-{/*
-  for(std::vector<'''+self._class_name+'''_config>::iterator i = columns_.begin(); i != columns_.end(); ++i)
-    i.modify();
-*/}
-''')
-      self._data_types = ['''
-#pragma db value
-class ColumnFromBlob_'''+self._class_name+''' : public ColumnFromBlob
-{
-public:
-  ColumnFromBlob_'''+self._class_name+'''(const long long &size,
-	     const std::string &type,
-             const std::string &array_size)
-  : ColumnFromBlob(size,type,array_size) {}
-
-  ColumnFromBlob_'''+self._class_name+'''(const std::string &type, const std::string &array_size)
-  : ColumnFromBlob(type,array_size) {}
-
-  ColumnFromBlob_'''+self._class_name+'''(const ColumnFromBlob &cfb)
-  : ColumnFromBlob(cfb){}
-
-  virtual
-  void
-  persist(odb::database &db);
-private:
-  ColumnFromBlob_'''+self._class_name+'''(){}
-  friend class odb::access;
-};
-/*
-#pragma db value
-class '''+self._class_name+'''_config : public ColumnConfig
-{
-public:
-  '''+self._class_name+'''_config(const std::string &col_name)
-    : col_name_(col_name) {}
-
-  virtual
-  ColumnFromFile *
-  column_from_file() const{
-    // null if there's no data in this column
-    return cff_.get();
-  }
-
-  virtual
-  void
-  column_from_file(const ColumnFromFile &cff){
-    cff_.reset(new ColumnFromFile_'''+self._class_name+'''(cff));
-  }
-
-  virtual
-  const std::string&
-  column_name() const {
-    return col_name_;
-  }
-
-private:
-  friend class odb::access;
-  std::string col_name_;
-  // might become lazy
-  shared_ptr<ColumnFromFile_'''+self._class_name+'''> cff_;
-  '''+self._class_name+'''_config(){}
-
-
-};
-*/
-''']
-      self._src_body.append('''
-void
-ColumnFromBlob_'''+self._class_name+'''::persist(odb::database &db){
-  //db.persist(*this);
-}
-''')    
+      self._src_body.extend(_blob_s.column_body_src(self._class_name,self._get_all_columns(self._class_name,[])))
+      self._data_types = _blob_s.column_data_types(self._class_name)
 # if we prepare the vector, this will be stored in th db even without data reference
 #  def visit_column(self,column):
 #    if self._store_as == 'File':
@@ -796,139 +503,21 @@ ColumnFromBlob_'''+self._class_name+'''::persist(odb::database &db){
   def visit_image(self,image):
     self._public_section.append('virtual bool is_image() const { return true; }')
     dim = int(image.dimensions) + 1
+    self._protected_section.append("virtual Image* image_from_file();")
+    self._protected_section.append("virtual void image_from_file(const Image &iff);")
+    self._protected_section.append('virtual void save_data(const std::string &path, das::TransactionBundle &tb);')
+    self._protected_section.append('virtual void save_data(das::TransactionBundle &tb);')
     if  self._store_as == 'File':
-      self._traits_data_type = 'ImageFromFile_'+self._class_name
+      self._traits_data_type = 'ImageFile_'+self._class_name
       self._traits_data_config_table = self._class_name
       self._traits_foreign_key = 'image'
-      self._protected_section.append("shared_ptr<ImageFromFile_"+self._class_name+"> image_;")
-      self._protected_section.append("virtual ImageFromFile* image_from_file();")
-      self._protected_section.append("virtual void image_from_file(const ImageFromFile &iff);")
-      self._protected_section.append('virtual void save_data(const std::string &path, das::TransactionBundle &tb);')
-      self._protected_section.append('virtual void save_data(das::TransactionBundle &tb);')
-      self._data_types = ['''
-#pragma db object session(false)
-class ImageFromFile_'''+self._class_name+''' : public ImageFromFile
-{
-public:
-  ImageFromFile_'''+self._class_name+'''(const std::string &pixel_type,
-            const std::string &fname)
-  : ImageFromFile(pixel_type,fname),
-    size0_(0),''']
-      for i in range(2,(dim-1)):
-        self._data_types.extend(['    size'+str(i-1)+'_(1),'])            
-      self._data_types.extend(['    size'+str(dim-2)+'''_(1)  {}
-
-  ImageFromFile_'''+self._class_name+'''(const std::string &pixel_type)
-  : ImageFromFile(pixel_type),
-    size0_(0),'''])
-      for i in range(2,(dim-1)):
-        self._data_types.extend(['    size'+str(i-1)+'_(1),'])            
-      self._data_types.extend(['    size'+str(dim-2)+'''_(1) {}
-
-  ImageFromFile_'''+self._class_name+'''(const ImageFromFile &iff)
-  : ImageFromFile(iff)
-  {'''])
-      for i in range(1,(dim)):
-        self._data_types.extend(['    size'+str(i-1)+'_ = iff.extent('+str(i-1)+');'])           
-      self._data_types.extend(['''
-
-  }
-
-  virtual unsigned int rank() const { return '''+str(dim-1)+''';}
-
-  virtual 
-  unsigned int
-  extent(size_t rank) const
-  {
-    switch(rank){
-      case 0: return size0_ + buff_.tiles();'''])
-      for i in range(2,dim):
-        self._data_types.extend(['      case '+str(i-1)+': return size'+str(i-1)+'_;'])            
-      self._data_types.extend(['''      default: return 0;
-    }
-  }
-  
-  virtual
-  unsigned int
-  file_tiles() const {
-    return size0_;
-  }
-
-  virtual
-  void
-  file_tiles(const unsigned int& tiles){
-    size0_ = tiles;
-  }
-
-  virtual void
-  extent(const size_t &rank, size_t value){
-    switch(rank){'''])
-      for i in range(2,dim):
-        self._data_types.extend(['      case '+str(i-1)+': size'+str(i-1)+'_ = value;'])            
-      self._data_types.extend(['''      default: return;
-    }
-  }
-
-  virtual
-  unsigned int
-  num_elements() const
-  {
-    return buff_.num_elements() + '''])
-      for i in range(1,(dim-1)):
-        self._data_types.extend(['    size'+str(i-1)+'_ *'])            
-      self._data_types.extend(['    size'+str(dim-2)+'''_;
-  }
-
-  virtual
-  void
-  persist(odb::database &db);
-
-private:'''])
-      for i in range(1,dim):
-        self._data_types.extend(['  int size'+str(i-1)+'_;'])            
-      self._data_types.extend(['''  ImageFromFile_'''+self._class_name+'''(){}
-  friend class odb::access;
-};
-
-'''])
-      self._src_body.extend(['''
-ImageFromFile*
-'''+self._class_name+'''::image_from_file(){
-  return image_.get();
-}
-
-void
-'''+self._class_name+'''::image_from_file(const ImageFromFile &iff){
-  image_.reset(new ImageFromFile_'''+self._class_name+'''(iff));
-  is_dirty_ = true; // will force odb to update the reference
-}
-'''])
-      self._src_body.append('''
-void
-ImageFromFile_'''+self._class_name+'''::persist(odb::database &db){
-  db.persist(*this);
-}
-
-void
-'''+self._class_name+'''::save_data(const std::string &path, das::TransactionBundle &tb){
-  shared_ptr<das::StorageTransaction> e = das::StorageTransaction::create(bundle_.alias(),tb);
-  e->add(this);
-  e->save(path);
-  tb.add(e);
-}
-
-void
-'''+self._class_name+'''::save_data(das::TransactionBundle &tb){
-  shared_ptr<das::StorageTransaction> e = das::StorageTransaction::create(bundle_.alias(),tb);
-  e->add(this);
-  e->save();
-  tb.add(e);
-}
-
-
-''')
+      self._protected_section.append("shared_ptr<ImageFile_"+self._class_name+"> image_;")
+      self._data_types = _file_s.image_data_types(self._class_name,dim)
+      self._src_body.extend(_file_s.image_body_src(self._class_name))
     else:
-      self._protected_section.append("ImageBlob image_;")
+      self._protected_section.append("ImageBlob_"+self._class_name+" image_;")
+      self._data_types = _blob_s.image_data_types(self._class_name,dim)
+      self._src_body.extend(_blob_s.image_body_src(self._class_name))
 
     self._header.append('#include "../image.hpp"')
 

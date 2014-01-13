@@ -452,13 +452,13 @@ namespace das {
     }
 
     void
-    BlobStorageAccess::flush_buffer(ImageFromFile* img) {
+    BlobStorageAccess::flush_buffer(Image* img) {
         //TODO
     }
 
     size_t
     BlobStorageAccess::read_image(
-            ImageFromFile* col,
+            Image* img,
             image_buffer_ptr buffer,
             const das::TinyVector<int, 11> &offset,
             const das::TinyVector<int, 11> &count,
