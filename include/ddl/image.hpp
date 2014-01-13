@@ -291,14 +291,14 @@ public:
     }
     
     blob_type&
-    store(){
+    blob(){
         return buffer_;
     }
     
     
     const
     blob_type&
-    store() const{
+    blob() const{
         return buffer_;
     }
 protected:

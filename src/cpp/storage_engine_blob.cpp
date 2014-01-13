@@ -16,7 +16,7 @@ enum SeekEnum {
 class BufferStream {
 public:
 
-    BufferStream(ColumnFromBlob::blob_type& blob) : blob_(blob), off_(0) {
+    BufferStream(const ColumnFromBlob::blob_type& blob) : blob_(blob), off_(0) {
         size_ = blob_.size();
     }
 
@@ -25,7 +25,7 @@ public:
         if (off_ + count > size_)
             throw das::io_exception();
 
-        char * data = &(blob_.front());
+        const char * data = &(blob_.front());
         memcpy(dest, data + off_, count);
         off_ += count;
     }
@@ -51,7 +51,7 @@ public:
 
 
 private:
-    ColumnFromBlob::blob_type& blob_;
+    const ColumnFromBlob::blob_type& blob_;
     size_t off_;
     size_t size_;
 };
@@ -451,10 +451,197 @@ namespace das {
                 col_t);
     }
 
+    class BlobStorageAccess_append_image : public boost::static_visitor<size_t> {
+    public:
+
+        BlobStorageAccess_append_image(ImageBlob::blob_type& blob, size_t count)
+        : c_(count), blob_(blob) {
+        }
+
+        template<typename T>
+        size_t operator() (const T* buff) const {
+            char *bc = (char*) buff;
+            blob_.insert(blob_.end(), bc, bc + c_ * sizeof (T));
+            return c_;
+        }
+    private:
+        size_t c_;
+        ImageBlob::blob_type& blob_;
+    };
+
+    class BlobStorageAccess_FlushImageBuffer : public boost::static_visitor<void> {
+    public:
+
+        BlobStorageAccess_FlushImageBuffer(
+                ImageBlob *i,
+                BlobStorageAccess *s)
+        : i_(i), s_(s) {
+
+        }
+
+        template<typename T>
+        void operator() (T &native_type) const {
+            typedef std::vector<ImageBufferEntry> buckets_type;
+            const buckets_type &bks = i_->buffer().buckets();
+            size_t tiles = 0;
+
+            for (typename buckets_type::const_iterator it = bks.begin(); it != bks.end(); ++it) {
+
+                StorageAccess::image_buffer_ptr buffer = it->data<T>();
+                size_t count = boost::apply_visitor(
+                        BlobStorageAccess_append_image(i_->blob(), it->num_elements()),
+                        buffer);
+
+                if (count != it->num_elements())
+                    throw io_exception();
+
+                tiles += it->shape()[0];
+            }
+
+            tiles += i_->file_tiles();
+            i_->file_tiles(tiles);
+            i_->buffer().clear();
+        }
+
+    private:
+        ImageBlob* i_;
+        BlobStorageAccess* s_;
+    };
+
     void
     BlobStorageAccess::flush_buffer(Image* img) {
-        //TODO
+        ImageBlob* i = dynamic_cast<ImageBlob*> (img);
+        if (i->buffer().empty()) return;
+        image_type img_t = DdlInfo::get_instance()->
+                get_image_info(type_name(obj_)).type_var_;
+        boost::apply_visitor(
+                BlobStorageAccess_FlushImageBuffer(i, this),
+                img_t);
     }
+
+    class BlobStorageAccess_read_image : public boost::static_visitor<ssize_t> {
+    public:
+
+        BlobStorageAccess_read_image(
+                const ImageBlob *i,
+                const das::TinyVector<int, 11> &offset,
+                const das::TinyVector<int, 11> &count,
+                const das::TinyVector<int, 11> &stride)
+        : i_(i), off_(offset), cnt_(count), str_(stride) {
+        }
+
+        template<typename T>
+        ssize_t operator() (T* buff) const {
+
+            BufferStream store(i_->blob());
+            size_t count = 0;
+
+            das::TinyVector<size_t, 11> shape(
+                    i_->extent(0),
+                    i_->extent(1),
+                    i_->extent(2) == 0 ? 1 : i_->extent(2),
+                    i_->extent(3) == 0 ? 1 : i_->extent(3),
+                    i_->extent(4) == 0 ? 1 : i_->extent(4),
+                    i_->extent(5) == 0 ? 1 : i_->extent(5),
+                    i_->extent(6) == 0 ? 1 : i_->extent(6),
+                    i_->extent(7) == 0 ? 1 : i_->extent(7),
+                    i_->extent(8) == 0 ? 1 : i_->extent(8),
+                    i_->extent(9) == 0 ? 1 : i_->extent(9),
+                    i_->extent(10) == 0 ? 1 : i_->extent(10)
+                    );
+
+            size_t dsp[] = {
+                /*dim 0*/ shape[1] * shape[2] * shape[3] * shape[4] * shape[5] * shape[6] * shape[7] * shape[8] * shape[9] * shape[10],
+                /*dim 1*/ shape[2] * shape[3] * shape[4] * shape[5] * shape[6] * shape[7] * shape[8] * shape[9] * shape[10],
+                /*dim 2*/ shape[3] * shape[4] * shape[5] * shape[6] * shape[7] * shape[8] * shape[9] * shape[10],
+                /*dim 3*/ shape[4] * shape[5] * shape[6] * shape[7] * shape[8] * shape[9] * shape[10],
+                /*dim 4*/ shape[5] * shape[6] * shape[7] * shape[8] * shape[9] * shape[10],
+                /*dim 5*/ shape[6] * shape[7] * shape[8] * shape[9] * shape[10],
+                /*dim 6*/ shape[7] * shape[8] * shape[9] * shape[10],
+                /*dim 7*/ shape[8] * shape[9] * shape[10],
+                /*dim 8*/ shape[9] * shape[10],
+                /*dim 9*/ shape[10],
+                /*dim10*/ 1
+            };
+            DAS_DBG_NO_SCOPE(
+                    size_t DBG_file_size = i_->file_tiles() * shape[1] *
+                    shape[2] * shape[3] * shape[4] * shape[5] *
+                    shape[6] * shape[7] * shape[8] * shape[9] *
+                    shape[10] * sizeof (T);
+                    );
+
+            off_t seeks[11];
+            seeks[0] = 0;
+            for (size_t d0 = 0; d0 < cnt_[0]; ++d0) {
+                seeks[0] += d0 == 0 ? dsp[0] * off_[0] : dsp[0] * str_[0];
+                seeks[1] = seeks[0];
+                for (size_t d1 = 0; d1 < cnt_[1]; ++d1) {
+                    seeks[1] += d1 == 0 ? dsp[1] * off_[1] : dsp[1] * str_[1];
+                    seeks[2] = seeks[1];
+                    for (size_t d2 = 0; d2 < cnt_[2]; ++d2) {
+                        seeks[2] += d2 == 0 ? dsp[2] * off_[2] : dsp[2] * str_[2];
+                        seeks[3] = seeks[2];
+                        for (size_t d3 = 0; d3 < cnt_[3]; ++d3) {
+                            seeks[3] += d3 == 0 ? dsp[3] * off_[3] : dsp[3] * str_[3];
+                            seeks[4] = seeks[3];
+                            for (size_t d4 = 0; d4 < cnt_[4]; ++d4) {
+                                seeks[4] += d4 == 0 ? dsp[4] * off_[4] : dsp[4] * str_[4];
+                                seeks[5] = seeks[4];
+                                for (size_t d5 = 0; d5 < cnt_[5]; ++d5) {
+                                    seeks[5] += d5 == 0 ? dsp[5] * off_[4] : dsp[5] * str_[5];
+                                    seeks[6] = seeks[5];
+                                    for (size_t d6 = 0; d6 < cnt_[6]; ++d6) {
+                                        seeks[6] += d6 == 0 ? dsp[6] * off_[6] : dsp[6] * str_[6];
+                                        seeks[7] = seeks[6];
+                                        for (size_t d7 = 0; d7 < cnt_[7]; ++d7) {
+                                            seeks[7] += d7 == 0 ? dsp[7] * off_[7] : dsp[7] * str_[7];
+                                            seeks[8] = seeks[7];
+                                            for (size_t d8 = 0; d8 < cnt_[8]; ++d8) {
+                                                seeks[8] += d8 == 0 ? dsp[8] * off_[8] : dsp[8] * str_[8];
+                                                seeks[9] = seeks[8];
+                                                for (size_t d9 = 0; d9 < cnt_[9]; ++d9) {
+                                                    seeks[9] += d9 == 0 ? dsp[9] * off_[9] : dsp[9] * str_[9];
+                                                    seeks[10] = seeks[9];
+                                                    for (size_t d10 = 0; d10 < cnt_[10]; ++d10) {
+                                                        seeks[10] += d10 == 0 ? dsp[10] * off_[10] : dsp[10] * str_[10];
+                                                        DAS_DBG_NO_SCOPE(
+                                                                size_t DBG_offset = seeks[10];
+                                                        if (DBG_offset * sizeof (T) > DBG_file_size) {
+                                                            DAS_LOG_DBG("IMAGE bad seek OVERFLOW!!! requested " << DBG_offset << " in file length " << DBG_file_size);
+                                                            return count;
+                                                        }
+                                                        );
+                                                        size_t file_pos = seeks[10] * sizeof (T);
+                                                        errno = 0;
+                                                        store.seek(file_pos,se_SET);
+                                                        //off_t off = lseek(fd, file_pos, SEEK_SET);
+                                                        T* ptr = buff + count;
+                                                        errno = 0;
+                                                        store.read(ptr, sizeof (T));
+                                                        //ssize_t c = read(fd, ptr, sizeof (T));
+                                                        DAS_LOG_DBG("buffer[" << count << "] = " << *ptr);
+                                                        ++count;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+            }
+            return count;
+        }
+
+    private:
+        const ImageBlob *i_;
+        const das::TinyVector<int, 11> &off_;
+        const das::TinyVector<int, 11> &cnt_;
+        const das::TinyVector<int, 11> &str_;
+    };
 
     size_t
     BlobStorageAccess::read_image(
@@ -464,7 +651,10 @@ namespace das {
             const das::TinyVector<int, 11> &count,
             const das::TinyVector<int, 11> &stride
             ) {
-        //TODO
-        return 0;
+        ImageBlob* i = dynamic_cast<ImageBlob*> (img);
+
+        return boost::apply_visitor(
+                BlobStorageAccess_read_image(i, offset, count, stride),
+                buffer);
     }
 }

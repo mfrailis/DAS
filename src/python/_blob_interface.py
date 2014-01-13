@@ -182,7 +182,7 @@ public:
     for i in range(1,(dim)):
         res.extend(['    size'+str(i-1)+'_ = img->extent('+str(i-1)+');'])           
     res.extend(['''
-    buffer_ = img->store();
+    buffer_ = img->blob();
   }
 
   virtual unsigned int rank() const { return '''+str(dim-1)+''';}
