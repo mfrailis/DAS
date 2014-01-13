@@ -301,9 +301,9 @@ public:
 
     unsigned int
     get_image_extent(int extent) {
-        Image *i = image_from_file();
+        Image *i = image_ptr();
         if (i)
-            return image_from_file()->extent(extent);
+            return image_ptr()->extent(extent);
         else
             return 0;
     }
@@ -445,7 +445,7 @@ protected:
 
     // StorageEngine utilities
 
-    virtual void get_columns_from_file(std::map<std::string, Column*> &map) {
+    virtual void populate_column_map(std::map<std::string, Column*> &map) {
         throw das::no_external_data();
     }
 
@@ -457,11 +457,11 @@ protected:
         throw das::no_external_data();
     }
 
-    virtual Image* image_from_file() {
+    virtual Image* image_ptr() {
         throw das::no_external_data();
     }
 
-    virtual void image_from_file(const Image &cf) {
+    virtual void image_ptr(const Image &cf) {
         throw das::no_external_data();
     }
 

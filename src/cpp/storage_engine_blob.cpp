@@ -225,7 +225,7 @@ namespace das {
                 }
             } else if (obj->is_image()) {
                 //TODO
-                /*ImageFromFile* iff = image_from_file(obj);
+                /*ImageFromFile* iff = image_ptr(obj);
                 if (iff == NULL) //image empty, skip
                     continue;
 
@@ -498,8 +498,8 @@ namespace das {
                 tiles += it->shape()[0];
             }
 
-            tiles += i_->file_tiles();
-            i_->file_tiles(tiles);
+            tiles += i_->store_tiles();
+            i_->store_tiles(tiles);
             i_->buffer().clear();
         }
 
@@ -564,7 +564,7 @@ namespace das {
                 /*dim10*/ 1
             };
             DAS_DBG_NO_SCOPE(
-                    size_t DBG_file_size = i_->file_tiles() * shape[1] *
+                    size_t DBG_file_size = i_->store_tiles() * shape[1] *
                     shape[2] * shape[3] * shape[4] * shape[5] *
                     shape[6] * shape[7] * shape[8] * shape[9] *
                     shape[10] * sizeof (T);

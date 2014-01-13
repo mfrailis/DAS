@@ -27,11 +27,11 @@ public:
 
     virtual
     unsigned int
-    file_tiles() const  = 0;
+    store_tiles() const  = 0;
     
     virtual
     void
-    file_tiles(const unsigned int& tiles) = 0;
+    store_tiles(const unsigned int& tiles) = 0;
     
     virtual
     void
@@ -112,13 +112,13 @@ public:
 
     virtual
     unsigned int
-    file_tiles() const {
+    store_tiles() const {
         return 0;
     }
     
     virtual
     void
-    file_tiles(const unsigned int& tiles){
+    store_tiles(const unsigned int& tiles){
     }
     
     virtual
@@ -248,13 +248,13 @@ public:
 
     virtual
     unsigned int
-    file_tiles() const {
+    store_tiles() const {
         return 0;
     }
     
     virtual
     void
-    file_tiles(const unsigned int& tiles){
+    store_tiles(const unsigned int& tiles){
     }
     
     virtual

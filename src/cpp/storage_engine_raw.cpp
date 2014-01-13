@@ -510,7 +510,7 @@ namespace das {
     size_t
     RawStorageAccess::read_column(const std::string &col_name, Column* col,
             column_buffer_ptr buffer, size_t offset, size_t count) {
-        ColumnFromFile * c = dynamic_cast<ColumnFromFile *>(col);
+        ColumnFile * c = dynamic_cast<ColumnFile *>(col);
         if (c->temp_path() != "")
             return boost::apply_visitor(
                 RawStorageAccess_read_column(offset, count, c->temp_path().c_str()),
@@ -533,7 +533,7 @@ namespace das {
             column_array_buffer_ptr &buffer, size_t offset, size_t count) {
 
         using boost::interprocess::unique_ptr;
-        ColumnFromFile * c = dynamic_cast<ColumnFromFile *>(col);
+        ColumnFile * c = dynamic_cast<ColumnFile *>(col);
         if (c->temp_path() != "")
             return boost::apply_visitor(
                 RawStorageAccess_read_column_array(offset, count, c->get_array_size(), c->temp_path().c_str()),
@@ -571,7 +571,7 @@ namespace das {
     public:
 
         RawStorageAccess_FlushColumnBuffer(
-                ColumnFromFile *c,
+                ColumnFile *c,
                 RawStorageAccess *s)
         : c_(c),s_(s) {
         }
@@ -613,7 +613,7 @@ namespace das {
         }
 
     private:
-        ColumnFromFile* c_;
+        ColumnFile* c_;
         RawStorageAccess* s_;
     };
 
@@ -651,8 +651,8 @@ namespace das {
                 tiles += it->shape()[0];
             }
 
-            tiles += i_->file_tiles();
-            i_->file_tiles(tiles);
+            tiles += i_->store_tiles();
+            i_->store_tiles(tiles);
             i_->buffer().clear();
         }
 
@@ -674,7 +674,7 @@ namespace das {
                 for (std::map<std::string, Column*>::iterator m_it = map.begin();
                         m_it != map.end(); ++m_it) {
                     std::string c_name = m_it->first;
-                    ColumnFromFile* cff = dynamic_cast<ColumnFromFile*>(m_it->second);
+                    ColumnFile* cff = dynamic_cast<ColumnFile*>(m_it->second);
 
 
                     if (cff == NULL) // empty column, skip
@@ -692,10 +692,10 @@ namespace das {
 
                         ss << m_it->first << "_";
 
-                        ColumnFromFile cffn(cff->store_size(), cff->get_type(), cff->get_array_size(), ss.str());
+                        ColumnFile cffn(cff->store_size(), cff->get_type(), cff->get_array_size(), ss.str());
                         column_from_file(obj, c_name, cffn);
 
-                        ColumnFromFile *cffnp = dynamic_cast<ColumnFromFile*>(column_from_file(obj, c_name));
+                        ColumnFile *cffnp = dynamic_cast<ColumnFile*>(column_from_file(obj, c_name));
                         cffnp->persist(*(tb_.db()));
 
                         ss << cffnp->id();
@@ -708,7 +708,7 @@ namespace das {
                     }
                 }
             } else if (obj->is_image()) {
-                ImageFile* iff = dynamic_cast<ImageFile*>(image_from_file(obj));
+                ImageFile* iff = dynamic_cast<ImageFile*>(image_ptr(obj));
 
                 if (iff == NULL)// empty image, skip
                     continue;
@@ -725,7 +725,7 @@ namespace das {
                         ss << rsa->get_custom_path(path, true);
 
                     ImageFile iffn(iff->pixel_type(), ss.str());
-                    unsigned int e0 = iff->file_tiles();
+                    unsigned int e0 = iff->store_tiles();
                     unsigned int e1 = iff->extent(1);
                     unsigned int e2 = iff->extent(2);
                     unsigned int e3 = iff->extent(3);
@@ -737,10 +737,10 @@ namespace das {
                     unsigned int e9 = iff->extent(9);
                     unsigned int e10 = iff->extent(10);
 
-                    image_from_file(obj, iffn);
+                    image_ptr(obj, iffn);
 
-                    ImageFile *iffnp = dynamic_cast<ImageFile*>(image_from_file(obj));
-                    iffnp->file_tiles(e0);
+                    ImageFile *iffnp = dynamic_cast<ImageFile*>(image_ptr(obj));
+                    iffnp->store_tiles(e0);
                     iffnp->extent(1, e1);
                     iffnp->extent(2, e2);
                     iffnp->extent(3, e3);
@@ -785,7 +785,7 @@ namespace das {
                  */
                 for (std::map<std::string, Column*>::iterator m_it = map.begin();
                         m_it != map.end(); ++m_it) {
-                    ColumnFromFile* cff = dynamic_cast<ColumnFromFile*>(m_it->second);
+                    ColumnFile* cff = dynamic_cast<ColumnFile*>(m_it->second);
 
                     if (cff == NULL || cff->fname() == "")
                         continue;
@@ -809,7 +809,7 @@ namespace das {
                 for (std::map<std::string, Column*>::iterator m_it = map.begin();
                         m_it != map.end(); ++m_it) {
                     std::string c_name = m_it->first;
-                    ColumnFromFile* cff = dynamic_cast<ColumnFromFile*>(m_it->second);
+                    ColumnFile* cff = dynamic_cast<ColumnFile*>(m_it->second);
 
                     if (cff == NULL) // empty column, skip
                         continue;
@@ -823,10 +823,10 @@ namespace das {
                         ss << storage_path;
                         ss << m_it->first << "_";
 
-                        ColumnFromFile cffn(cff->store_size(), cff->get_type(), cff->get_array_size(), ss.str());
+                        ColumnFile cffn(cff->store_size(), cff->get_type(), cff->get_array_size(), ss.str());
                         column_from_file(obj, c_name, cffn);
 
-                        ColumnFromFile *cffnp = dynamic_cast<ColumnFromFile*>(column_from_file(obj, c_name));
+                        ColumnFile *cffnp = dynamic_cast<ColumnFile*>(column_from_file(obj, c_name));
                         cffnp->persist(*(tb_.db()));
 
                         ss << cffnp->id();
@@ -847,7 +847,7 @@ namespace das {
             } else if (obj->is_image()) {
                 std::string storage_path;
 
-                ImageFile* iff = dynamic_cast<ImageFile*>(image_from_file(obj));
+                ImageFile* iff = dynamic_cast<ImageFile*>(image_ptr(obj));
                 if (iff == NULL) //image empty, skip
                     continue;
 
@@ -871,7 +871,7 @@ namespace das {
 
                     ImageFile iffn(iff->pixel_type(), ss.str());
 
-                    unsigned int e0 = iff->file_tiles();
+                    unsigned int e0 = iff->store_tiles();
                     unsigned int e1 = iff->extent(1);
                     unsigned int e2 = iff->extent(2);
                     unsigned int e3 = iff->extent(3);
@@ -883,10 +883,10 @@ namespace das {
                     unsigned int e9 = iff->extent(9);
                     unsigned int e10 = iff->extent(10);
 
-                    image_from_file(obj, iffn);
+                    image_ptr(obj, iffn);
 
-                    ImageFile *iffnp = dynamic_cast<ImageFile*>(image_from_file(obj));
-                    iffnp->file_tiles(e0);
+                    ImageFile *iffnp = dynamic_cast<ImageFile*>(image_ptr(obj));
+                    iffnp->store_tiles(e0);
                     iffnp->extent(1, e1);
                     iffnp->extent(2, e2);
                     iffnp->extent(3, e3);
@@ -934,7 +934,7 @@ namespace das {
 
                 for (std::map<std::string, Column*>::iterator m_it = map.begin();
                         m_it != map.end(); ++m_it) {
-                    ColumnFromFile* cff = dynamic_cast<ColumnFromFile*>(m_it->second);
+                    ColumnFile* cff = dynamic_cast<ColumnFile*>(m_it->second);
 
                     if (cff == NULL) // empty column, skip
                         continue;
@@ -965,7 +965,7 @@ namespace das {
             } else if (obj->is_image()) {
                 std::string storage_path;
 
-                ImageFile* iff = dynamic_cast<ImageFile*>(image_from_file(obj));
+                ImageFile* iff = dynamic_cast<ImageFile*>(image_ptr(obj));
                 if (iff == NULL) //image empty, skip
                     continue;
 
@@ -997,7 +997,7 @@ namespace das {
 
     void
     RawStorageAccess::flush_buffer(const std::string &col_name, Column* c) {
-        ColumnFromFile* col = dynamic_cast<ColumnFromFile*>(c);
+        ColumnFile* col = dynamic_cast<ColumnFile*>(c);
         if (col->buffer().empty()) return;
         if (col->temp_path() == "") {
 
@@ -1134,7 +1134,7 @@ namespace das {
                 /*dim10*/ 1
             };
             DAS_DBG_NO_SCOPE(
-                    size_t DBG_file_size = i_->file_tiles() * shape[1] *
+                    size_t DBG_file_size = i_->store_tiles() * shape[1] *
                     shape[2] * shape[3] * shape[4] * shape[5] *
                     shape[6] * shape[7] * shape[8] * shape[9] *
                     shape[10] * sizeof (T);
@@ -1294,7 +1294,7 @@ namespace das {
     }
 
     bool RawStorageAccess::release(Column *c) {
-        ColumnFromFile* cff = dynamic_cast<ColumnFromFile*>(c);
+        ColumnFile* cff = dynamic_cast<ColumnFile*>(c);
         return drop(cff);
     }
 

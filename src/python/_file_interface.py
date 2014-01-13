@@ -2,26 +2,26 @@
 def column_data_types(class_name):
     return ['''
 #pragma db object session(false)
-class ColumnFromFile_'''+class_name+''' : public ColumnFromFile
+class ColumnFile_'''+class_name+''' : public ColumnFile
 {
 public:
-  ColumnFromFile_'''+class_name+'''(const long long &size,
+  ColumnFile_'''+class_name+'''(const long long &size,
 	     const std::string &type,
              const std::string &array_size,
 	     const std::string &fname)
-  : ColumnFromFile(size,type,array_size,fname) {}
+  : ColumnFile(size,type,array_size,fname) {}
 
-  ColumnFromFile_'''+class_name+'''(const std::string &type, const std::string &array_size)
-  : ColumnFromFile(type,array_size) {}
+  ColumnFile_'''+class_name+'''(const std::string &type, const std::string &array_size)
+  : ColumnFile(type,array_size) {}
 
-  ColumnFromFile_'''+class_name+'''(const ColumnFromFile &cff)
-  : ColumnFromFile(cff){}
+  ColumnFile_'''+class_name+'''(const ColumnFile &cff)
+  : ColumnFile(cff){}
 
   virtual
   void
   persist(odb::database &db);
 private:
-  ColumnFromFile_'''+class_name+'''(){}
+  ColumnFile_'''+class_name+'''(){}
   friend class odb::access;
 };
 
@@ -33,7 +33,7 @@ public:
     : col_name_(col_name) {}
 
   virtual
-  ColumnFromFile *
+  ColumnFile *
   column_from_file() const{
     // null if there's no data in this column
     return cff_.get();
@@ -41,8 +41,8 @@ public:
 
   virtual
   void
-  column_from_file(const ColumnFromFile &cff){
-    cff_.reset(new ColumnFromFile_'''+class_name+'''(cff));
+  column_from_file(const ColumnFile &cff){
+    cff_.reset(new ColumnFile_'''+class_name+'''(cff));
   }
 
   virtual
@@ -55,7 +55,7 @@ private:
   friend class odb::access;
   std::string col_name_;
   // might become lazy
-  shared_ptr<ColumnFromFile_'''+class_name+'''> cff_;
+  shared_ptr<ColumnFile_'''+class_name+'''> cff_;
   '''+class_name+'''_config(){}
 
 
@@ -67,7 +67,7 @@ def column_body_src(class_name,columns):
     res = []
     res.append('''
 void
-'''+class_name+'''::get_columns_from_file(std::map<std::string,Column*> &map){''')
+'''+class_name+'''::populate_column_map(std::map<std::string,Column*> &map){''')
     for col in columns:
         res.append('  map.insert(std::pair<std::string,Column*>("'+col+'",NULL));')
     res.append('''
@@ -128,7 +128,7 @@ Column*
 
 void
 '''+class_name+'''::column_ptr(const std::string &col_name, const Column &c){
-  const ColumnFromFile& cf = dynamic_cast<const ColumnFromFile&>(c);
+  const ColumnFile& cf = dynamic_cast<const ColumnFile&>(c);
   get_column_info(col_name); // will throw if not present
   '''+class_name+'''_config conf(col_name);
   conf.column_from_file(cf);
@@ -146,7 +146,7 @@ void
 */}
 
 void
-ColumnFromFile_'''+class_name+'''::persist(odb::database &db){
+ColumnFile_'''+class_name+'''::persist(odb::database &db){
   db.persist(*this);
 }
 
@@ -199,13 +199,13 @@ public:
   
   virtual
   unsigned int
-  file_tiles() const {
+  store_tiles() const {
     return size0_;
   }
 
   virtual
   void
-  file_tiles(const unsigned int& tiles){
+  store_tiles(const unsigned int& tiles){
     size0_ = tiles;
   }
 
@@ -245,12 +245,12 @@ private:'''])
 def image_body_src(class_name):
     return ['''
 Image*
-'''+class_name+'''::image_from_file(){
+'''+class_name+'''::image_ptr(){
   return image_.get();
 }
 
 void
-'''+class_name+'''::image_from_file(const Image &i){
+'''+class_name+'''::image_ptr(const Image &i){
   const ImageFile& iff = dynamic_cast<const ImageFile&>(i);
   image_.reset(new ImageFile_'''+class_name+'''(iff));
   is_dirty_ = true; // will force odb to update the reference

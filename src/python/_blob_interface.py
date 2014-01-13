@@ -32,7 +32,7 @@ public:
     : col_name_(col_name) {}
 
   virtual
-  ColumnFromFile *
+  ColumnFile *
   column_from_file() const{
     // null if there's no data in this column
     return cff_.get();
@@ -40,8 +40,8 @@ public:
 
   virtual
   void
-  column_from_file(const ColumnFromFile &cff){
-    cff_.reset(new ColumnFromFile_'''+class_name+'''(cff));
+  column_from_file(const ColumnFile &cff){
+    cff_.reset(new ColumnFile_'''+class_name+'''(cff));
   }
 
   virtual
@@ -54,7 +54,7 @@ private:
   friend class odb::access;
   std::string col_name_;
   // might become lazy
-  shared_ptr<ColumnFromFile_'''+class_name+'''> cff_;
+  shared_ptr<ColumnFile_'''+class_name+'''> cff_;
   '''+class_name+'''_config(){}
 
 
@@ -66,7 +66,7 @@ def column_body_src(class_name,columns):
     res = []
     res.append('''
 void
-'''+class_name+'''::get_columns_from_file(std::map<std::string,Column*> &map){''')
+'''+class_name+'''::populate_column_map(std::map<std::string,Column*> &map){''')
     for col in columns:
         res.append('\n  map.insert(std::pair<std::string,Column*>("'+col+'",NULL));')
     res.append('''
@@ -201,13 +201,13 @@ public:
   
   virtual
   unsigned int
-  file_tiles() const {
+  store_tiles() const {
     return size0_;
   }
 
   virtual
   void
-  file_tiles(const unsigned int& tiles){
+  store_tiles(const unsigned int& tiles){
     size0_ = tiles;
   }
 
@@ -247,12 +247,12 @@ private:'''])
 def image_body_src(class_name):
     res = ['''
 Image*
-'''+class_name+'''::image_from_file(){
+'''+class_name+'''::image_ptr(){
   return &image_;
 }
 
 void
-'''+class_name+'''::image_from_file(const Image &i){
+'''+class_name+'''::image_ptr(const Image &i){
   const ImageBlob& iff = dynamic_cast<const ImageBlob&>(i);
   image_.reset(&i);
   is_dirty_ = true; // will force odb to update the reference

@@ -469,11 +469,11 @@ void
     self._public_section.append('virtual bool is_table() const { return true; }')
     self._protected_section.append('virtual Column* column_ptr(const std::string &col_name);')
     self._protected_section.append('virtual void column_ptr(const std::string &col_name, const Column &cf);')
-    self._protected_section.append('virtual void get_columns_from_file(std::map<std::string,Column*> &map);')
+    self._protected_section.append('virtual void populate_column_map(std::map<std::string,Column*> &map);')
     self._protected_section.append('virtual void save_data(const std::string &path, das::TransactionBundle &tb);')
     self._protected_section.append('virtual void save_data(das::TransactionBundle &tb);')
     if self._store_as == 'File':
-      self._traits_data_type = 'ColumnFromFile_'+self._class_name
+      self._traits_data_type = 'ColumnFile_'+self._class_name
       self._traits_data_config_table = self._class_name+'_columns'
       self._traits_foreign_key = 'value_cff'
       self._src_body.extend(_file_s.column_body_src(self._class_name,self._get_all_columns(self._class_name,[])))
@@ -503,8 +503,8 @@ void
   def visit_image(self,image):
     self._public_section.append('virtual bool is_image() const { return true; }')
     dim = int(image.dimensions) + 1
-    self._protected_section.append("virtual Image* image_from_file();")
-    self._protected_section.append("virtual void image_from_file(const Image &iff);")
+    self._protected_section.append("virtual Image* image_ptr();")
+    self._protected_section.append("virtual void image_ptr(const Image &iff);")
     self._protected_section.append('virtual void save_data(const std::string &path, das::TransactionBundle &tb);')
     self._protected_section.append('virtual void save_data(das::TransactionBundle &tb);')
     if  self._store_as == 'File':

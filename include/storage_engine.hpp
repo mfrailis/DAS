@@ -227,11 +227,11 @@ namespace das {
 
         static
         Image *
-        image_from_file(DasObject *ptr);
+        image_ptr(DasObject *ptr);
 
         static
         void
-        image_from_file(DasObject *ptr, const Image &iff);
+        image_ptr(DasObject *ptr, const Image &iff);
 
         static
         const std::string&
@@ -299,14 +299,14 @@ namespace das {
 
         static
         Image *
-        image_from_file(DasObject *ptr) {
-            return StorageAccess::image_from_file(ptr);
+        image_ptr(DasObject *ptr) {
+            return StorageAccess::image_ptr(ptr);
         }
 
         static
         void
-        image_from_file(DasObject *ptr, const Image &iff) {
-            StorageAccess::image_from_file(ptr, iff);
+        image_ptr(DasObject *ptr, const Image &iff) {
+            StorageAccess::image_ptr(ptr, iff);
         }
 
         static

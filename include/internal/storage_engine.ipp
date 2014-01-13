@@ -441,12 +441,12 @@ namespace das {
     template <typename T, int Rank>
     void
     StorageAccess::append_tiles(Array<T, Rank> &t) {
-        Image *i = obj_->image_from_file(); //throw if type does not provide image data
+        Image *i = obj_->image_ptr(); //throw if type does not provide image data
 
         if (!i) {
             Image * iff = create_image(DdlInfo::get_instance()->get_image_info(obj_->type_name_).type);
-            obj_->image_from_file(*iff);
-            i = obj_->image_from_file();
+            obj_->image_ptr(*iff);
+            i = obj_->image_ptr();
         }
 
         /*
@@ -464,12 +464,12 @@ namespace das {
     void
     StorageAccess::set_image(Array<T, Rank> &t) {
         Image* iff = create_image(DdlInfo::get_instance()->get_image_info(obj_->type_name_).type);
-        Image* i = obj_->image_from_file();
+        Image* i = obj_->image_ptr();
         if(i)
             iff->reset(i); /*iff.fname(i->fname());*/
             
-        obj_->image_from_file(*iff);
-        i = obj_->image_from_file();
+        obj_->image_ptr(*iff);
+        i = obj_->image_ptr();
 
 
         /*
@@ -511,14 +511,14 @@ namespace das {
             size_t tiles_count = 0;
 
             // check if we need to read some (or all) tiles from file
-            if (i_->file_tiles() > off_[0]) {
+            if (i_->store_tiles() > off_[0]) {
                 /*
                  * calculate the amount of tiles to read from file:
                  *  min(1+(file_tiles - offset[0] -1)/stride[0], count[0]) 
                  */
 
                 size_t tiles_to_read = 1;
-                tiles_to_read += ((i_->file_tiles() - 1) - off_[0]) / str_[0];
+                tiles_to_read += ((i_->store_tiles() - 1) - off_[0]) / str_[0];
                 tiles_to_read = tiles_to_read > cnt_[0] ? cnt_[0] : tiles_to_read;
 
 
@@ -560,7 +560,7 @@ namespace das {
             TinyVector<int, 11> count(cnt_);
 
             if (tiles_count != 0) {
-                offset[0] = (i_->file_tiles() - ((tiles_count - 1) * str_[0])) - off_[0];
+                offset[0] = (i_->store_tiles() - ((tiles_count - 1) * str_[0])) - off_[0];
                 offset[0] = str_[0] - offset[0];
                 count[0] -= tiles_count;
             }
@@ -600,14 +600,14 @@ namespace das {
             size_t tiles_count = 0;
 
             // check if we need to read some (or all) tiles from file
-            if (i_->file_tiles() > off_[0]) {
+            if (i_->store_tiles() > off_[0]) {
                 /*
                  * calculate the amount of tiles to read from file:
                  *  min(1+(file_tiles - offset[0] -1)/stride[0], count[0]) 
                  */
 
                 size_t tiles_to_read = 1;
-                tiles_to_read += ((i_->file_tiles() - 1) - off_[0]) / str_[0];
+                tiles_to_read += ((i_->store_tiles() - 1) - off_[0]) / str_[0];
                 tiles_to_read = tiles_to_read > cnt_[0] ? cnt_[0] : tiles_to_read;
 
                 TinyVector<int, 11> count(
@@ -641,7 +641,7 @@ namespace das {
 
 
             if (tiles_count != 0) {
-                offset[0] = (i_->file_tiles() - ((tiles_count - 1) * str_[0])) - off_[0];
+                offset[0] = (i_->store_tiles() - ((tiles_count - 1) * str_[0])) - off_[0];
                 offset[0] = str_[0] - offset[0];
                 count[0] -= tiles_count;
             }
@@ -695,7 +695,7 @@ namespace das {
             ) {
         using boost::interprocess::unique_ptr;
 
-        Image *i_ = obj_->image_from_file();
+        Image *i_ = obj_->image_ptr();
         if (i_ == NULL)
             throw das::empty_image();
 
@@ -742,7 +742,7 @@ namespace das {
     void
     StorageAccess::get_columns_from_file(DasObject *ptr,
             std::map<std::string, Column*> &map) {
-        return ptr->get_columns_from_file(map);
+        return ptr->populate_column_map(map);
     }
 
     inline
@@ -762,14 +762,14 @@ namespace das {
 
     inline
     Image *
-    StorageAccess::image_from_file(DasObject *ptr) {
-        return ptr->image_from_file();
+    StorageAccess::image_ptr(DasObject *ptr) {
+        return ptr->image_ptr();
     }
 
     inline
     void
-    StorageAccess::image_from_file(DasObject *ptr, const Image &i) {
-        ptr->image_from_file(i);
+    StorageAccess::image_ptr(DasObject *ptr, const Image &i) {
+        ptr->image_ptr(i);
     }
 
     inline

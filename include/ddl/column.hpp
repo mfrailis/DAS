@@ -66,17 +66,17 @@ private:
 
 #pragma db object abstract
 
-class ColumnFromFile : public Column {
+class ColumnFile : public Column {
 public:
 
-    ColumnFromFile(const long long &size,
+    ColumnFile(const long long &size,
             const std::string &type,
             const std::string &array_size,
             const std::string &fname)
     : Column(type, array_size), size_(size), type_(type), array_size_(array_size), fname_(fname), id_(0) {
     }
 
-    ColumnFromFile(const std::string &type, const std::string& array_size)
+    ColumnFile(const std::string &type, const std::string& array_size)
     : Column(type, array_size), size_(0), type_(type), array_size_(array_size), id_(0) {
     }
 
@@ -178,7 +178,7 @@ protected:
 
     // implemented for odb library pourposes
 
-    ColumnFromFile() : id_(0) {
+    ColumnFile() : id_(0) {
     }
 private:
 

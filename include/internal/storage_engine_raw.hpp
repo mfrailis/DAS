@@ -84,7 +84,7 @@ namespace das {
         virtual Column* create_column(
                 const std::string &type,
                 const std::string &array_size){
-            return new ColumnFromFile(type,array_size);
+            return new ColumnFile(type,array_size);
         }  
         
         virtual Image* create_image(
