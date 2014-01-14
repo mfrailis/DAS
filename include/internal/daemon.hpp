@@ -9,7 +9,7 @@
 namespace das {
     namespace data_gc {
 
-        template<typename DataType>
+        template<typename DasType, typename DataType>
         class Collector {
         public:
 
@@ -18,8 +18,10 @@ namespace das {
                     const std::string &tb) {
                 typedef odb::result<DataType> result;
 
+                shared_ptr<DasType> dummy = DasType::create("dummy",ptr->bundle_.alias());
+                
                 shared_ptr<StorageAccess> sa(StorageAccess::create(
-                        ptr->bundle_.alias(), NULL));
+                        ptr->bundle_.alias(), dummy.get()));
 
                 Transaction t = ptr->begin(serializable);
                 shared_ptr<odb::database> db = ptr->bundle_.db();
@@ -34,8 +36,8 @@ namespace das {
             }
         };
 
-        template<>
-        class Collector<void> {
+        template<typename DasType>
+        class Collector<DasType,void> {
         public:
 
             void operator() (const shared_ptr<tpl::Database> &ptr,
@@ -43,16 +45,16 @@ namespace das {
                     const std::string &tb) {
             }
         };
-        
+
         template<typename DasType>
         void collect(const shared_ptr<tpl::Database> &ptr) {
             typedef das_traits<DasType> Tr;
             typedef typename Tr::data_type DataType;
 
-            Collector<DataType> c;
+            Collector<DasType,DataType> c;
             c(ptr, Tr::foreign_key, Tr::data_config_table);
         }
-        
+
     } // namespace garbage_data_collector
 } // namespace das
 #endif	/* DAEMON_HPP */
