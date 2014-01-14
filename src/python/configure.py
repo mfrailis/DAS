@@ -157,7 +157,10 @@ foreach(type_name ${TYPE_NAMES_ALL})
 endforeach()
         
 add_custom_command(
-OUTPUT '''+db_dir+'''/das_object-odb.cxx
+OUTPUT 
+    '''+db_dir+'''/das_object-odb.cxx
+    ${DDL_HEADERS_DIR}/'''+db_type+'''/das_object-odb.hxx
+    ${DDL_HEADERS_DIR}/'''+db_type+'''/das_object-odb.ixx
 COMMAND ${ODB_COMPILER}
     --output-dir '''+db_dir+'''
     --database '''+db_type+'''
@@ -188,7 +191,10 @@ VERBATIM
 )
 
 add_custom_command(
-OUTPUT '''+db_dir+'''/aux_query-odb.cxx
+OUTPUT 
+    '''+db_dir+'''/aux_query-odb.cxx
+    ${DDL_HEADERS_DIR}/'''+db_type+'''/aux_query-odb.hxx
+    ${DDL_HEADERS_DIR}/'''+db_type+'''/aux_query-odb.ixx
 COMMAND ${ODB_COMPILER}
     --output-dir '''+db_dir+'''
     --database '''+db_type+'''
@@ -213,7 +219,10 @@ VERBATIM
 )
 
 add_custom_command(
-OUTPUT '''+db_dir+'''/column-odb.cxx
+OUTPUT 
+    '''+db_dir+'''/column-odb.cxx
+    ${DDL_HEADERS_DIR}/'''+db_type+'''/column-odb.hxx
+    ${DDL_HEADERS_DIR}/'''+db_type+'''/column-odb.ixx
 COMMAND ${ODB_COMPILER}
     --output-dir '''+db_dir+'''
     --database '''+db_type+'''
@@ -235,7 +244,10 @@ VERBATIM
 )
 
 add_custom_command(
-OUTPUT '''+db_dir+'''/image-odb.cxx
+OUTPUT 
+    '''+db_dir+'''/image-odb.cxx
+    ${DDL_HEADERS_DIR}/'''+db_type+'''/image-odb.hxx
+    ${DDL_HEADERS_DIR}/'''+db_type+'''/image-odb.ixx
 COMMAND ${ODB_COMPILER}
     --output-dir '''+db_dir+'''
     --database '''+db_type+'''
@@ -339,6 +351,9 @@ target_link_libraries(array_column_test DAS_SO)
 
 add_executable(rollback_test EXCLUDE_FROM_ALL ${TEST_SOURCE_DIR}/rollback_test.cpp)
 target_link_libraries(rollback_test boost_thread DAS_SO)
+
+add_executable(scratch EXCLUDE_FROM_ALL ${TEST_SOURCE_DIR}/scratch.cpp)
+target_link_libraries(scratch DAS_SO)
 
 add_executable(persistence_example EXCLUDE_FROM_ALL ${EXAMPLES_SOURCE_DIR}/persistence_example.cpp)
 target_link_libraries(persistence_example DAS_SO)

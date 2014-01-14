@@ -42,7 +42,7 @@ namespace das {
         serializable ///< strogest isolation level. Possible low performance.
     };
     namespace data_gc {
-        template<typename T>
+        template<typename T,typename Y>
         class Collector;
     }
     namespace tpl {

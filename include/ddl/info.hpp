@@ -317,6 +317,10 @@ public:
         return type_;
     }
     
+    const std::string&
+    get_store_as() const{
+        return store_as_;
+    }
 private:
     friend class DdlInfo;
     shared_ptr<TypeCtor> ctor_;
@@ -325,6 +329,7 @@ private:
     boost::unordered_map< std::string, KeywordInfo > keywords_;
     boost::unordered_map< std::string, ColumnInfo > columns_;
     const std::type_info* type_;
+    std::string store_as_;
 };
 
 class DdlInfo {
