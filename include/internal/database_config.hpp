@@ -27,6 +27,7 @@ namespace das {
         std::string db_name;
         std::string user;
         std::string password;
+        std::string mysql_socket;
         boost::property_tree::ptree storage_engine;
         
         const bool&

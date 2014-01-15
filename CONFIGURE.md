@@ -27,6 +27,7 @@ followed by a reconfiguration of the DAS system in order to make them active.
 			"host"          : "localhost",
 			"port"          : 3306,
 			"db_type"  	    : "mysql",
+			"mysql_socket"  : "/var/lib/mysql/mysql.sock",
 			"alias"         : "test_level1",
 			"db_name"  	    : "test_level1",
 			"ddl"	     	: "ddl_level1_types.xml",
@@ -43,6 +44,7 @@ followed by a reconfiguration of the DAS system in order to make them active.
 			"host"          : "localhost",
 			"port"          : 3306,
 			"db_type"  	    : "mysql",
+			"mysql_socket"  : "/var/lib/mysql/mysql.sock",
 			"alias"         : "test_level2",
 			"db_name"  	    : "test_level2",
 			"ddl"	     	: "ddl_test_types.xml",
@@ -63,6 +65,7 @@ Each of the properties shown in this example are mandatory:
   * host : the hostname or ip address where the database is located
   * port : the listening port of the database
   * db_type : the database vendor, currently only mysql is supported
+  * mysql_socket : the location of the mysql pipe file to use when connecting to local MySQL server
   * alias : human readable name to use in the code to refer to this database
   * db_name : the name of the database to access for storing meta-data
   * ddl : the relative path of the file that contains the DDL for this database

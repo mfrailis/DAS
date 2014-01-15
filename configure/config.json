@@ -3,6 +3,7 @@
 	"host"          : "localhost",
 	"port"          : 3306,
 	"db_type"  	: "mysql",
+	"mysql_socket"  : "/var/run/mysqld/mysqld.sock",
 	"alias"         : "test_level2",
 	"db_name"  	: "test_level2",
 	"ddl"	     	: "ddl_test_types.xml",

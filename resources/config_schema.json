@@ -26,6 +26,10 @@
 	     "enum" : [ "mysql", "pgsql", "oracle", "sqlite", "mssql" ],
 	     "required" : true
 	 },
+	 "mysql_socket": {
+	     "type" : "string",
+	     "required" : false
+	 },
 	 "db_name"  : {
 	     "type" : "string",
 	     "required" : true

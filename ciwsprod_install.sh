@@ -90,7 +90,7 @@ then
 fi
 
 cd mysql-connector-c-6.1.2-src
-cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="$INSTALL_PATH/mysqlclient" -DMYSQL_UNIX_ADDR="/var/run/mysqld/mysqld.sock" . && \
+cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="$INSTALL_PATH/mysqlclient" . && \
 make && \
 $SUDO make install
 if [ $? != 0 ]
