@@ -69,7 +69,7 @@ echo "
 export CMAKE_INCLUDE_PATH=\"$INSTALL_PATH/mysqlclient/include:$INSTALL_PATH/boost_1_54/include:$INSTALL_PATH/odb/include:$INSTALL_PATH/das/include:$INSTALL_PATH/blitz/include:\$CMAKE_INCLUDE_PATH\"
 export CMAKE_LIBRARY_PATH=\"$INSTALL_PATH/mysqlclient/lib:$INSTALL_PATH/boost_1_54/lib:$INSTALL_PATH/odb/lib:$INSTALL_PATH/das/lib:$INSTALL_PATH/blitz/lib:\$CMAKE_LIBRARY_PATH\"
 export PATH=\"$INSTALL_PATH/swig/bin:\$PATH\"
-export CPLUS_INCLUDE_PATH=\"$INSTALL_PATH/boost_1_54/include:$INSTALL_PATH/odb/include:$INSTALL_PATH/das/include:$INSTALL_PATH/blitz/include:\$CPLUS_INCLUDE_PATH\"
+export CPLUS_INCLUDE_PATH=\"$CMAKE_INCLUDE_PATH:\$CPLUS_INCLUDE_PATH\"
 export LIBRARY_PATH=\"$INSTALL_PATH/boost_1_54/lib:$INSTALL_PATH/odb/lib:$INSTALL_PATH/das/lib:$INSTALL_PATH/blitz/lib:\$LIBRARY_PATH\"
 export LD_LIBRARY_PATH=\"$INSTALL_PATH/boost_1_54/lib:$INSTALL_PATH/odb/lib:$INSTALL_PATH/das/lib:$INSTALL_PATH/blitz/lib:\$LD_LIBRARY_PATH\"
 " > ~/.das/profile
