@@ -352,6 +352,9 @@ target_link_libraries(array_column_test DAS_SO)
 add_executable(rollback_test EXCLUDE_FROM_ALL ${TEST_SOURCE_DIR}/rollback_test.cpp)
 target_link_libraries(rollback_test boost_thread DAS_SO)
 
+add_executable(scratch EXCLUDE_FROM_ALL ${TEST_SOURCE_DIR}/scratch.cpp)
+target_link_libraries(scratch DAS_SO)
+
 add_executable(persistence_example EXCLUDE_FROM_ALL ${EXAMPLES_SOURCE_DIR}/persistence_example.cpp)
 target_link_libraries(persistence_example DAS_SO)
 
@@ -562,6 +565,8 @@ namespace das{
       info.db_name = "''',str(db['db_name']),'''";
       info.db_type = "''',str(db['db_type']),'''";
 '''])
+        if(db.has_key('mysql_socket')):
+             f.writelines(['      info.mysql_socket = "'+str(db['mysql_socket'])+'";\n'])  
         f.writelines(l for l in  storage_engine_tree_visit(db['storage_engine'],''))
         f.writelines(['    }\n'])
     f.writelines(['''  }

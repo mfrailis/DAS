@@ -6,12 +6,12 @@
 class ColumnConfig {
 public:    
     virtual
-    ColumnFromFile *
+    ColumnFile *
     column_from_file() const = 0;
 
     virtual
     void
-    column_from_file(const ColumnFromFile &cff) = 0;
+    column_from_file(const ColumnFile &cff) = 0;
     
     virtual
     const std::string&

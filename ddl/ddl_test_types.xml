@@ -194,4 +194,129 @@
         </data>
     </type>
 
+
+
+    <type name="test_columns_blob">
+        <metadata>
+            <keyword name ="sig_string"  type="int64" default="0"/>
+            <keyword name ="dim_string"  type="int64" default="0"/>
+            
+            <keyword name ="sig_byte"    type="int64" default="0"/>
+            <keyword name ="dim_byte"    type="int64" default="0"/>
+            
+            <keyword name ="sig_int16"   type="int64" default="0"/>
+            <keyword name ="dim_int16"   type="int64" default="0"/>
+            
+            <keyword name ="sig_int32"   type="int64" default="0"/>
+            <keyword name ="dim_int32"   type="int64" default="0"/>
+            
+            <keyword name ="sig_int64"   type="int64" default="0"/>
+            <keyword name ="dim_int64"   type="int64" default="0"/>
+            
+            <keyword name ="sig_float32" type="float64" default="0"/>
+            <keyword name ="dim_float32" type="int64" default="0"/>
+            
+            <keyword name ="sig_float64" type="float64" default="0"/>
+            <keyword name ="dim_float64" type="int64" default="0"/>
+            
+            <keyword name ="sig_boolean" type="int64" default="0"/>
+            <keyword name ="dim_boolean" type="int64" default="0"/>
+            
+            <keyword name ="sig_char"    type="int64" default="0"/>
+            <keyword name ="dim_char"    type="int64" default="0"/>
+            
+            <keyword name ="sig_uint8"   type="int64" default="0"/>
+            <keyword name ="dim_uint8"   type="int64" default="0"/>
+            
+            <keyword name ="sig_uint16"  type="int64" default="0"/>
+            <keyword name ="dim_uint16"  type="int64" default="0"/>
+            
+            <keyword name ="sig_uint32"  type="int64" default="0"/>
+            <keyword name ="dim_uint32"  type="int64" default="0"/>
+        </metadata>
+        <data storeAs="blob">
+            <binaryTable>
+                <column name="column_string"  type="string"/>
+                <column name="column_byte"    type="byte"/>
+                <column name="column_int16"   type="int16"/>
+                <column name="column_int32"   type="int32"/>
+                <column name="column_int64"   type="int64"/>
+                <column name="column_float32" type="float32"/>
+                <column name="column_float64" type="float64"/>
+                <column name="column_boolean" type="boolean"/>
+                <column name="column_char"    type="char"/>
+                <column name="column_uint8"   type="uint8"/>
+                <column name="column_uin16"   type="uint16"/>
+                <column name="column_uint32"  type="uint32"/>
+            </binaryTable>
+        </data>
+    </type>
+
+    <type name="test_columns_array_blob">
+        <metadata>
+            <keyword name ="sig_string"  type="int64" default="0"/>
+            <keyword name ="dim_string"  type="int64" default="0"/>
+            
+            <keyword name ="sig_byte"    type="int64" default="0"/>
+            <keyword name ="dim_byte"    type="int64" default="0"/>
+            
+            <keyword name ="sig_int16"   type="int64" default="0"/>
+            <keyword name ="dim_int16"   type="int64" default="0"/>
+            
+            <keyword name ="sig_int32"   type="int64" default="0"/>
+            <keyword name ="dim_int32"   type="int64" default="0"/>
+            
+            <keyword name ="sig_int64"   type="int64" default="0"/>
+            <keyword name ="dim_int64"   type="int64" default="0"/>
+            
+            <keyword name ="sig_float32" type="float64" default="0"/>
+            <keyword name ="dim_float32" type="int64" default="0"/>
+            
+            <keyword name ="sig_float64" type="float64" default="0"/>
+            <keyword name ="dim_float64" type="int64" default="0"/>
+            
+            <keyword name ="sig_boolean" type="int64" default="0"/>
+            <keyword name ="dim_boolean" type="int64" default="0"/>
+            
+            <keyword name ="sig_char"    type="int64" default="0"/>
+            <keyword name ="dim_char"    type="int64" default="0"/>
+            
+            <keyword name ="sig_uint8"   type="int64" default="0"/>
+            <keyword name ="dim_uint8"   type="int64" default="0"/>
+            
+            <keyword name ="sig_uint16"  type="int64" default="0"/>
+            <keyword name ="dim_uint16"  type="int64" default="0"/>
+            
+            <keyword name ="sig_uint32"  type="int64" default="0"/>
+            <keyword name ="dim_uint32"  type="int64" default="0"/>
+        </metadata>
+        <data storeAs="blob">
+            <binaryTable>
+                <column name="column_string"  type="string"  arraysize="3"/>
+                <column name="column_byte"    type="byte"    arraysize="3x2"/>
+                <column name="column_int16"   type="int16"   arraysize="2x*"/>
+                <column name="column_int32"   type="int32"   arraysize="2x3*"/>
+                <column name="column_int64"   type="int64"   arraysize="*"/>
+                <column name="column_float32" type="float32" arraysize="2"/>
+                <column name="column_float64" type="float64"/>
+                <column name="column_boolean" type="boolean"/>
+                <column name="column_uin16"   type="uint16"/>
+                <column name="column_uint32"  type="uint32"/>
+            </binaryTable>
+        </data>
+    </type>
+
+
+    <type name="test_image2d_blob">
+        <data storeAs="blob">
+            <image pixType="float64"/>
+        </data>
+    </type>
+
+    <type name="test_image3d_blob">
+        <data storeAs="blob">
+            <image pixType="float32" dimensions="3"/>
+        </data>
+    </type>
+
 </ddl>

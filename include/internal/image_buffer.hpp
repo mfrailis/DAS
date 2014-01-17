@@ -8,7 +8,7 @@
 #include <boost/any.hpp>
 #include "../ddl/info.hpp"
 
-class ImageFromFile;
+class Image;
 
 class ImageBufferEntry {
 public:
@@ -67,12 +67,12 @@ private:
 class ImageBuffer {
 public:
 
-    ImageBuffer(const std::string &type, ImageFromFile *iff)
+    ImageBuffer(const std::string &type, Image *iff)
     : is_init_(false), iff_(iff), size0_(0){
         init(type);
     }
 
-    ImageBuffer(ImageFromFile *iff)
+    ImageBuffer(Image *iff)
     : is_init_(false), iff_(iff), size0_(0){
     }
 
@@ -115,7 +115,7 @@ private:
     image_type type_;
     std::vector<ImageBufferEntry> buffer_;
     bool is_init_;
-    ImageFromFile *iff_;
+    Image *iff_;
 
     unsigned int size0_;
 };

@@ -1,7 +1,6 @@
 #include "tpl/database.hpp"
 #include "transaction.hpp"
 #include "ddl/types.hpp"
-#include <boost/thread/thread.hpp>
 
 using namespace std;
 namespace D = das::tpl;
@@ -9,79 +8,16 @@ namespace D = das::tpl;
 using namespace std;
 //boost::mutex mtx;
 #define BOOST_REQUIRE_NO_THROW(s) s
+#define BOOST_CHECK_NO_THROW(s) s
 #define BOOST_REQUIRE_NE(x,y)
-
-void thread_func(long long id) {
-    //    mtx.lock();
-    try {
-        shared_ptr<D::Database> db = D::Database::create("test_level1");
-        D::Transaction t = db->begin(das::serializable);
-        shared_ptr<lfiHkDaeSlowVoltage> ptr = db->load<lfiHkDaeSlowVoltage>(id);
-        cout << "TH read" << endl;
-        ptr->apid(1);
-        cout << "TH before commit" << endl;
-        t.commit();
-        cout << "TH committed" << endl;
-    } catch (const std::exception &e) {
-        cout << "TH exception" << endl;
-    }
-    //    mtx.unlock();
-}
-
-/*int main(int argc, char** argv) {
-    //    mtx.lock();
-    shared_ptr<D::Database> db = D::Database::create("test_level1");
-
-    shared_ptr<lfiHkDaeSlowVoltage> ptr = lfiHkDaeSlowVoltage::create("test1", "test_level1");
-
-    das::Array<long long> a;
-    a.resize(10);
-    a(0) = 25;
-    ptr->append_column<long long>("sampleOBT", a);
-    a(9) = 15;
-
-    D::Transaction t = db->begin(das::serializable);
-    db->persist(ptr);
-    t.commit();
-    boost::thread th(&thread_func, ptr->das_id());
-
-    ptr->append_column<long long>("sampleOBT", a);
-
-    try {
-        D::Transaction t = db->begin();
-        cout << "M begin" << endl;
-        db->attach(ptr);
-        boost::thread::yield();
-        shared_ptr<lfiHkDaeSlowVoltage> ptr1 = db->load<lfiHkDaeSlowVoltage>(ptr->das_id());
-
-        //    mtx.unlock();
-
-        //    mtx.lock();
+#define BOOST_CHECK_EQUAL(x,y)
+#define BOOST_CHECK_THROW(x,e) try{ x; }catch(const e & exc){}
 
 
-        ptr->apid(2);
-        cout << "M before commit main" << endl;
-        t.commit();
-        cout << "M committed" << endl;
-    } catch (const std::exception &e) {
-        cout << "M exception" << endl;
-    }
-    //    mtx.unlock();
-    das::Array<long long> b = ptr->get_column<long long>("sampleOBT", 0, 20);
 
-    cout << b << endl;
-
-    th.join();
-
-    t = db->begin(das::serializable);
-    db->attach(ptr);
-    t.commit();
-
-    return 0;
-}*/
 
 template<typename IT0, typename IT1>
-void CHECK_EQUAL_COLLECTIONS(IT0 L_begin, IT0 L_end, IT1 R_begin, IT1 R_end) {
+void BOOST_CHECK_EQUAL_COLLECTIONS(IT0 L_begin, IT0 L_end, IT1 R_begin, IT1 R_end) {
     IT0 L_it = L_begin;
     IT1 R_it = R_begin;
     size_t i = 0;
@@ -134,168 +70,483 @@ void CHECK_NESTED_COLLECTIONS(
 }
 
 void
-save(shared_ptr<test_columns_array>& ptr, shared_ptr<D::Database>& db) {
-    D::Transaction t = db->begin();
-    db->attach(ptr);
-    t.commit();
-}
-
-template<typename T, int Rank>
-void
-test_case(
-        const std::string col_name,
-        shared_ptr<test_columns_array>& ptr,
-        shared_ptr<D::Database>& db,
-        das::ColumnArray<T, Rank>& base,
-        das::ColumnArray<T, Rank>& ext1
-        ) {
-    typedef typename das::ColumnArray<T, Rank>::iterator array_it;
-
-    ptr->append_column_array(col_name, base);
-
-    das::ColumnArray<T, Rank> a = ptr->get_column_array<T, Rank>(col_name);
-
-    cout << a(0).shape() << endl;
-    cout << a(1).shape() << endl;
-    cout << a(2).shape() << endl;
-
-    CHECK_NESTED_COLLECTIONS<T, Rank>(base.begin(), base.end(), a.begin(), a.end());
-
-    cout << "CHECK_NESTED_COLLECTIONS 0" << endl;
-
-    das::ColumnArray<T, Rank> a1 = ptr->get_column_array<T, Rank>(col_name, 1, 2);
-
-    cout << a1(0).shape() << endl;
-    cout << a1(1).shape() << endl;
-
-    typename das::ColumnArray<T, Rank>::iterator it = base.begin();
-    ++it;
-    CHECK_NESTED_COLLECTIONS<T, Rank>(it, base.end(), a1.begin(), a1.end());
-
-    cout << "CHECK_NESTED_COLLECTIONS 1" << endl;
-
-    save(ptr, db);
-
-
-    das::ColumnArray<T, Rank> b = ptr->get_column_array<T, Rank>(col_name);
-
-    cout << b(0).shape() << endl;
-    cout << b(1).shape() << endl;
-    cout << b(2).shape() << endl;
-
-    CHECK_NESTED_COLLECTIONS<T, Rank>(base.begin(), base.end(), b.begin(), b.end());
-    cout << "CHECK_NESTED_COLLECTIONS 2" << endl;
-
-    ptr->append_column_array(col_name, ext1);
-
-    das::ColumnArray<T, Rank> c = ptr->get_column_array<T, Rank>(col_name, 3, 4);
-
-    cout << c(0).shape() << endl;
-    cout << c(1).shape() << endl;
-    cout << c(2).shape() << endl;
-    cout << c(3).shape() << endl;
-
-    CHECK_NESTED_COLLECTIONS<T, Rank>(ext1.begin(), ext1.end(), c.begin(), c.end());
-    cout << "CHECK_NESTED_COLLECTIONS 3" << endl;
-    save(ptr, db);
-
-
-    das::ColumnArray<T, Rank> d = ptr->get_column_array<T, Rank>(col_name, 3, 4);
-
-    cout << d(0).shape() << endl;
-    cout << d(1).shape() << endl;
-    cout << d(2).shape() << endl;
-    cout << d(3).shape() << endl;
-    CHECK_NESTED_COLLECTIONS<T, Rank>(ext1.begin(), ext1.end(), d.begin(), d.end());
-    cout << "CHECK_NESTED_COLLECTIONS 4" << endl;
-    long long s = ptr->get_column_array_size(col_name);
-
-    if (s != 7)
-        cout << "dim error" << endl;
-
-}
-shared_ptr<D::Database> db;
-shared_ptr<test_columns_array> ptr;
-long long id;
-
-void ColumnFixture() {
-
-    BOOST_REQUIRE_NO_THROW(db = D::Database::create("test_level2"));
-    BOOST_REQUIRE_NO_THROW(ptr = test_columns_array::create("column_array_unit_test_0", "test_level2"));
+save(shared_ptr<test_columns_blob>& ptr, shared_ptr<D::Database>& db) {
     BOOST_REQUIRE_NO_THROW(
             D::Transaction t = db->begin();
-            db->persist(ptr);
+            db->attach(ptr);
             t.commit();
             );
+}
+
+
+shared_ptr<D::Database> db;
+shared_ptr<test_columns_blob> ptr;
+long long id;
+
+void ColumnFixtureBlob() {
+    id = 0;
+
+    db = D::Database::create("test_level2");
+    ptr = test_columns_blob::create("column_unit_test_0", "test_level2");
+
+            D::Transaction t = db->begin(); 
+            db->persist(ptr);
+            t.commit();
+
     id = ptr->das_id();
-    BOOST_REQUIRE_NE(id, 0);
+
 }
 
 void change() {
-    BOOST_REQUIRE_NO_THROW(ptr = test_columns_array::create("column__array_unit_test_1", "test_level2"));
-    BOOST_REQUIRE_NO_THROW(
+ptr = test_columns_blob::create("column_unit_test_1", "test_level2");
+
             D::Transaction t = db->begin();
             db->persist(ptr);
             t.commit();
-            );
+
     id = ptr->das_id();
-    BOOST_REQUIRE_NE(id, 0);
+
 }
 
-int main() {
-    /*   typedef boost::posix_time::ptime ptime;
-    
-       shared_ptr<test_keywords> p = test_keywords::create("test","test_level2");
-    
-       das::optional<signed char> a0 = p->get_key<signed char>("key_byte");
-       das::optional<short> a1 = p->get_key<short>("key_int16"); 
-       das::optional<int> a2 = p->get_key<int>("key_int32"); 
-       das::optional<long long> a3 = p->get_key<long long>("key_int64");
-       das::optional<float> a4 = p->get_key<float>("key_float32");
-       das::optional<double> a5 = p->get_key<double>("key_float64");
-       das::optional<bool> a6 = p->get_key<bool>("key_boolean");
-       das::optional<char> a7 = p->get_key<char>("key_char");
-       das::optional<std::string> a8 = p->get_key<std::string>("key_string");
-       das::optional<std::string> a9 = p->get_key<std::string>("key_text");
-    
-       long long b = p->get_key<long long>("das_id");                   // das_id
-       std::string b1 = p->get_key<std::string>("name");                 // name
-       short b2 = p->get_key<short>("version");                       // version
-       ptime ct =  p->get_key<ptime>("creationDate");  // creationDate
-     */
+template<typename T>
+void
+test_case_blob(
+        const std::string col_name,
+        shared_ptr<test_columns_blob>& ptr,
+        shared_ptr<D::Database>& db,
+        das::Array<T>& base,
+        das::Array<T>& ext1
+        ) {
+
+   // BOOST_CHECK_THROW(ptr->get_column<T>(col_name, 0, 10), das::empty_column);
+
+ptr->append_column(col_name, base);
+
+    das::Array<T> a;
+a.reference(ptr->get_column<T>(col_name));
+
+    BOOST_CHECK_EQUAL_COLLECTIONS(base.begin(), base.end(), a.begin(), a.end());
+
+    das::Array<T> a1;
+    a1.reference(ptr->get_column<T>(col_name, 1, 2));
+
+    typename das::Array<T>::iterator it = base.begin();
+    ++it;
+    BOOST_CHECK_EQUAL_COLLECTIONS(it, base.end(), a1.begin(), a1.end());
+
+//    BOOST_CHECK_THROW(ptr->get_column<T>(col_name, 0, 10), das::io_exception);
+
+    save(ptr, db);
+
+//    BOOST_CHECK_THROW(ptr->get_column<T>(col_name, 0, 10), das::io_exception);
+
+    das::Array<T> b;
+    b.reference(ptr->get_column<T>(col_name));
+
+    BOOST_CHECK_EQUAL_COLLECTIONS(base.begin(), base.end(), b.begin(), b.end());
+
+    ptr->append_column(col_name, ext1);
+
+    das::Array<T> c;
+    BOOST_REQUIRE_NO_THROW(c.reference(ptr->get_column<T>(col_name, 3, 4)));
+
+    BOOST_CHECK_EQUAL_COLLECTIONS(ext1.begin(), ext1.end(), c.begin(), c.end());
+
+ //   BOOST_CHECK_THROW(ptr->get_column<T>(col_name, 0, 10), das::io_exception);
+
+    save(ptr, db);
+
+ //   BOOST_CHECK_THROW(ptr->get_column<T>(col_name, 0, 10), das::io_exception);
+
+    das::Array<T> d;
+    d.reference(ptr->get_column<T>(col_name, 3, 4));
+
+    BOOST_CHECK_EQUAL_COLLECTIONS(ext1.begin(), ext1.end(), d.begin(), d.end());
+
+    long long s = 0;
+    s = ptr->get_column_size(col_name);
 
 
-    ColumnFixture();
 
-    int b0[] = {0, 1, 2, 3, 4, 5};
-    int b1[] = {7, 8, 9, 10, 11, 12};
-    int b2[] = {13, 14, 15, 16, 17, 18};
+}
 
-    int e0[] = {19, 20, 21, 22, 23, 24};
-    int e1[] = {25, 26, 27, 28, 29, 30};
-    int e2[] = {31, 32, 33, 34, 35, 36};
-    int e3[] = {37, 38, 39, 40, 41, 42};
+int main(){
 
-    das::ColumnArray<int, 2> base(das::shape(3));
-    base(0).reference(das::Array<int, 2>(b0, das::shape(2, 3), das::neverDeleteData));
-    base(1).reference(das::Array<int, 2>(b1, das::shape(2, 3), das::neverDeleteData));
-    base(2).reference(das::Array<int, 2>(b2, das::shape(2, 3), das::neverDeleteData));
+    cout << "START" << endl;
+    /*BOOST_AUTO_TEST_CASE(conversion_exceptions)*/
+    {
 
-    das::ColumnArray<int, 2> ext(4);
-    ext(0).reference(das::Array<int, 2>(e0, das::shape(2, 3), das::neverDeleteData));
-    ext(1).reference(das::Array<int, 2>(e1, das::shape(2, 3), das::neverDeleteData));
-    ext(2).reference(das::Array<int, 2>(e2, das::shape(2, 3), das::neverDeleteData));
-    ext(3).reference(das::Array<int, 2>(e3, das::shape(2, 3), das::neverDeleteData));
+        ColumnFixtureBlob();
+        das::Array<int> base(das::shape(3));
+        base(0) = -2220;
+        base(1) = 1523;
+        base(2) = 2117;
+        BOOST_CHECK_THROW(ptr->append_column("column_string", base), das::bad_type);
 
-    das::DatabaseConfig::database("test_level2").buffered_data(true);
-    test_case("column_byte", ptr, db, base, ext);
-    /*
+        das::Array<std::string> str(das::shape(3));
+        str(0) = "string1";
+        str(1) = "string2";
+        str(2) = "string3";
+        BOOST_CHECK_THROW(ptr->append_column("column_float32", str), das::bad_type);
+
+        das::ColumnArray<int> img;
+        img.resize(2);
+        img(0).resize(1);
+        img(1).resize(1);
+        BOOST_CHECK_THROW(ptr->append_column_array("column_float32", img), das::bad_array_shape);
+
+        BOOST_CHECK_NO_THROW(ptr->append_column("column_int32", base));
+
+        BOOST_CHECK_THROW(ptr->get_column<std::string>("column_int32", 0, 3), das::bad_type);
+    }
+
+    /*BOOST_AUTO_TEST_CASE(column_char)*/
+    {
+        ColumnFixtureBlob();
+        das::Array<char> base(das::shape(3));
+        base(0) = -22;
+        base(1) = 15;
+        base(2) = 27;
+
+        das::Array<char> ext(das::shape(4));
+        ext(0) = 56;
+        ext(1) = -30;
+        ext(2) = 18;
+        ext(3) = -12;
+
+        das::DatabaseConfig::database("test_level2").buffered_data(true);
+        test_case_blob("column_char", ptr, db, base, ext);
+
         change();
         das::DatabaseConfig::database("test_level2").buffered_data(false);
-        test_case("column_byte", ptr, db, base, ext);
-     */
+        test_case_blob("column_char", ptr, db, base, ext);
+    }
 
+    /*BOOST_AUTO_TEST_CASE(column_short)*/
+    {
+        ColumnFixtureBlob();
+        das::Array<short> base(das::shape(3));
+        base(0) = -222;
+        base(1) = 15;
+        base(2) = 27;
+
+        das::Array<short> ext(das::shape(4));
+        ext(0) = 254;
+        ext(1) = -30;
+        ext(2) = 18;
+        ext(3) = -121;
+
+        das::DatabaseConfig::database("test_level2").buffered_data(true);
+        test_case_blob("column_int16", ptr, db, base, ext);
+
+        change();
+        das::DatabaseConfig::database("test_level2").buffered_data(false);
+        test_case_blob("column_int16", ptr, db, base, ext);
+    }
+
+    /*BOOST_AUTO_TEST_CASE(column_int)*/
+    {
+        ColumnFixtureBlob();
+        das::Array<int> base(das::shape(3));
+        base(0) = -2220;
+        base(1) = 1523;
+        base(2) = 2117;
+
+        das::Array<int> ext(das::shape(4));
+        ext(0) = 254;
+        ext(1) = -3330;
+        ext(2) = 18;
+        ext(3) = -121;
+
+        das::DatabaseConfig::database("test_level2").buffered_data(true);
+        test_case_blob("column_int32", ptr, db, base, ext);
+
+        change();
+        das::DatabaseConfig::database("test_level2").buffered_data(false);
+        test_case_blob("column_int32", ptr, db, base, ext);
+    }
+
+    /*BOOST_AUTO_TEST_CASE(column_long_long)*/
+    {
+        ColumnFixtureBlob();
+        das::Array<long long> base(das::shape(3));
+        base(0) = -22202;
+        base(1) = 15213;
+        base(2) = 213317;
+
+        das::Array<long long> ext(das::shape(4));
+        ext(0) = 2544;
+        ext(1) = -33350;
+        ext(2) = 1866;
+        ext(3) = -12111;
+
+        das::DatabaseConfig::database("test_level2").buffered_data(true);
+        test_case_blob("column_int64", ptr, db, base, ext);
+
+        change();
+        das::DatabaseConfig::database("test_level2").buffered_data(false);
+        test_case_blob("column_int64", ptr, db, base, ext);
+    }
+
+    /*BOOST_AUTO_TEST_CASE(column_float)*/
+    {
+        ColumnFixtureBlob();
+        das::Array<float> base(das::shape(3));
+        base(0) = -22.202;
+        base(1) = 152.13;
+        base(2) = 2.13317;
+
+        das::Array<float> ext(das::shape(4));
+        ext(0) = 254.4;
+        ext(1) = -33.350;
+        ext(2) = 186.6;
+        ext(3) = -121.11;
+
+        das::DatabaseConfig::database("test_level2").buffered_data(true);
+        test_case_blob("column_float32", ptr, db, base, ext);
+
+        change();
+        das::DatabaseConfig::database("test_level2").buffered_data(false);
+        test_case_blob("column_float32", ptr, db, base, ext);
+    }
+
+    /*BOOST_AUTO_TEST_CASE(column_double)*/
+    {
+        ColumnFixtureBlob();
+        das::Array<double> base(das::shape(3));
+        base(0) = -22.202332;
+        base(1) = 152.12243;
+        base(2) = 2.133561337;
+
+        das::Array<double> ext(das::shape(4));
+        ext(0) = 254.4234;
+        ext(1) = -33.3554560;
+        ext(2) = 186.6232234;
+        ext(3) = -121.1551;
+
+        das::DatabaseConfig::database("test_level2").buffered_data(true);
+        test_case_blob("column_float64", ptr, db, base, ext);
+
+        change();
+        das::DatabaseConfig::database("test_level2").buffered_data(false);
+        test_case_blob("column_float64", ptr, db, base, ext);
+    }
+
+    /*BOOST_AUTO_TEST_CASE(column_boolean)*/
+    {
+        ColumnFixtureBlob();
+        das::Array<bool> base(das::shape(3));
+        base(0) = true;
+        base(1) = false;
+        base(2) = false;
+
+        das::Array<bool> ext(das::shape(4));
+        ext(0) = true;
+        ext(1) = true;
+        ext(2) = false;
+        ext(3) = false;
+
+        das::DatabaseConfig::database("test_level2").buffered_data(true);
+        test_case_blob("column_boolean", ptr, db, base, ext);
+
+        change();
+        das::DatabaseConfig::database("test_level2").buffered_data(false);
+        test_case_blob("column_boolean", ptr, db, base, ext);
+    }
+
+    /*BOOST_AUTO_TEST_CASE(column_uchar)*/
+    {
+        ColumnFixtureBlob();
+        das::Array<unsigned char> base(das::shape(3));
+        base(0) = 22;
+        base(1) = 15;
+        base(2) = 27;
+
+        das::Array<unsigned char> ext(das::shape(4));
+        ext(0) = 56;
+        ext(1) = 30;
+        ext(2) = 18;
+        ext(3) = 12;
+
+        das::DatabaseConfig::database("test_level2").buffered_data(true);
+        test_case_blob("column_uint8", ptr, db, base, ext);
+
+        change();
+        das::DatabaseConfig::database("test_level2").buffered_data(false);
+        test_case_blob("column_uint8", ptr, db, base, ext);
+    }
+
+    /*BOOST_AUTO_TEST_CASE(column_ushort)*/
+    {
+        ColumnFixtureBlob();
+        das::Array<unsigned short> base(das::shape(3));
+        base(0) = 222;
+        base(1) = 15;
+        base(2) = 27;
+
+        das::Array<unsigned short> ext(das::shape(4));
+        ext(0) = 254;
+        ext(1) = 30;
+        ext(2) = 18;
+        ext(3) = 121;
+
+        das::DatabaseConfig::database("test_level2").buffered_data(true);
+        test_case_blob("column_uin16", ptr, db, base, ext);
+
+        change();
+        das::DatabaseConfig::database("test_level2").buffered_data(false);
+        test_case_blob("column_uin16", ptr, db, base, ext);
+    }
+
+    /*BOOST_AUTO_TEST_CASE(column_uint)*/
+    {
+        ColumnFixtureBlob();
+        das::Array<unsigned int> base(das::shape(3));
+        base(0) = 2220;
+        base(1) = 1523;
+        base(2) = 2117;
+
+        das::Array<unsigned int> ext(das::shape(4));
+        ext(0) = 254;
+        ext(1) = 3330;
+        ext(2) = 18;
+        ext(3) = 121;
+
+        das::DatabaseConfig::database("test_level2").buffered_data(true);
+        test_case_blob("column_uint32", ptr, db, base, ext);
+
+        change();
+        das::DatabaseConfig::database("test_level2").buffered_data(false);
+        test_case_blob("column_uint32", ptr, db, base, ext);
+    }
+
+    /*BOOST_AUTO_TEST_CASE(column_string)*/
+    {
+        ColumnFixtureBlob();
+        das::Array<std::string> base(das::shape(3));
+        base(0) = "string01string01string01string01string01string01string01string01\
+string01string01string01string01string01string01string01string01string01string01\
+string01string01string01string01string01string01string01string01string01string01\
+string01string01string01string01string01string01string01string01string01string01\
+string01string01string01string01string01string01string01string01string01string01\
+string01string01string01string01string01string01string01string01string01string01\
+string01string01string01string01string01string01string01string01string01string01\
+string01string01string01string01string01string01string01string01string01string01\
+string01string01string01string01string01string01string01string01string01string01\
+string01string01string01string01string01string01string01string01string01string01\
+string01string01string01string01string01string01string01string01string01string01\
+string01string01string01string01string01string01string01string01string01string01\
+string01string01string01string01string01string01string01string01string01string01\
+string01string01string01string01string01string01string01string01string01string01\
+string01string01string01string01string01string01string01string01string01string01\
+string01string01string01string01string01string01string01string01string01string01\
+string01string01string01string01string01string01string01string01string01string01";
+        base(1) = "string2";
+        base(2) = "string3";
+
+        das::Array<std::string> ext(das::shape(4));
+        ext(0) = "string chunk 2.1";
+        ext(1) = "string chunk 2.1";
+        ext(2) = "string chunk 2.1";
+        ext(3) = "string chunk 2.1";
+
+        das::DatabaseConfig::database("test_level2").buffered_data(true);
+        test_case_blob("column_string", ptr, db, base, ext);
+
+        change();
+        das::DatabaseConfig::database("test_level2").buffered_data(false);
+        test_case_blob("column_string", ptr, db, base, ext);
+    }
+
+    /*BOOST_AUTO_TEST_CASE(column_float_conversion)*/
+    {
+        ColumnFixtureBlob();
+        das::Array<int> base(das::shape(3));
+        base(0) = -2220;
+        base(1) = 1523;
+        base(2) = 2117;
+
+        das::Array<int> ext(das::shape(4));
+        ext(0) = 254;
+        ext(1) = -3330;
+        ext(2) = 18;
+        ext(3) = -121;
+
+        das::DatabaseConfig::database("test_level2").buffered_data(true);
+        test_case_blob("column_float32", ptr, db, base, ext);
+
+        change();
+        das::DatabaseConfig::database("test_level2").buffered_data(false);
+        test_case_blob("column_float32", ptr, db, base, ext);
+    }
     return 0;
 }
 
+/*void thread_func(long long id) {
+    //    mtx.lock();
+    try {
+        shared_ptr<D::Database> db = D::Database::create("test_level1");
+        D::Transaction t = db->begin(das::serializable);
+        shared_ptr<lfiHkDaeSlowVoltage> ptr = db->load<lfiHkDaeSlowVoltage>(id);
+        cout << "TH read" << endl;
+        ptr->apid(1);
+        cout << "TH before commit" << endl;
+        t.commit();
+        cout << "TH committed" << endl;
+    } catch (const std::exception &e) {
+        cout << "TH exception" << endl;
+    }
+    //    mtx.unlock();
+}
 
+int main(int argc, char** argv) {
+    //    mtx.lock();
+    shared_ptr<D::Database> db = D::Database::create("test_level1");
+
+    shared_ptr<lfiHkDaeSlowVoltage> ptr = lfiHkDaeSlowVoltage::create("test1", "test_level1");
+
+    das::Array<long long> a;
+    a.resize(10);
+    a(0) = 25;
+    ptr->append_column<long long>("sampleOBT", a);
+    a(9) = 15;
+
+    D::Transaction t = db->begin(das::serializable);
+    db->persist(ptr);
+    t.commit();
+    boost::thread th(&thread_func, ptr->das_id());
+
+    ptr->append_column<long long>("sampleOBT", a);
+
+    try {
+        D::Transaction t = db->begin();
+        cout << "M begin" << endl;
+        db->attach(ptr);
+        boost::thread::yield();
+        shared_ptr<lfiHkDaeSlowVoltage> ptr1 = db->load<lfiHkDaeSlowVoltage>(ptr->das_id());
+
+        //    mtx.unlock();
+
+        //    mtx.lock();
+
+
+        ptr->apid(2);
+        cout << "M before commit main" << endl;
+        t.commit();
+        cout << "M committed" << endl;
+    } catch (const std::exception &e) {
+        cout << "M exception" << endl;
+    }
+    //    mtx.unlock();
+    das::Array<long long> b = ptr->get_column<long long>("sampleOBT", 0, 20);
+
+    cout << b << endl;
+
+    th.join();
+
+    t = db->begin(das::serializable);
+    db->attach(ptr);
+    t.commit();
+
+    return 0;
+}*/

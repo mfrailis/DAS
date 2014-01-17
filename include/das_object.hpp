@@ -239,9 +239,9 @@ public:
 
     long long
     get_column_size(const std::string &col_name) {
-        ColumnFromFile *cff = column_from_file(col_name);
-        if (cff)
-            return cff->size();
+        Column *c = column_ptr(col_name);
+        if (c)
+            return c->size();
         else
             return 0;
     }
@@ -301,9 +301,9 @@ public:
 
     unsigned int
     get_image_extent(int extent) {
-        ImageFromFile *iff = image_from_file();
-        if (iff)
-            return image_from_file()->extent(extent);
+        Image *i = image_ptr();
+        if (i)
+            return image_ptr()->extent(extent);
         else
             return 0;
     }
@@ -445,23 +445,23 @@ protected:
 
     // StorageEngine utilities
 
-    virtual void get_columns_from_file(std::map<std::string, ColumnFromFile*> &map) {
+    virtual void populate_column_map(std::map<std::string, Column*> &map) {
         throw das::no_external_data();
     }
 
-    virtual ColumnFromFile* column_from_file(const std::string &col_name) {
+    virtual Column* column_ptr(const std::string &col_name) {
         throw das::no_external_data();
     }
 
-    virtual void column_from_file(const std::string &col_name, const ColumnFromFile &cf) {
+    virtual void column_ptr(const std::string &col_name, const Column &cf) {
         throw das::no_external_data();
     }
 
-    virtual ImageFromFile* image_from_file() {
+    virtual Image* image_ptr() {
         throw das::no_external_data();
     }
 
-    virtual void image_from_file(const ImageFromFile &cf) {
+    virtual void image_ptr(const Image &cf) {
         throw das::no_external_data();
     }
 

@@ -4,6 +4,7 @@
 	"port"          : 3306,
 	"db_type"  	: "mysql",
 	"alias"         : "ciws",
+	"mysql_socket"  : "/var/run/mysqld/mysqld.sock",
 	"db_name"  	: "ciws_prototype",
 	"ddl"	     	: "das_ddl_prototype.xml",
 	"storage_engine": {

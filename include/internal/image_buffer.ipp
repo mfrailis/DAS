@@ -241,7 +241,7 @@ ImageBuffer::copy(OutputIterator& begin,
         const das::TinyVector<int, 11>& stride) {
 
     if (!is_init_) {
-        std::cout << "buffer type uninitialized" << std::endl;
+        DAS_LOG_DBG("buffer type uninitialized");
         throw std::exception();
     }
 
