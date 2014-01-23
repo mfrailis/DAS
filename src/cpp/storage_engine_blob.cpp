@@ -224,15 +224,13 @@ namespace das {
                     rsa->flush_buffer(c_name, cfb);
                 }
             } else if (obj->is_image()) {
-                //TODO
-                /*ImageFromFile* iff = image_ptr(obj);
-                if (iff == NULL) //image empty, skip
+                Image* i = image_ptr(obj);
+                if (i == NULL) //image empty, skip
                     continue;
 
-                RawStorageAccess *rsa = dynamic_cast<RawStorageAccess*> (storage_access(obj));
+                BlobStorageAccess *rsa = dynamic_cast<BlobStorageAccess*> (storage_access(obj));
 
-                rsa->flush_buffer(iff);
-                 */
+                rsa->flush_buffer(i);
             }
         }
     }

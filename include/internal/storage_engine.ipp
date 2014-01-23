@@ -696,7 +696,7 @@ namespace das {
         using boost::interprocess::unique_ptr;
 
         Image *i_ = obj_->image_ptr();
-        if (i_ == NULL)
+        if (i_ == NULL /*|| (i_->store_tiles() == 0 && i_->buffer().empty())*/)
             throw das::empty_image();
 
         if (Rank != i_->rank())

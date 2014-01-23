@@ -87,7 +87,7 @@ void
     else
       ++it;
   }
-  shared_ptr<das::StorageTransaction> e(new das::BlobStorageTransaction(tb)); //RIVEDI
+  shared_ptr<das::StorageTransaction> e(new das::BlobStorageTransaction(tb));
   e->add(this);
   e->save(path);
   tb.add(e);
@@ -105,7 +105,7 @@ void
     else
       ++it;
   }
-  shared_ptr<das::StorageTransaction> e(new das::BlobStorageTransaction(tb)); //RIVEDI
+  shared_ptr<das::StorageTransaction> e(new das::BlobStorageTransaction(tb));
   e->add(this);
   e->save();
   tb.add(e);
@@ -182,6 +182,8 @@ public:
     for i in range(1,(dim)):
         res.extend(['    size'+str(i-1)+'_ = img->extent('+str(i-1)+');'])           
     res.extend(['''
+    if(!buff_.is_init())
+      pixel_type(img->pixel_type());
     buffer_ = img->blob();
   }
 
@@ -248,7 +250,10 @@ def image_body_src(class_name):
     res = ['''
 Image*
 '''+class_name+'''::image_ptr(){
-  return &image_;
+  if(image_.buffer().is_init())  
+    return &image_;
+  else
+    return NULL;
 }
 
 void
@@ -265,7 +270,7 @@ ImageBlob_'''+class_name+'''::persist(odb::database &db){
 
 void
 '''+class_name+'''::save_data(const std::string &path, das::TransactionBundle &tb){
-  shared_ptr<das::StorageTransaction> e = das::StorageTransaction::create(bundle_.alias(),tb);
+  shared_ptr<das::StorageTransaction> e(new das::BlobStorageTransaction(tb));
   e->add(this);
   e->save(path);
   tb.add(e);
@@ -273,7 +278,7 @@ void
 
 void
 '''+class_name+'''::save_data(das::TransactionBundle &tb){
-  shared_ptr<das::StorageTransaction> e = das::StorageTransaction::create(bundle_.alias(),tb);
+  shared_ptr<das::StorageTransaction> e(new das::BlobStorageTransaction(tb));
   e->add(this);
   e->save();
   tb.add(e);

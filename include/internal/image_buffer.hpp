@@ -76,12 +76,12 @@ public:
     : is_init_(false), iff_(iff), size0_(0){
     }
 
-    void init(const std::string &type);
+    void init(const std::string& type);
 
     bool is_init() const {
         return is_init_;
     }
-
+    
     bool empty();
 
     template<typename T, int N>
@@ -112,6 +112,7 @@ public:
             const das::TinyVector<int, 11> &stride);
 
 private:
+    ImageBuffer();
     image_type type_;
     std::vector<ImageBufferEntry> buffer_;
     bool is_init_;

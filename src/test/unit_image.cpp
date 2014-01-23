@@ -6,7 +6,7 @@ namespace D = das::tpl;
 
 template<typename T>
 void
-save(shared_ptr<T>& ptr, shared_ptr<D::Database>& db) {
+save_image(shared_ptr<T>& ptr, shared_ptr<D::Database>& db) {
     BOOST_REQUIRE_NO_THROW(
             D::Transaction t = db->begin();
             db->attach(ptr);
@@ -15,7 +15,7 @@ save(shared_ptr<T>& ptr, shared_ptr<D::Database>& db) {
 }
 
 template<typename T>
-void image_2D_test(shared_ptr<D::Database> db, const std::string path = "") {
+void image_2D_test_(shared_ptr<D::Database> db, const std::string path = "") {
 
     shared_ptr<test_image2d> ptr;
     BOOST_REQUIRE_NO_THROW(ptr = test_image2d::create("image2d_unit_test", "test_level2"));
@@ -107,7 +107,7 @@ void image_2D_test(shared_ptr<D::Database> db, const std::string path = "") {
     BOOST_CHECK_EQUAL(ptr->get_image_extent(0), 3);
     BOOST_CHECK_EQUAL(ptr->get_image_extent(1), 4);
 
-    save(ptr, db);
+    save_image(ptr, db);
 
     BOOST_CHECK_EQUAL(ptr->get_image_extent(0), 3);
     BOOST_CHECK_EQUAL(ptr->get_image_extent(1), 4);
@@ -126,7 +126,7 @@ void image_2D_test(shared_ptr<D::Database> db, const std::string path = "") {
     BOOST_CHECK_EQUAL(ptr->get_image_extent(0), 4);
     BOOST_CHECK_EQUAL(ptr->get_image_extent(1), 4);
 
-    save(ptr, db);
+    save_image(ptr, db);
 
     BOOST_CHECK_EQUAL(ptr->get_image_extent(0), 4);
     BOOST_CHECK_EQUAL(ptr->get_image_extent(1), 4);
@@ -150,7 +150,7 @@ void image_2D_test(shared_ptr<D::Database> db, const std::string path = "") {
     BOOST_CHECK_EQUAL(ptr->get_image_extent(0), 8);
     BOOST_CHECK_EQUAL(ptr->get_image_extent(1), 4);
 
-    save(ptr, db);
+    save_image(ptr, db);
 
     BOOST_CHECK_EQUAL(ptr->get_image_extent(0), 8);
     BOOST_CHECK_EQUAL(ptr->get_image_extent(1), 4);
@@ -222,7 +222,7 @@ void image_2D_test(shared_ptr<D::Database> db, const std::string path = "") {
     BOOST_CHECK_EQUAL(ptr->get_image_extent(0), 4);
     BOOST_CHECK_EQUAL(ptr->get_image_extent(1), 4);
 
-    save(ptr, db);
+    save_image(ptr, db);
 
     BOOST_CHECK_EQUAL(ptr->get_image_extent(0), 4);
     BOOST_CHECK_EQUAL(ptr->get_image_extent(1), 4);
@@ -234,7 +234,7 @@ void image_2D_test(shared_ptr<D::Database> db, const std::string path = "") {
 
 
 template<typename T>
-void image_3D_test(shared_ptr<D::Database> db, const std::string path = "") {
+void image_3D_test_(shared_ptr<D::Database> db, const std::string path = "") {
 
     shared_ptr<test_image3d> ptr;
     BOOST_REQUIRE_NO_THROW(ptr = test_image3d::create("image3d_unit_test", "test_level2"));
@@ -348,7 +348,7 @@ void image_3D_test(shared_ptr<D::Database> db, const std::string path = "") {
     BOOST_CHECK_EQUAL(ptr->get_image_extent(1), 4);
     BOOST_CHECK_EQUAL(ptr->get_image_extent(2), 2);
 
-    save(ptr, db);
+    save_image(ptr, db);
 
     BOOST_CHECK_EQUAL(ptr->get_image_extent(0), 3);
     BOOST_CHECK_EQUAL(ptr->get_image_extent(1), 4);
@@ -369,7 +369,7 @@ void image_3D_test(shared_ptr<D::Database> db, const std::string path = "") {
     BOOST_CHECK_EQUAL(ptr->get_image_extent(1), 4);
     BOOST_CHECK_EQUAL(ptr->get_image_extent(2), 2);
 
-    save(ptr, db);
+    save_image(ptr, db);
 
     BOOST_CHECK_EQUAL(ptr->get_image_extent(0), 4);
     BOOST_CHECK_EQUAL(ptr->get_image_extent(1), 4);
@@ -396,7 +396,7 @@ void image_3D_test(shared_ptr<D::Database> db, const std::string path = "") {
     BOOST_CHECK_EQUAL(ptr->get_image_extent(1), 4);
     BOOST_CHECK_EQUAL(ptr->get_image_extent(2), 2);
 
-    save(ptr, db);
+    save_image(ptr, db);
 
     BOOST_CHECK_EQUAL(ptr->get_image_extent(0), 8);
     BOOST_CHECK_EQUAL(ptr->get_image_extent(1), 4);
@@ -471,7 +471,7 @@ void image_3D_test(shared_ptr<D::Database> db, const std::string path = "") {
     BOOST_CHECK_EQUAL(ptr->get_image_extent(1), 2);
     BOOST_CHECK_EQUAL(ptr->get_image_extent(2), 2);
 
-    save(ptr, db);
+    save_image(ptr, db);
 
     BOOST_CHECK_EQUAL(ptr->get_image_extent(0), 2);
     BOOST_CHECK_EQUAL(ptr->get_image_extent(1), 2);
@@ -490,20 +490,20 @@ BOOST_AUTO_TEST_CASE(image_2D) {
 
     das::DatabaseConfig::database("test_level2").buffered_data(true);
 
-    image_2D_test<double>(db);
-    image_2D_test<float>(db);
+    image_2D_test_<double>(db);
+    image_2D_test_<float>(db);
 
-    image_2D_test<double>(db, "dir_unit_test/2D/image_D");
-    image_2D_test<float> (db, "dir_unit_test/2D/image_F");
+    image_2D_test_<double>(db, "dir_unit_test/2D/image_D");
+    image_2D_test_<float> (db, "dir_unit_test/2D/image_F");
 
 
     das::DatabaseConfig::database("test_level2").buffered_data(false);
 
-    image_2D_test<double>(db);
-    image_2D_test<float>(db);
+    image_2D_test_<double>(db);
+    image_2D_test_<float>(db);
 
-    image_2D_test<double>(db, "dir_unit_test/2D/image_D");
-    image_2D_test<float> (db, "dir_unit_test/2D/image_F");
+    image_2D_test_<double>(db, "dir_unit_test/2D/image_D");
+    image_2D_test_<float> (db, "dir_unit_test/2D/image_F");
 }
 
 BOOST_AUTO_TEST_CASE(image_3D) {
@@ -512,20 +512,20 @@ BOOST_AUTO_TEST_CASE(image_3D) {
 
     das::DatabaseConfig::database("test_level2").buffered_data(true);
 
-    image_3D_test<double>(db);
-    image_3D_test<float>(db);
+    image_3D_test_<double>(db);
+    image_3D_test_<float>(db);
 
-    image_3D_test<double>(db, "dir_unit_test/3D/image_D");
-    image_3D_test<float> (db, "dir_unit_test/3D/image_F");
+    image_3D_test_<double>(db, "dir_unit_test/3D/image_D");
+    image_3D_test_<float> (db, "dir_unit_test/3D/image_F");
 
 
     das::DatabaseConfig::database("test_level2").buffered_data(false);
 
-    image_3D_test<double>(db);
-    image_3D_test<float>(db);
+    image_3D_test_<double>(db);
+    image_3D_test_<float>(db);
 
-    image_3D_test<double>(db, "dir_unit_test/3D/image_D");
-    image_3D_test<float> (db, "dir_unit_test/3D/image_F");
+    image_3D_test_<double>(db, "dir_unit_test/3D/image_D");
+    image_3D_test_<float> (db, "dir_unit_test/3D/image_F");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

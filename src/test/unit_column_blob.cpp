@@ -3,7 +3,7 @@
 namespace D = das::tpl;
 
 void
-save(shared_ptr<test_columns_blob>& ptr, shared_ptr<D::Database>& db) {
+save_blob(shared_ptr<test_columns_blob>& ptr, shared_ptr<D::Database>& db) {
     BOOST_REQUIRE_NO_THROW(
             D::Transaction t = db->begin();
             db->attach(ptr);
@@ -72,7 +72,7 @@ test_case_blob(
 
     BOOST_CHECK_THROW(ptr->get_column<T>(col_name,0,10),das::io_exception);
     
-    save(ptr, db);
+    save_blob(ptr, db);
 
     BOOST_CHECK_THROW(ptr->get_column<T>(col_name,0,10),das::io_exception);
     
@@ -90,7 +90,7 @@ test_case_blob(
 
     BOOST_CHECK_THROW(ptr->get_column<T>(col_name,0,10),das::io_exception);
     
-    save(ptr, db);
+    save_blob(ptr, db);
     
     BOOST_CHECK_THROW(ptr->get_column<T>(col_name,0,10),das::io_exception);
 
@@ -108,7 +108,7 @@ test_case_blob(
 
 BOOST_FIXTURE_TEST_SUITE(column_data_blob_unit_tests, ColumnFixtureBlob)
 
-BOOST_AUTO_TEST_CASE(conversion_exceptions) {
+BOOST_AUTO_TEST_CASE(conversion_exceptions_blob) {
     das::Array<int> base(das::shape(3));
     base(0) = -2220;
     base(1) = 1523;
@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE(conversion_exceptions) {
     BOOST_CHECK_THROW(ptr->get_column<std::string>("column_int32", 0, 3), das::bad_type);
 }
 
-BOOST_AUTO_TEST_CASE(column_char) {
+BOOST_AUTO_TEST_CASE(column_char_blob) {
     das::Array<char> base(das::shape(3));
     base(0) = -22;
     base(1) = 15;
@@ -152,7 +152,7 @@ BOOST_AUTO_TEST_CASE(column_char) {
     test_case_blob("column_char", ptr, db, base, ext);
 }
 
-BOOST_AUTO_TEST_CASE(column_short) {
+BOOST_AUTO_TEST_CASE(column_short_blob) {
     das::Array<short> base(das::shape(3));
     base(0) = -222;
     base(1) = 15;
@@ -172,7 +172,7 @@ BOOST_AUTO_TEST_CASE(column_short) {
     test_case_blob("column_int16", ptr, db, base, ext);
 }
 
-BOOST_AUTO_TEST_CASE(column_int) {
+BOOST_AUTO_TEST_CASE(column_int_blob) {
     das::Array<int> base(das::shape(3));
     base(0) = -2220;
     base(1) = 1523;
@@ -192,7 +192,7 @@ BOOST_AUTO_TEST_CASE(column_int) {
     test_case_blob("column_int32", ptr, db, base, ext);
 }
 
-BOOST_AUTO_TEST_CASE(column_long_long) {
+BOOST_AUTO_TEST_CASE(column_long_long_blob) {
     das::Array<long long> base(das::shape(3));
     base(0) = -22202;
     base(1) = 15213;
@@ -212,7 +212,7 @@ BOOST_AUTO_TEST_CASE(column_long_long) {
     test_case_blob("column_int64", ptr, db, base, ext);
 }
 
-BOOST_AUTO_TEST_CASE(column_float) {
+BOOST_AUTO_TEST_CASE(column_float_blob) {
     das::Array<float> base(das::shape(3));
     base(0) = -22.202;
     base(1) = 152.13;
@@ -232,7 +232,7 @@ BOOST_AUTO_TEST_CASE(column_float) {
     test_case_blob("column_float32", ptr, db, base, ext);
 }
 
-BOOST_AUTO_TEST_CASE(column_double) {
+BOOST_AUTO_TEST_CASE(column_double_blob) {
     das::Array<double> base(das::shape(3));
     base(0) = -22.202332;
     base(1) = 152.12243;
@@ -252,7 +252,7 @@ BOOST_AUTO_TEST_CASE(column_double) {
     test_case_blob("column_float64", ptr, db, base, ext);
 }
 
-BOOST_AUTO_TEST_CASE(column_boolean) {
+BOOST_AUTO_TEST_CASE(column_boolean_blob) {
     das::Array<bool> base(das::shape(3));
     base(0) = true;
     base(1) = false;
@@ -272,7 +272,7 @@ BOOST_AUTO_TEST_CASE(column_boolean) {
     test_case_blob("column_boolean", ptr, db, base, ext);
 }
 
-BOOST_AUTO_TEST_CASE(column_uchar) {
+BOOST_AUTO_TEST_CASE(column_uchar_blob) {
     das::Array<unsigned char> base(das::shape(3));
     base(0) = 22;
     base(1) = 15;
@@ -292,7 +292,7 @@ BOOST_AUTO_TEST_CASE(column_uchar) {
     test_case_blob("column_uint8", ptr, db, base, ext);
 }
 
-BOOST_AUTO_TEST_CASE(column_ushort) {
+BOOST_AUTO_TEST_CASE(column_ushort_blob) {
     das::Array<unsigned short> base(das::shape(3));
     base(0) = 222;
     base(1) = 15;
@@ -312,7 +312,7 @@ BOOST_AUTO_TEST_CASE(column_ushort) {
     test_case_blob("column_uin16", ptr, db, base, ext);
 }
 
-BOOST_AUTO_TEST_CASE(column_uint) {
+BOOST_AUTO_TEST_CASE(column_uint_blob) {
     das::Array<unsigned int> base(das::shape(3));
     base(0) = 2220;
     base(1) = 1523;
@@ -332,7 +332,7 @@ BOOST_AUTO_TEST_CASE(column_uint) {
     test_case_blob("column_uint32", ptr, db, base, ext);
 }
 
-BOOST_AUTO_TEST_CASE(column_string) {
+BOOST_AUTO_TEST_CASE(column_string_blob) {
     das::Array<std::string> base(das::shape(3));
     base(0) = "string01string01string01string01string01string01string01string01\
 string01string01string01string01string01string01string01string01string01string01\
@@ -368,7 +368,7 @@ string01string01string01string01string01string01string01string01string01string01
     test_case_blob("column_string", ptr, db, base, ext);
 }
 
-BOOST_AUTO_TEST_CASE(column_float_conversion) {
+BOOST_AUTO_TEST_CASE(column_float_conversion_blob) {
     das::Array<int> base(das::shape(3));
     base(0) = -2220;
     base(1) = 1523;
