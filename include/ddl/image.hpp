@@ -54,6 +54,11 @@ public:
         return buff_;
     }
     
+    const ImageBuffer&
+    buffer() const {
+        return buff_;
+    }
+    
     virtual
     void
     persist(odb::database &db) = 0;
