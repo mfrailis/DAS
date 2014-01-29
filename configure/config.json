@@ -6,14 +6,14 @@
 	"alias"         : "ciws",
 	"mysql_socket"  : "/var/run/mysqld/mysqld.sock",
 	"db_name"  	: "ciws_prototype",
-	"ddl"	     	: "das_ddl_prototype.xml",
+	"ddl"	     	: "das_ddl_prototype3.xml",
 	"storage_engine": {
 	    "name"          : "Raw",
-	    "root_dir"      : "%$HOME$%/data/ciws",
+	    "root_dir"      : "/mnt/DBs/data/ciws/store",
 	    "default_path"  : "%F/%t/%n/%v/",
 	    "custom_path"   : "%s/%B/%n/%v",
-	    "temp_path"      : "%$HOME$/data/temp/%$LOGNAME$",
-	    "unref_data_expiration_time" : 86400
+	    "temp_path"      : "/mnt/DBs/data/ciws/temp/%$LOGNAME$",
+	    "unref_data_expiration_time" : 5
 	}
     }
 ]

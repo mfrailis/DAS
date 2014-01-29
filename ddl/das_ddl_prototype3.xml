@@ -1,0 +1,555 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE doc [
+<!ENTITY das_essential SYSTEM "../resources/das_essential.xml">
+]>
+<ddl xmlns="http://oats.inaf.it/das" xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://oats.inaf.it/das ../resources/ddl.xsd">
+
+  &das_essential;
+
+  <type name="s21i"  description="ciws prototype data">
+    <metadata>
+      <keyword name="telescope" type="string" index="yes"/>
+      <keyword name="instrument" type="string" index="yes"/>
+      <keyword name="telescopeid" description="telescope identifier" type="int16" index="yes" />
+      <keyword name="origin" type="string" index="yes"/>
+      <keyword name="creator" type="string"/>
+      <keyword name="filename" type="string"/>
+      <keyword name="file_version" type="int16"/>
+      <keyword name="object" type="string"/>
+      <keyword name="observer" type="string"/>
+      <keyword name="PI_name" type="string" index="yes"/>
+      <keyword name="campaign" type="string" index="yes"/>
+      <keyword name="period" type="string" index="yes"/>
+      <keyword name="obs_id" type="string"/>
+      <keyword name="targ_id" type="int32"/>
+      <keyword name="run_id" type="int32"/>
+      <keyword name="seq_num" type="int32"/>
+      <keyword name="type" description="packet type" type="int16"  index="yes" />
+      <keyword name="subtype" description="packet sub type" type="int16" index="yes" />
+      <keyword name="npdm" type="int16"/>
+      <keyword name="timesys" type="string"/>
+      <keyword name="mjdrefi" type="int32"/>
+      <keyword name="mjdreff" type="float64"/>
+      <keyword name="clockapp" type="string"/>
+      <keyword name="timezero" type="float64" unit="s"/>
+      <keyword name="tstart" type="float64"/>
+      <keyword name="tstop" type="float64"/>
+      <keyword name="telapse" type="float64"/>
+      <keyword name="date_obs" type="string" description="start date (UTC yy-mm-ddThh:hh:ss)" index="yes"/>
+      <keyword name="date_end" type="string"  description="end date (UTC yy-mm-ddThh:hh:ss)" index="yes"/>
+      <keyword name="radesys" type="string"/>
+      <keyword name="equinox" type="float64"/>
+      <keyword name="ra_obj" type="float64"/>
+      <keyword name="def_obj" type="float64"/>
+      <keyword name="ra_pnt" type="float64"/>
+      <keyword name="dec_pnt" type="float64"/>
+      <keyword name="obs_mode" type="string"/>
+      <keyword name="n_tels" type="int32"/>
+      <keyword name="tel_list" type="string"/>
+      <keyword name="geo_lat" type="float64"/>
+      <keyword name="geo_lon" type="float64"/>
+      <keyword name="altitude" type="float64"/>
+      <!--INDEX keywords -->
+      <keyword name="event_counter_min" type="int64"/>
+      <keyword name="event_counter_max" type="int64"/>
+      <keyword name="packets_stored" type="int64"/>
+    </metadata>
+    <data  storeAs="file">
+      <binaryTable>
+	<column name="datetime" type="string"  description="UTC date time yy-mm-ddThh:hh:ss" />
+	<column name="seconds" type="int32" unit="s" description="nanoseconds fraction time" />
+	<column name="nanoseconds" type="int32" unit="ns" description="nanoseconds fraction time" />
+	<column name="gpsStatus" type="boolean" description="gps status" />
+	<column name="eventnumber" type="int32" description=""/>
+	<column name="flags" type="int32" />
+	<column name="packetlen" type="int16" description="packet lenght" />
+	<column name="tr_pdm" type="byte" description="triggered pdm id" />
+	<column name="ssc" type="int16" description="source sequence counter" />
+	<column name="event_counter" type="int32" />
+	<column name="PDM1_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM1_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM2_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM2_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM3_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM3_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM4_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM4_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM5_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM5_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM6_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM6_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM7_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM7_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM8_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM8_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM9_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM9_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM10_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM10_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM11_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM11_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM12_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM12_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM13_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM13_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM14_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM14_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM15_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM15_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM16_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM16_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM17_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM17_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM18_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM18_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM19_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM19_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM20_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM20_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM21_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM21_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM22_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM22_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM23_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM23_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM24_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM24_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM25_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM25_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM26_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM26_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM27_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM27_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM28_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM28_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM29_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM29_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM30_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM30_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM31_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM31_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM32_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM32_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM33_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM33_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM34_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM34_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM35_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM35_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM36_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM36_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM37_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM37_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+      </binaryTable>
+    </data>
+  </type>
+
+  <type name="s21i_blob"  description="ciws prototype data">
+    <metadata>
+      <keyword name="telescope" type="string" index="yes"/>
+      <keyword name="instrument" type="string" index="yes"/>
+      <keyword name="telescopeid" description="telescope identifier" type="int16" index="yes" />
+      <keyword name="origin" type="string" index="yes"/>
+      <keyword name="creator" type="string"/>
+      <keyword name="filename" type="string"/>
+      <keyword name="file_version" type="int16"/>
+      <keyword name="object" type="string"/>
+      <keyword name="observer" type="string"/>
+      <keyword name="PI_name" type="string" index="yes"/>
+      <keyword name="campaign" type="string" index="yes"/>
+      <keyword name="period" type="string" index="yes"/>
+      <keyword name="obs_id" type="string"/>
+      <keyword name="targ_id" type="int32"/>
+      <keyword name="run_id" type="int32"/>
+      <keyword name="seq_num" type="int32"/>
+      <keyword name="type" description="packet type" type="int16"  index="yes" />
+      <keyword name="subtype" description="packet sub type" type="int16" index="yes" />
+      <keyword name="npdm" type="int16"/>
+      <keyword name="timesys" type="string"/>
+      <keyword name="mjdrefi" type="int32"/>
+      <keyword name="mjdreff" type="float64"/>
+      <keyword name="clockapp" type="string"/>
+      <keyword name="timezero" type="float64" unit="s"/>
+      <keyword name="tstart" type="float64"/>
+      <keyword name="tstop" type="float64"/>
+      <keyword name="telapse" type="float64"/>
+      <keyword name="date_obs" type="string" description="start date (UTC yy-mm-ddThh:hh:ss)" index="yes"/>
+      <keyword name="date_end" type="string"  description="end date (UTC yy-mm-ddThh:hh:ss)" index="yes"/>
+      <keyword name="radesys" type="string"/>
+      <keyword name="equinox" type="float64"/>
+      <keyword name="ra_obj" type="float64"/>
+      <keyword name="def_obj" type="float64"/>
+      <keyword name="ra_pnt" type="float64"/>
+      <keyword name="dec_pnt" type="float64"/>
+      <keyword name="obs_mode" type="string"/>
+      <keyword name="n_tels" type="int32"/>
+      <keyword name="tel_list" type="string"/>
+      <keyword name="geo_lat" type="float64"/>
+      <keyword name="geo_lon" type="float64"/>
+      <keyword name="altitude" type="float64"/>
+      <!--INDEX keywords -->
+      <keyword name="event_counter_min" type="int64"/>
+      <keyword name="event_counter_max" type="int64"/>
+      <keyword name="packets_stored" type="int64"/>
+    </metadata>
+    <data  storeAs="blob">
+      <binaryTable>
+	<column name="datetime" type="string"  description="UTC date time yy-mm-ddThh:hh:ss" />
+	<column name="seconds" type="int32" unit="s" description="nanoseconds fraction time" />
+	<column name="nanoseconds" type="int32" unit="ns" description="nanoseconds fraction time" />
+	<column name="gpsStatus" type="boolean" description="gps status" />
+	<column name="eventnumber" type="int32" description=""/>
+	<column name="flags" type="int32" />
+	<column name="packetlen" type="int16" description="packet lenght" />
+	<column name="tr_pdm" type="byte" description="triggered pdm id" />
+	<column name="ssc" type="int16" description="source sequence counter" />
+	<column name="event_counter" type="int32" />
+	<column name="PDM1_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM1_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM2_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM2_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM3_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM3_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM4_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM4_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM5_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM5_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM6_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM6_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM7_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM7_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM8_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM8_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM9_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM9_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM10_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM10_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM11_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM11_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM12_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM12_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM13_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM13_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM14_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM14_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM15_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM15_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM16_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM16_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM17_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM17_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM18_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM18_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM19_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM19_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM20_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM20_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM21_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM21_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM22_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM22_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM23_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM23_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM24_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM24_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM25_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM25_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM26_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM26_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM27_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM27_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM28_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM28_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM29_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM29_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM30_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM30_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM31_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM31_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM32_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM32_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM33_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM33_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM34_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM34_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM35_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM35_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM36_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM36_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM37_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM37_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+      </binaryTable>
+    </data>
+  </type>
+
+
+  <type name="s21"  description="ciws prototype data">
+    <metadata>
+      <keyword name="telescope" type="string" index="yes"/>
+      <keyword name="instrument" type="string" index="yes"/>
+      <keyword name="telescopeid" description="telescope identifier" type="int16" index="yes" />
+      <keyword name="origin" type="string" index="yes"/>
+      <keyword name="creator" type="string"/>
+      <keyword name="filename" type="string"/>
+      <keyword name="file_version" type="int16"/>
+      <keyword name="object" type="string"/>
+      <keyword name="observer" type="string"/>
+      <keyword name="PI_name" type="string" index="yes"/>
+      <keyword name="campaign" type="string" index="yes"/>
+      <keyword name="period" type="string" index="yes"/>
+      <keyword name="obs_id" type="string"/>
+      <keyword name="targ_id" type="int32"/>
+      <keyword name="run_id" type="int32"/>
+      <keyword name="seq_num" type="int32"/>
+      <keyword name="type" description="packet type" type="int16"  index="yes" />
+      <keyword name="subtype" description="packet sub type" type="int16" index="yes" />
+      <keyword name="npdm" type="int16"/>
+      <keyword name="timesys" type="string"/>
+      <keyword name="mjdrefi" type="int32"/>
+      <keyword name="mjdreff" type="float64"/>
+      <keyword name="clockapp" type="string"/>
+      <keyword name="timezero" type="float64" unit="s"/>
+      <keyword name="tstart" type="float64"/>
+      <keyword name="tstop" type="float64"/>
+      <keyword name="telapse" type="float64"/>
+      <keyword name="date_obs" type="string" description="start date (UTC yy-mm-ddThh:hh:ss)" index="yes"/>
+      <keyword name="date_end" type="string"  description="end date (UTC yy-mm-ddThh:hh:ss)" index="yes"/>
+      <keyword name="radesys" type="string"/>
+      <keyword name="equinox" type="float64"/>
+      <keyword name="ra_obj" type="float64"/>
+      <keyword name="def_obj" type="float64"/>
+      <keyword name="ra_pnt" type="float64"/>
+      <keyword name="dec_pnt" type="float64"/>
+      <keyword name="obs_mode" type="string"/>
+      <keyword name="n_tels" type="int32"/>
+      <keyword name="tel_list" type="string"/>
+      <keyword name="geo_lat" type="float64"/>
+      <keyword name="geo_lon" type="float64"/>
+      <keyword name="altitude" type="float64"/>
+    </metadata>
+    <data  storeAs="file">
+      <binaryTable>
+	<column name="datetime" type="string"  description="UTC date time yy-mm-ddThh:hh:ss" />
+	<column name="seconds" type="int32" unit="s" description="nanoseconds fraction time" />
+	<column name="nanoseconds" type="int32" unit="ns" description="nanoseconds fraction time" />
+	<column name="gpsStatus" type="boolean" description="gps status" />
+	<column name="eventnumber" type="int32" description=""/>
+	<column name="flags" type="int32" />
+	<column name="packetlen" type="int16" description="packet lenght" />
+	<column name="tr_pdm" type="byte" description="triggered pdm id" />
+	<column name="ssc" type="int16" description="source sequence counter" />
+	<column name="event_counter" type="int32" />
+	<column name="PDM1_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM1_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM2_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM2_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM3_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM3_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM4_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM4_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM5_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM5_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM6_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM6_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM7_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM7_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM8_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM8_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM9_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM9_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM10_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM10_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM11_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM11_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM12_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM12_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM13_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM13_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM14_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM14_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM15_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM15_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM16_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM16_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM17_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM17_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM18_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM18_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM19_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM19_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM20_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM20_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM21_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM21_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM22_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM22_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM23_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM23_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM24_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM24_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM25_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM25_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM26_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM26_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM27_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM27_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM28_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM28_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM29_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM29_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM30_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM30_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM31_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM31_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM32_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM32_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM33_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM33_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM34_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM34_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM35_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM35_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM36_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM36_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM37_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM37_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+      </binaryTable>
+    </data>
+  </type>
+
+  <type name="s21_blob"  description="ciws prototype data">
+    <metadata>
+      <keyword name="telescope" type="string" index="yes"/>
+      <keyword name="instrument" type="string" index="yes"/>
+      <keyword name="telescopeid" description="telescope identifier" type="int16" index="yes" />
+      <keyword name="origin" type="string" index="yes"/>
+      <keyword name="creator" type="string"/>
+      <keyword name="filename" type="string"/>
+      <keyword name="file_version" type="int16"/>
+      <keyword name="object" type="string"/>
+      <keyword name="observer" type="string"/>
+      <keyword name="PI_name" type="string" index="yes"/>
+      <keyword name="campaign" type="string" index="yes"/>
+      <keyword name="period" type="string" index="yes"/>
+      <keyword name="obs_id" type="string"/>
+      <keyword name="targ_id" type="int32"/>
+      <keyword name="run_id" type="int32"/>
+      <keyword name="seq_num" type="int32"/>
+      <keyword name="type" description="packet type" type="int16"  index="yes" />
+      <keyword name="subtype" description="packet sub type" type="int16" index="yes" />
+      <keyword name="npdm" type="int16"/>
+      <keyword name="timesys" type="string"/>
+      <keyword name="mjdrefi" type="int32"/>
+      <keyword name="mjdreff" type="float64"/>
+      <keyword name="clockapp" type="string"/>
+      <keyword name="timezero" type="float64" unit="s"/>
+      <keyword name="tstart" type="float64"/>
+      <keyword name="tstop" type="float64"/>
+      <keyword name="telapse" type="float64"/>
+      <keyword name="date_obs" type="string" description="start date (UTC yy-mm-ddThh:hh:ss)" index="yes"/>
+      <keyword name="date_end" type="string"  description="end date (UTC yy-mm-ddThh:hh:ss)" index="yes"/>
+      <keyword name="radesys" type="string"/>
+      <keyword name="equinox" type="float64"/>
+      <keyword name="ra_obj" type="float64"/>
+      <keyword name="def_obj" type="float64"/>
+      <keyword name="ra_pnt" type="float64"/>
+      <keyword name="dec_pnt" type="float64"/>
+      <keyword name="obs_mode" type="string"/>
+      <keyword name="n_tels" type="int32"/>
+      <keyword name="tel_list" type="string"/>
+      <keyword name="geo_lat" type="float64"/>
+      <keyword name="geo_lon" type="float64"/>
+      <keyword name="altitude" type="float64"/>
+    </metadata>
+    <data  storeAs="blob">
+      <binaryTable>
+	<column name="datetime" type="string"  description="UTC date time yy-mm-ddThh:hh:ss" />
+	<column name="seconds" type="int32" unit="s" description="nanoseconds fraction time" />
+	<column name="nanoseconds" type="int32" unit="ns" description="nanoseconds fraction time" />
+	<column name="gpsStatus" type="boolean" description="gps status" />
+	<column name="eventnumber" type="int32" description=""/>
+	<column name="flags" type="int32" />
+	<column name="packetlen" type="int16" description="packet lenght" />
+	<column name="tr_pdm" type="byte" description="triggered pdm id" />
+	<column name="ssc" type="int16" description="source sequence counter" />
+	<column name="event_counter" type="int32" />
+	<column name="PDM1_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM1_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM2_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM2_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM3_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM3_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM4_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM4_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM5_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM5_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM6_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM6_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM7_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM7_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM8_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM8_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM9_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM9_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM10_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM10_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM11_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM11_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM12_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM12_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM13_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM13_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM14_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM14_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM15_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM15_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM16_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM16_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM17_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM17_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM18_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM18_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM19_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM19_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM20_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM20_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM21_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM21_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM22_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM22_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM23_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM23_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM24_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM24_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM25_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM25_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM26_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM26_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM27_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM27_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM28_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM28_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM29_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM29_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM30_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM30_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM31_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM31_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM32_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM32_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM33_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM33_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM34_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM34_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM35_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM35_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM36_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM36_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM37_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM37_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+      </binaryTable>
+    </data>
+  </type>
+
+</ddl>
