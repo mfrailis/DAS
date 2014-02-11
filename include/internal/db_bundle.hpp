@@ -4,7 +4,7 @@
 #include <odb/session.hxx>
 #include <odb/transaction.hxx>
 #include <memory>
-#include <list>
+#include <deque>
 #include <typeinfo>
 #include <set>
 #include <odb/traits.hxx>
@@ -23,7 +23,7 @@ namespace das {
 
     class TransactionBundle {
     public:
-        typedef std::list<shared_ptr<StorageTransaction> > data_list_type;
+        typedef std::deque<shared_ptr<StorageTransaction> > data_list_type;
 
         TransactionBundle(const std::string &alias,
                 const shared_ptr<odb::database> &db,

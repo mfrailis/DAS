@@ -1,7 +1,7 @@
 #ifndef COLUMN_BUFFER_HPP
 #define	COLUMN_BUFFER_HPP
 
-#include <list>
+#include <deque>
 #include <exception>
 #include "array.hpp"
 #include "utility.hpp"
@@ -11,17 +11,17 @@
 class ColumnBuffer {
 public:
     typedef boost::variant<  
-    std::list< das::ArrayStore<char> >,
-    std::list< das::ArrayStore<short> >,
-    std::list< das::ArrayStore<int> >,
-    std::list< das::ArrayStore<long long> >,
-    std::list< das::ArrayStore<float> >,
-    std::list< das::ArrayStore<double> >,
-    std::list< das::ArrayStore<bool> >,
-    std::list< das::ArrayStore<unsigned char> >,
-    std::list< das::ArrayStore<unsigned short> >,
-    std::list< das::ArrayStore<unsigned int> >,
-    std::list< das::ArrayStore<std::string> >
+    std::deque< das::ArrayStore<char> >,
+    std::deque< das::ArrayStore<short> >,
+    std::deque< das::ArrayStore<int> >,
+    std::deque< das::ArrayStore<long long> >,
+    std::deque< das::ArrayStore<float> >,
+    std::deque< das::ArrayStore<double> >,
+    std::deque< das::ArrayStore<bool> >,
+    std::deque< das::ArrayStore<unsigned char> >,
+    std::deque< das::ArrayStore<unsigned short> >,
+    std::deque< das::ArrayStore<unsigned int> >,
+    std::deque< das::ArrayStore<std::string> >
     > buffer_type;
 
     ColumnBuffer(const std::string &type, const std::string &array_size);
@@ -73,7 +73,7 @@ public:
     copy(T* begin, T* end, size_t offset);
 
     template<typename T>
-    std::list<std::pair<T*, size_t> >
+    std::deque<std::pair<T*, size_t> >
     buckets();
 
     void
