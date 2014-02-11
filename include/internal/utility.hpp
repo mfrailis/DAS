@@ -42,7 +42,7 @@ namespace das {
         }
 
         template<int Rank>
-        ArrayStore(T* p, const TinyVector<int, Rank> s) :
+        ArrayStore(T* p, const TinyVector<int, Rank>& s) :
         ptr_(p),
         owner_(std::tr1::shared_ptr<T>(p,ArrayDeleter<T>())),
         shape_(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),

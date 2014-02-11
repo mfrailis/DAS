@@ -160,7 +160,7 @@ namespace das {
 
         template<typename T>
         void operator() (T &native_type) const {
-            typedef std::vector<std::pair<T*, size_t> > buckets_type;
+            typedef std::list<std::pair<T*, size_t> > buckets_type;
             buckets_type bks = c_->buffer().buckets<T>();
             size_t size = 0;
 
@@ -206,7 +206,7 @@ namespace das {
 
     void
     BlobStorageTransaction::save() {
-        for (std::vector<DasObject*>::iterator obj_it = objs_.begin();
+        for (std::list<DasObject*>::iterator obj_it = objs_.begin();
                 obj_it != objs_.end(); ++obj_it) {
             DasObject* obj = *obj_it;
             std::map<std::string, Column*> map;
@@ -479,7 +479,7 @@ namespace das {
 
         template<typename T>
         void operator() (T &native_type) const {
-            typedef std::vector<ImageBufferEntry> buckets_type;
+            typedef std::list<ImageBufferEntry> buckets_type;
             const buckets_type &bks = i_->buffer().buckets();
             size_t tiles = 0;
 

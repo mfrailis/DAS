@@ -1,6 +1,6 @@
 #ifndef STORAGE_ENGINE_RAW_HPP
 #define	STORAGE_ENGINE_RAW_HPP
-#include <vector>
+#include <list>
 #include <fstream>
 #include <sstream>
 #include <exception>
@@ -30,7 +30,7 @@ namespace das {
 
         RawStorageTransaction(TransactionBundle &tb);
     private:
-        std::vector<DasObject*> objs_;
+        std::list<DasObject*> objs_;
         TransactionBundle& tb_;
     };
 

@@ -19,27 +19,27 @@ ColumnBuffer::init_type(const std::string &type) {
     }
 
     if (type == "byte" || type == "char") {
-        buffer_ = std::vector< das::ArrayStore<char> >();
+        buffer_ = std::list< das::ArrayStore<char> >();
     } else if (type == "int16") {
-        buffer_ = std::vector< das::ArrayStore<short> >();
+        buffer_ = std::list< das::ArrayStore<short> >();
     } else if (type == "int32") {
-        buffer_ = std::vector< das::ArrayStore<int> >();
+        buffer_ = std::list< das::ArrayStore<int> >();
     } else if (type == "int64") {
-        buffer_ = std::vector< das::ArrayStore<long long> >();
+        buffer_ = std::list< das::ArrayStore<long long> >();
     } else if (type == "float32") {
-        buffer_ = std::vector< das::ArrayStore<float> >();
+        buffer_ = std::list< das::ArrayStore<float> >();
     } else if (type == "float64") {
-        buffer_ = std::vector< das::ArrayStore<double> >();
+        buffer_ = std::list< das::ArrayStore<double> >();
     } else if (type == "boolean") {
-        buffer_ = std::vector < das::ArrayStore<bool> >();
+        buffer_ = std::list < das::ArrayStore<bool> >();
     } else if (type == "uint8") {
-        buffer_ = std::vector< das::ArrayStore<unsigned char> >();
+        buffer_ = std::list< das::ArrayStore<unsigned char> >();
     } else if (type == "uint16") {
-        buffer_ = std::vector< das::ArrayStore<unsigned short> >();
+        buffer_ = std::list< das::ArrayStore<unsigned short> >();
     } else if (type == "uint32") {
-        buffer_ = std::vector< das::ArrayStore<unsigned int> >();
+        buffer_ = std::list< das::ArrayStore<unsigned int> >();
     } else if (type == "string") {
-        buffer_ = std::vector< das::ArrayStore<std::string> >();
+        buffer_ = std::list< das::ArrayStore<std::string> >();
     } else {
         std::cout << "type not supported" << std::endl;
         throw std::exception();

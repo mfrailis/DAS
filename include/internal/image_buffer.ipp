@@ -9,7 +9,7 @@ template<typename X, int N>
 class ImageBuffer_add : public boost::static_visitor<void> {
 public:
 
-    ImageBuffer_add(das::Array<X, N> &elem, size_t rank, std::vector<ImageBufferEntry> &buffer)
+    ImageBuffer_add(das::Array<X, N> &elem, size_t rank, std::list<ImageBufferEntry> &buffer)
     : elem_(elem), rank_(rank), buff_(buffer) {
     }
 
@@ -36,7 +36,7 @@ public:
 
 private:
     das::Array<X, N> &elem_;
-    std::vector<ImageBufferEntry> &buff_;
+    std::list<ImageBufferEntry> &buff_;
     size_t rank_;
 };
 
@@ -100,7 +100,7 @@ public:
             const das::TinyVector<int, 11> &offset,
             const das::TinyVector<int, 11> &count,
             const das::TinyVector<int, 11> &stride,
-            std::vector<ImageBufferEntry> &buff)
+            std::list<ImageBufferEntry> &buff)
     : b_(begin), offset_(offset),
     count_(count), stride_(stride), buffer_(buff) {
     }
@@ -110,7 +110,7 @@ public:
         size_t count = 0;
         OutputIterator next = b_;
 
-        std::vector<ImageBufferEntry>::iterator buff_it = buffer_.begin();
+        std::list<ImageBufferEntry>::iterator buff_it = buffer_.begin();
         if (buff_it == buffer_.end()) return count;
 
         const das::TinyVector<int, 11> &shape = buff_it->shape();
@@ -230,7 +230,7 @@ private:
     const das::TinyVector<int, 11> &offset_;
     const das::TinyVector<int, 11> &count_;
     const das::TinyVector<int, 11> &stride_;
-    std::vector<ImageBufferEntry> &buffer_;
+    std::list<ImageBufferEntry> &buffer_;
 };
 
 template<class OutputIterator>
