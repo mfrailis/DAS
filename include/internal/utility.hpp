@@ -111,7 +111,7 @@ namespace das {
     template<typename T>
     class ColumnArrayBuffer {
         typedef std::pair<size_t, T*> item;
-        typedef std::list<item> buff_type;
+        typedef std::deque<item> buff_type;
 
     public:
 
