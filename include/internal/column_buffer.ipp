@@ -3,7 +3,6 @@
 
 #include "column_buffer.hpp"
 #include <iterator>
-#include <list>
 
 template<int Rank>
 bool
@@ -418,18 +417,18 @@ ColumnBuffer::copy(T* begin, T* end, size_t offset) {
 }
 
 template<typename T>
-class ColumnBuffer_buckets : public boost::static_visitor<std::vector<std::pair<T*, size_t> > > {
+class ColumnBuffer_buckets : public boost::static_visitor<std::list<std::pair<T*, size_t> > > {
 public:
 
     template<typename U>
-    std::vector<std::pair<T*, size_t> >
+    std::list<std::pair<T*, size_t> >
     operator() (std::list< das::ArrayStore<U> > &vec) const {
         throw das::bad_type();
     }
 
-    std::vector<std::pair<T*, size_t> >
+    std::list<std::pair<T*, size_t> >
     operator() (std::list< das::ArrayStore<T> > &vec) const {
-        std::vector<std::pair<T*, size_t> > bks;
+        std::list<std::pair<T*, size_t> > bks;
         for (typename std::list< das::ArrayStore<T> >::iterator it = vec.begin();
                 it != vec.end(); ++it)
             bks.push_back(it->pair());
@@ -439,7 +438,7 @@ public:
 };
 
 template<typename T >
-std::vector<std::pair<T*, size_t> >
+std::list<std::pair<T*, size_t> >
 ColumnBuffer::buckets() {
 
     return boost::apply_visitor(ColumnBuffer_buckets<T>(), buffer_);

@@ -114,15 +114,15 @@ public:
                 throw das::io_exception(errno);
             }
         }
-        
-	// flushing kernel buffers for each file whould be nice, but it is 
-        // too expensive
-/*	AutoFile in_fd(open(new_path.c_str(), O_RDONLY));
+	// flush kernel buffers for each file would be nice, but
+	// is too expensive
+	/*
+	AutoFile in_fd(open(new_path.c_str(), O_RDONLY));
         if (in_fd == -1)
             throw das::io_exception(errno);
 	if(syncfs(in_fd))
 	  throw das::io_exception(errno);
-*/
+	*/
     }
 };
 
@@ -588,7 +588,7 @@ namespace das {
 
         template<typename T>
         void operator() (T &native_type) const {
-            typedef std::vector<std::pair<T*, size_t> > buckets_type;
+            typedef std::list<std::pair<T*, size_t> > buckets_type;
             buckets_type bks = c_->buffer().buckets<T>();
             size_t size = 0;
 
@@ -639,7 +639,7 @@ namespace das {
 
         template<typename T>
         void operator() (T &native_type) const {
-            typedef std::vector<ImageBufferEntry> buckets_type;
+            typedef std::list<ImageBufferEntry> buckets_type;
             const buckets_type &bks = i_->buffer().buckets();
             size_t tiles = 0;
 
@@ -673,7 +673,7 @@ namespace das {
 
     void
     RawStorageTransaction::save(const std::string &path) {
-        for (std::vector<DasObject*>::iterator obj_it = objs_.begin();
+        for (std::list<DasObject*>::iterator obj_it = objs_.begin();
                 obj_it != objs_.end(); ++obj_it) {
             std::map<std::string, Column*> map;
             DasObject* obj = *obj_it;
@@ -779,7 +779,7 @@ namespace das {
 
     void
     RawStorageTransaction::save() {
-        for (std::vector<DasObject*>::iterator obj_it = objs_.begin();
+        for (std::list<DasObject*>::iterator obj_it = objs_.begin();
                 obj_it != objs_.end(); ++obj_it) {
             std::map<std::string, Column*> map;
             DasObject* obj = *obj_it;
@@ -932,7 +932,7 @@ namespace das {
 
     void
     RawStorageTransaction::rollback() {
-        for (std::vector<DasObject*>::iterator obj_it = objs_.begin();
+        for (std::list<DasObject*>::iterator obj_it = objs_.begin();
                 obj_it != objs_.end(); ++obj_it) {
             std::map<std::string, Column*> map;
             DasObject* obj = *obj_it;

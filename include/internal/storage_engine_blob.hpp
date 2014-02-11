@@ -34,7 +34,7 @@ namespace das {
         BlobStorageTransaction(TransactionBundle &tb) {
         }
     private:
-        std::vector<DasObject*> objs_;
+        std::list<DasObject*> objs_;
 
     };
 

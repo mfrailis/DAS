@@ -1,7 +1,7 @@
 #ifndef IMAGE_BUFFER_HPP
 #define	IMAGE_BUFFER_HPP
 
-#include <vector>
+#include <list>
 #include <exception>
 #include "array.hpp"
 #include <boost/variant.hpp>
@@ -87,7 +87,7 @@ public:
     template<typename T, int N>
     void append(das::Array<T, N> &array);
 
-    const std::vector<ImageBufferEntry>&
+    const std::list<ImageBufferEntry>&
     buckets() const {
         return buffer_;
     }
@@ -114,7 +114,7 @@ public:
 private:
     ImageBuffer();
     image_type type_;
-    std::vector<ImageBufferEntry> buffer_;
+    std::list<ImageBufferEntry> buffer_;
     bool is_init_;
     Image *iff_;
 

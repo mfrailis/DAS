@@ -73,7 +73,7 @@ public:
     copy(T* begin, T* end, size_t offset);
 
     template<typename T>
-    std::vector<std::pair<T*, size_t> >
+    std::list<std::pair<T*, size_t> >
     buckets();
 
     void
