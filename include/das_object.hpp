@@ -409,6 +409,8 @@ protected:
         init();
         dbUserId_ = das::DatabaseConfig::database(db_alias).user;
     }
+
+    ~DasObject(){}
 #pragma db transient
     std::string type_name_;
 

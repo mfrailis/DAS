@@ -114,12 +114,15 @@ public:
                 throw das::io_exception(errno);
             }
         }
-	// flush kernel buffers for this file
-	AutoFile in_fd(open(new_path.c_str(), O_RDONLY));
+        
+	// flushing kernel buffers for each file whould be nice, but it is 
+        // too expensive
+/*	AutoFile in_fd(open(new_path.c_str(), O_RDONLY));
         if (in_fd == -1)
             throw das::io_exception(errno);
 	if(syncfs(in_fd))
 	  throw das::io_exception(errno);
+*/
     }
 };
 

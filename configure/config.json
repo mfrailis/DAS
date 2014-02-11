@@ -15,5 +15,22 @@
 	    "temp_path"      : "/mnt/DBs/data/ciws/temp/%$LOGNAME$",
 	    "unref_data_expiration_time" : 5
 	}
+    },
+    {
+	"host"          : "localhost",
+	"port"          : 3306,
+	"db_type"  	: "mysql",
+	"alias"         : "test_level2",
+	"mysql_socket"  : "/var/run/mysqld/mysqld.sock",
+	"db_name"  	: "test_level2",
+	"ddl"	     	: "ddl_test_types.xml",
+	"storage_engine": {
+	    "name"          : "Raw",
+	    "root_dir"      : "/mnt/DBs/data/test/store",
+	    "default_path"  : "%F/%t/%n/%v/",
+	    "custom_path"   : "%s/%B/%n/%v",
+	    "temp_path"      : "/mnt/DBs/data/test/temp/%$LOGNAME$",
+	    "unref_data_expiration_time" : 10
+	}
     }
 ]
