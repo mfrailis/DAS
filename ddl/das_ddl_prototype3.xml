@@ -337,7 +337,7 @@
 	<column name="eventnumber" type="int32" description=""/>
 	<column name="flags" type="int32" />
 	<column name="packetlen" type="int16" description="packet lenght" />
-	<column name="tr_pdm" type="byte" description="triggered pdm id" />
+	<column name="tr_pdm" type="byte" description="triggered pdm" />
 	<column name="ssc" type="int16" description="source sequence counter" />
 	<column name="event_counter" type="int32" />
 	<column name="PDM1_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
