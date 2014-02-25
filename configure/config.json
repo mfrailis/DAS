@@ -9,10 +9,10 @@
 	"ddl"	     	: "das_ddl_prototype3.xml",
 	"storage_engine": {
 	    "name"          : "Raw",
-	    "root_dir"      : "/mnt/DBs/data/ciws/store",
+	    "root_dir"      : "%$HOME$/data/ciws/store",
 	    "default_path"  : "%F/%t/%n/%v/",
 	    "custom_path"   : "%s/%B/%n/%v",
-	    "temp_path"      : "/mnt/DBs/data/ciws/temp/%$LOGNAME$",
+	    "temp_path"      : "%$HOME$/data/ciws/temp/%$LOGNAME$",
 	    "unref_data_expiration_time" : 5
 	}
     },
@@ -26,10 +26,10 @@
 	"ddl"	     	: "ddl_test_types.xml",
 	"storage_engine": {
 	    "name"          : "Raw",
-	    "root_dir"      : "/mnt/DBs/data/test/store",
+	    "root_dir"      : "%$HOME$/data/test/store",
 	    "default_path"  : "%F/%t/%n/%v/",
 	    "custom_path"   : "%s/%B/%n/%v",
-	    "temp_path"      : "/mnt/DBs/data/test/temp/%$LOGNAME$",
+	    "temp_path"      : "%$HOME$/data/test/temp/%$LOGNAME$",
 	    "unref_data_expiration_time" : 10
 	}
     }
