@@ -61,8 +61,8 @@ public:
     if(!bo_) return;
     errno = 0;
     ssize_t count =  write(fd_, b_, bo_);
+    bo_=0;
     if (count == -1){
-      bo_=0;
       throw das::io_exception(errno);
     }
   }
