@@ -247,14 +247,18 @@ bool CIWSProcessor::setValue(){
 
   stringstream ss_config; 
   ss_config << fib_st << fib_mode << lid << scan << trig << rgb ;  
-  string sconfig = ss_config.str();
-  das->datetime(sconfig);
+  das::Array<std::string> datetime(1);
+  datetime(0) = ss_config.str();
+  das->append_column("datetime",datetime);
+  
 
-  int pk_mode = p->dataField->dataFieldHeader->getFieldValue(17); // pkt mode
-  das->packetmode(pk_mode);
+  das::Array<int> flags(1);
+  flags(0) = p->dataField->dataFieldHeader->getFieldValue(17); // pkt mode
+  das->append_column("flags",flags);
 
-  int numpdm = p->dataField->dataFieldHeader->getFieldValue(18); // npdm
-  das->npdm(numpdm);
+
+  //  int numpdm = p->dataField->dataFieldHeader->getFieldValue(18); // npdm
+  //das->npdm(numpdm);
 	
 
 
@@ -329,6 +333,7 @@ char** CIWSProcessor::initCharValueForOutput_init(){
 }
 
 int* CIWSProcessor::initIntValueForOutput_init(){
+  das::DatabaseConfig::database("ciws_prototype").buffered_data(false); // 
   return 0;
 }
 
