@@ -30,7 +30,7 @@ using namespace std;
  */
 class AutoFile {
 public:
-  static const size_t BLK_SIZE = 4096; //TODO provide this as default, offer constructor argument to increase
+  static const size_t BLK_SIZE = 4194304; /* 4 MiB */ //TODO provide this as default, offer constructor argument to increase
   explicit AutoFile(int fd) : fd_(fd), bo_(0) {
     b_ = malloc(BLK_SIZE);
   }
