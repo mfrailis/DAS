@@ -1,3 +1,5 @@
+#define BOOST_TEST_DYN_LINK
+#define BOOST_TEST_MODULE Unit Test Suite
 #include "unit_tpl_all.hpp"
 
 #define IT_OFF(it,N) {for (size_t i = 0; i < N; ++i) ++it;}

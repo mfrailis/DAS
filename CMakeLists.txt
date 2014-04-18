@@ -87,21 +87,6 @@ set(DAS_SRC
   ${CPP_SOURCE_DIR}/storage_engine_blob.cpp
 )
 
-set(UNIT_TEST_SRC
-  ${TEST_SOURCE_DIR}/unit_tpl_all.hpp
-  ${TEST_SOURCE_DIR}/unit_metadata.cpp
-  ${TEST_SOURCE_DIR}/unit_association.cpp
-  ${TEST_SOURCE_DIR}/unit_column.cpp
-  ${TEST_SOURCE_DIR}/unit_column_blob.cpp
-  ${TEST_SOURCE_DIR}/unit_column_array.cpp 
-  ${TEST_SOURCE_DIR}/unit_column_array_blob.cpp  
-  ${TEST_SOURCE_DIR}/unit_image.cpp  
-  ${TEST_SOURCE_DIR}/unit_image_blob.cpp
-  ${TEST_SOURCE_DIR}/unit_query.cpp 
-  ${TEST_SOURCE_DIR}/unit_main.cpp  
-  )
-
-
 include_directories(${CPP_INCLUDE_DIR})
 include_directories(${CMAKE_INCLUDE_PATH})
 include_directories(${Boost_INCLUDE_DIR})
@@ -170,11 +155,43 @@ endif()
 
 enable_testing()
 
-add_executable(unit_tests ${UNIT_TEST_SRC})
-target_link_libraries(unit_tests DAS_A boost_unit_test_framework)
+add_executable(unit_metadata ${TEST_SOURCE_DIR}/unit_metadata.cpp)
+target_link_libraries(unit_metadata DAS_A boost_unit_test_framework)
+
+add_executable(unit_association  ${TEST_SOURCE_DIR}/unit_association.cpp )
+target_link_libraries(unit_association  DAS_A boost_unit_test_framework)
+
+add_executable(unit_column  ${TEST_SOURCE_DIR}/unit_column.cpp )
+target_link_libraries(unit_column  DAS_A boost_unit_test_framework)
+
+add_executable(unit_column_blob  ${TEST_SOURCE_DIR}/unit_column_blob.cpp )
+target_link_libraries(unit_column_blob  DAS_A boost_unit_test_framework)
+
+add_executable(unit_column_array  ${TEST_SOURCE_DIR}/unit_column_array.cpp )
+target_link_libraries(unit_column_array  DAS_A boost_unit_test_framework)
+
+add_executable(unit_column_array_blob  ${TEST_SOURCE_DIR}/unit_column_array_blob.cpp )
+target_link_libraries(unit_column_array_blob  DAS_A boost_unit_test_framework)
+
+add_executable(unit_image  ${TEST_SOURCE_DIR}/unit_image.cpp )
+target_link_libraries(unit_image  DAS_A boost_unit_test_framework)
+
+add_executable(unit_image_blob  ${TEST_SOURCE_DIR}/unit_image_blob.cpp )
+target_link_libraries(unit_image_blob  DAS_A boost_unit_test_framework)
+
+add_executable(unit_query  ${TEST_SOURCE_DIR}/unit_query.cpp )
+target_link_libraries(unit_query  DAS_A boost_unit_test_framework)
 
 add_test(schema ${CMAKE_BUILD_TOOL} db-unit_test)
-add_test(unit unit_tests)
+add_test(metadata  unit_metadata)
+add_test(association  unit_association)
+add_test(column  unit_column)
+add_test(column_blob  unit_column_blob)
+add_test(column_array  unit_column_array)
+add_test(column_array_blob  unit_column_array_blob)
+add_test(image  unit_image)
+add_test(image_blob  unit_image_blob)
+add_test(query  unit_query)
 
 install(DIRECTORY include/ DESTINATION include/das)
 
