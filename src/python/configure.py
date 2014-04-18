@@ -379,15 +379,15 @@ add_custom_target(examples
     column_example
 )
 
-add_custom_target(tests
-  DEPENDS
-   # main_test
-    metadata_test
-    association_test
-    data_test
-    array_column_test
-    rollback_test
-)
+#add_custom_target(tests
+#  DEPENDS
+#   # main_test
+#    metadata_test
+#    association_test
+#    data_test
+#    array_column_test
+#    rollback_test
+#)
 '''
 )
         f.close()

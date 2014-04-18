@@ -168,8 +168,13 @@ if(SWIG_FOUND AND PYTHONLIBS_FOUND)
 
 endif()
 
-add_executable(unit_tests EXCLUDE_FROM_ALL ${UNIT_TEST_SRC})
+enable_testing()
+
+add_executable(unit_tests ${UNIT_TEST_SRC})
 target_link_libraries(unit_tests DAS_A boost_unit_test_framework)
+
+add_test(schema ${CMAKE_BUILD_TOOL} db-unit_test)
+add_test(unit unit_tests)
 
 install(DIRECTORY include/ DESTINATION include/das)
 

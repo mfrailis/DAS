@@ -20,16 +20,16 @@
 	"host"          : "localhost",
 	"port"          : 3306,
 	"db_type"  	: "mysql",
-	"alias"         : "test_level2",
+	"alias"         : "unit_test",
 	"mysql_socket"  : "/var/run/mysqld/mysqld.sock",
-	"db_name"  	: "test_level2",
+	"db_name"  	: "das_unit_test",
 	"ddl"	     	: "ddl_test_types.xml",
 	"storage_engine": {
 	    "name"          : "Raw",
-	    "root_dir"      : "/mnt/DBs/data/test/store",
+	    "root_dir"      : "%$HOME$/DAS/unit_test/store",
 	    "default_path"  : "%F/%t/%n/%v/",
 	    "custom_path"   : "%s/%B/%n/%v",
-	    "temp_path"      : "/mnt/DBs/data/test/temp/%$LOGNAME$",
+	    "temp_path"      : "%$HOME$/DAS/unit_test/temp/%$LOGNAME$",
 	    "unref_data_expiration_time" : 10
 	}
     }

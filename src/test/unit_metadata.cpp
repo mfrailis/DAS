@@ -15,8 +15,8 @@ struct MetadataFixture {
         key_char_ = '9';
         key_string_ = "this is a 'test' string";
         key_text_ = "this is a 'test' text";
-        BOOST_REQUIRE_NO_THROW(db = D::Database::create("test_level2"));
-        BOOST_REQUIRE_NO_THROW(ptr = test_keywords::create("keywords_test_0", "test_level2"));
+        BOOST_REQUIRE_NO_THROW(db = D::Database::create("unit_test"));
+        BOOST_REQUIRE_NO_THROW(ptr = test_keywords::create("keywords_test_0", "unit_test"));
     }
 
     ~MetadataFixture() {

@@ -18,7 +18,7 @@ template<typename T>
 void image_2D_test_(shared_ptr<D::Database> db, const std::string path = "") {
 
     shared_ptr<test_image2d> ptr;
-    BOOST_REQUIRE_NO_THROW(ptr = test_image2d::create("image2d_unit_test", "test_level2"));
+    BOOST_REQUIRE_NO_THROW(ptr = test_image2d::create("image2d_unit_test", "unit_test"));
     long long id;
 
 
@@ -237,7 +237,7 @@ template<typename T>
 void image_3D_test_(shared_ptr<D::Database> db, const std::string path = "") {
 
     shared_ptr<test_image3d> ptr;
-    BOOST_REQUIRE_NO_THROW(ptr = test_image3d::create("image3d_unit_test", "test_level2"));
+    BOOST_REQUIRE_NO_THROW(ptr = test_image3d::create("image3d_unit_test", "unit_test"));
     long long id;
 
     das::Array<T, 3> tiles_0(das::shape(3,4,2));
@@ -486,9 +486,9 @@ BOOST_AUTO_TEST_SUITE(image_data_unit_tests)
 
 BOOST_AUTO_TEST_CASE(image_2D) {
     shared_ptr<D::Database> db;
-    BOOST_REQUIRE_NO_THROW(db = D::Database::create("test_level2"));
+    BOOST_REQUIRE_NO_THROW(db = D::Database::create("unit_test"));
 
-    das::DatabaseConfig::database("test_level2").buffered_data(true);
+    das::DatabaseConfig::database("unit_test").buffered_data(true);
 
     image_2D_test_<double>(db);
     image_2D_test_<float>(db);
@@ -497,7 +497,7 @@ BOOST_AUTO_TEST_CASE(image_2D) {
     image_2D_test_<float> (db, "dir_unit_test/2D/image_F");
 
 
-    das::DatabaseConfig::database("test_level2").buffered_data(false);
+    das::DatabaseConfig::database("unit_test").buffered_data(false);
 
     image_2D_test_<double>(db);
     image_2D_test_<float>(db);
@@ -508,9 +508,9 @@ BOOST_AUTO_TEST_CASE(image_2D) {
 
 BOOST_AUTO_TEST_CASE(image_3D) {
     shared_ptr<D::Database> db;
-    BOOST_REQUIRE_NO_THROW(db = D::Database::create("test_level2"));
+    BOOST_REQUIRE_NO_THROW(db = D::Database::create("unit_test"));
 
-    das::DatabaseConfig::database("test_level2").buffered_data(true);
+    das::DatabaseConfig::database("unit_test").buffered_data(true);
 
     image_3D_test_<double>(db);
     image_3D_test_<float>(db);
@@ -519,7 +519,7 @@ BOOST_AUTO_TEST_CASE(image_3D) {
     image_3D_test_<float> (db, "dir_unit_test/3D/image_F");
 
 
-    das::DatabaseConfig::database("test_level2").buffered_data(false);
+    das::DatabaseConfig::database("unit_test").buffered_data(false);
 
     image_3D_test_<double>(db);
     image_3D_test_<float>(db);

@@ -78,8 +78,8 @@ get(const std::string col_name, shared_ptr<test_columns_array>& ptr) {
 struct ColumnArrayFixture {
 
     ColumnArrayFixture() : id(0) {
-        BOOST_REQUIRE_NO_THROW(db = D::Database::create("test_level2"));
-        BOOST_REQUIRE_NO_THROW(ptr = test_columns_array::create("column_array_unit_test_0", "test_level2"));
+        BOOST_REQUIRE_NO_THROW(db = D::Database::create("unit_test"));
+        BOOST_REQUIRE_NO_THROW(ptr = test_columns_array::create("column_array_unit_test_0", "unit_test"));
         BOOST_REQUIRE_NO_THROW(
                 D::Transaction t = db->begin();
                 db->persist(ptr);
@@ -90,7 +90,7 @@ struct ColumnArrayFixture {
     }
 
     void change() {
-        BOOST_REQUIRE_NO_THROW(ptr = test_columns_array::create("column__array_unit_test_1", "test_level2"));
+        BOOST_REQUIRE_NO_THROW(ptr = test_columns_array::create("column__array_unit_test_1", "unit_test"));
         BOOST_REQUIRE_NO_THROW(
                 D::Transaction t = db->begin();
                 db->persist(ptr);
@@ -223,11 +223,11 @@ BOOST_AUTO_TEST_CASE(column_byte_col_array) {
     ext(2).reference(das::Array<char, 2>(e2, das::shape(2, 3), das::neverDeleteData));
     ext(3).reference(das::Array<char, 2>(e3, das::shape(2, 3), das::neverDeleteData));
 
-    das::DatabaseConfig::database("test_level2").buffered_data(true);
+    das::DatabaseConfig::database("unit_test").buffered_data(true);
     test_case_col_array("column_byte", ptr, db, base, ext);
 
     change();
-    das::DatabaseConfig::database("test_level2").buffered_data(false);
+    das::DatabaseConfig::database("unit_test").buffered_data(false);
     test_case_col_array("column_byte", ptr, db, base, ext);
 
 
@@ -254,11 +254,11 @@ BOOST_AUTO_TEST_CASE(column_short_col_array) {
     ext(2).reference(das::Array<short, 2>(e2, das::shape(5, 2), das::neverDeleteData));
     ext(3).reference(das::Array<short, 2>(e3, das::shape(3, 2), das::neverDeleteData));
 
-    das::DatabaseConfig::database("test_level2").buffered_data(true);
+    das::DatabaseConfig::database("unit_test").buffered_data(true);
     test_case_col_array("column_int16", ptr, db, base, ext);
 
     change();
-    das::DatabaseConfig::database("test_level2").buffered_data(false);
+    das::DatabaseConfig::database("unit_test").buffered_data(false);
     test_case_col_array("column_int16", ptr, db, base, ext);
 }
 
@@ -283,11 +283,11 @@ BOOST_AUTO_TEST_CASE(column_int_col_array) {
     ext(2).reference(das::Array<int, 2>(e2, das::shape(5, 2), das::neverDeleteData));
     ext(3).reference(das::Array<int, 2>(e3, das::shape(3, 2), das::neverDeleteData));
 
-    das::DatabaseConfig::database("test_level2").buffered_data(true);
+    das::DatabaseConfig::database("unit_test").buffered_data(true);
     test_case_col_array("column_int32", ptr, db, base, ext);
 
     change();
-    das::DatabaseConfig::database("test_level2").buffered_data(false);
+    das::DatabaseConfig::database("unit_test").buffered_data(false);
     test_case_col_array("column_int32", ptr, db, base, ext);
 }
 
@@ -312,11 +312,11 @@ BOOST_AUTO_TEST_CASE(column_long_long_col_array) {
     ext(2).reference(das::Array<long long>(e2, das::shape(10), das::neverDeleteData));
     ext(3).reference(das::Array<long long>(e3, das::shape(6), das::neverDeleteData));
 
-    das::DatabaseConfig::database("test_level2").buffered_data(true);
+    das::DatabaseConfig::database("unit_test").buffered_data(true);
     test_case_col_array("column_int64", ptr, db, base, ext);
 
     change();
-    das::DatabaseConfig::database("test_level2").buffered_data(false);
+    das::DatabaseConfig::database("unit_test").buffered_data(false);
     test_case_col_array("column_int64", ptr, db, base, ext);
 }
 
@@ -341,11 +341,11 @@ BOOST_AUTO_TEST_CASE(column_float_col_array) {
     ext(2).reference(das::Array<float>(e2, das::shape(2), das::neverDeleteData));
     ext(3).reference(das::Array<float>(e3, das::shape(2), das::neverDeleteData));
 
-    das::DatabaseConfig::database("test_level2").buffered_data(true);
+    das::DatabaseConfig::database("unit_test").buffered_data(true);
     test_case_col_array("column_float32", ptr, db, base, ext);
 
     change();
-    das::DatabaseConfig::database("test_level2").buffered_data(false);
+    das::DatabaseConfig::database("unit_test").buffered_data(false);
     test_case_col_array("column_float32", ptr, db, base, ext);
 }
 
@@ -388,11 +388,11 @@ string01string01string01string01string01string01string01string01string01string01
     ext(1)(2) = "string chunk 2.1";
     ext(3)(1) = "string chunk 2.1";
 
-    das::DatabaseConfig::database("test_level2").buffered_data(true);
+    das::DatabaseConfig::database("unit_test").buffered_data(true);
     test_case_col_array("column_string", ptr, db, base, ext);
 
     change();
-    das::DatabaseConfig::database("test_level2").buffered_data(false);
+    das::DatabaseConfig::database("unit_test").buffered_data(false);
     test_case_col_array("column_string", ptr, db, base, ext);
 }
 
@@ -417,11 +417,11 @@ BOOST_AUTO_TEST_CASE(column_byte_int_col_array) {
     ext(2).reference(das::Array<int, 2>(e2, das::shape(2, 3), das::neverDeleteData));
     ext(3).reference(das::Array<int, 2>(e3, das::shape(2, 3), das::neverDeleteData));
 
-    das::DatabaseConfig::database("test_level2").buffered_data(true);
+    das::DatabaseConfig::database("unit_test").buffered_data(true);
     test_case_col_array("column_byte", ptr, db, base, ext);
 
     change();
-    das::DatabaseConfig::database("test_level2").buffered_data(false);
+    das::DatabaseConfig::database("unit_test").buffered_data(false);
     test_case_col_array("column_byte", ptr, db, base, ext);
 }
 
@@ -446,11 +446,11 @@ BOOST_AUTO_TEST_CASE(column_float_byte_col_array) {
     ext(2).reference(das::Array<char>(e2, das::shape(2), das::neverDeleteData));
     ext(3).reference(das::Array<char>(e3, das::shape(2), das::neverDeleteData));
 
-    das::DatabaseConfig::database("test_level2").buffered_data(true);
+    das::DatabaseConfig::database("unit_test").buffered_data(true);
     test_case_col_array("column_float32", ptr, db, base, ext);
 
     change();
-    das::DatabaseConfig::database("test_level2").buffered_data(false);
+    das::DatabaseConfig::database("unit_test").buffered_data(false);
     test_case_col_array("column_float32", ptr, db, base, ext);
 }
 
