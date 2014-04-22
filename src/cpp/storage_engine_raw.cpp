@@ -24,31 +24,65 @@
 using namespace std;
 
 
+
 /* class for auto managing file descriptors.
  * Avoids dangling opened files
  */
 class AutoFile {
 public:
-
-    AutoFile(int fd) : fd_(fd) {
+  static const size_t BLK_SIZE = 4194304; /* 4 MiB */ //TODO provide this as default, offer constructor argument to increase
+  explicit AutoFile(int fd) : fd_(fd), bo_(0) {
+    b_ = malloc(BLK_SIZE);
+  }
+  
+  operator int&() {
+    return fd_;
+  }
+  
+  
+  size_t defer_write(const void * data, size_t count){
+    size_t data_o = 0;
+    while(data_o < count){
+      size_t curr_count = 0;
+      if(bo_ == BLK_SIZE)
+	flush();
+      if((count - data_o) > (BLK_SIZE - bo_))
+	curr_count = BLK_SIZE - bo_;
+      else
+	curr_count = count - data_o;
+      memcpy(b_+bo_, data+data_o, curr_count);
+      bo_ += curr_count;
+      data_o += curr_count;
     }
-
-    operator int&() {
-        return fd_;
+    return count;
+  }
+  
+  void flush(){
+    if(!bo_) return;
+    errno = 0;
+    ssize_t count =  write(fd_, b_, bo_);
+    bo_=0;
+    if (count == -1){
+      throw das::io_exception(errno);
     }
-
-    ~AutoFile() {
-        if (fd_ > 0) {
-            close(fd_);
-        }
-    }
-
+  }
+  
+  
+  ~AutoFile() {
+    free(b_);
+    if (fd_ > 0)
+      close(fd_);
+  }
+  
 private:
-    AutoFile();
-    AutoFile(const AutoFile& rhs);
-    const AutoFile& operator=(const AutoFile& rhs);
-
-    int fd_;
+  
+  AutoFile();
+  AutoFile(const AutoFile& rhs);
+  const AutoFile& operator=(const AutoFile& rhs);
+  
+  int fd_;
+  void * b_;
+  size_t bo_;
 };
 
 class FileUtils {
@@ -113,6 +147,15 @@ public:
                 throw das::io_exception(errno);
             }
         }
+	// flush kernel buffers for each file would be nice, but
+	// is too expensive
+	/*
+	AutoFile in_fd(open(new_path.c_str(), O_RDONLY));
+        if (in_fd == -1)
+            throw das::io_exception(errno);
+	if(syncfs(in_fd))
+	  throw das::io_exception(errno);
+	*/
     }
 };
 
@@ -442,24 +485,20 @@ namespace das {
     class RawStorageAccess_append_column : public boost::static_visitor<size_t> {
     public:
 
-        RawStorageAccess_append_column(int file_desc, size_t count, bool include_size)
-        : c_(count), f_(file_desc), include_size_(include_size) {
+        RawStorageAccess_append_column(AutoFile& file_desc, size_t count, bool include_size)
+        : c_(count), af_(file_desc), include_size_(include_size) {
         }
 
         size_t operator() (std::string* buff) const {
             if (include_size_) {
                 chunk_t size = c_;
                 errno = 0;
-                ssize_t count = write(f_, &size, sizeof (chunk_t));
-                if (count == -1)
-                    throw io_exception(errno);
+                size_t count = af_.defer_write(&size, sizeof (chunk_t));
             }
             for (size_t i = 0; i < c_; ++i) {
                 size_t len = buff[i].length();
                 errno = 0;
-                ssize_t count = write(f_, buff[i].c_str(), len + 1);
-                if (count == -1)
-                    throw io_exception(errno);
+		size_t count = af_.defer_write(buff[i].c_str(), len + 1);
             }
             return c_;
         }
@@ -469,42 +508,36 @@ namespace das {
             if (include_size_) {
                 chunk_t size = c_;
                 errno = 0;
-                ssize_t count = write(f_, &size, sizeof (chunk_t));
-                if (count == -1)
-                    throw io_exception(errno);
+                size_t count = af_.defer_write(&size, sizeof (chunk_t));
             }
             errno = 0;
-            ssize_t count = write(f_, buff, c_ * sizeof (T));
-            if (count == -1)
-                throw io_exception(errno);
+            size_t count = af_.defer_write(buff, c_ * sizeof (T));
             count /= sizeof (T);
             return count;
         }
     private:
         size_t c_;
-        int f_;
+        AutoFile& af_;
         bool include_size_;
     };
 
     class RawStorageAccess_append_image : public boost::static_visitor<size_t> {
     public:
 
-        RawStorageAccess_append_image(int file_desc, size_t count)
+        RawStorageAccess_append_image(AutoFile& file_desc, size_t count)
         : c_(count), f_(file_desc) {
         }
 
         template<typename T>
         size_t operator() (const T* buff) const {
             errno = 0;
-            ssize_t count = write(f_, buff, c_ * sizeof (T));
-            if (count == -1)
-                throw io_exception(errno);
+            ssize_t count = f_.defer_write(buff, c_ * sizeof (T));
             count /= sizeof (T);
             return count;
         }
     private:
         size_t c_;
-        int f_;
+        AutoFile& f_;
     };
 
     size_t
@@ -578,7 +611,7 @@ namespace das {
 
         template<typename T>
         void operator() (T &native_type) const {
-            typedef std::vector<std::pair<T*, size_t> > buckets_type;
+            typedef std::deque<std::pair<T*, size_t> > buckets_type;
             buckets_type bks = c_->buffer().buckets<T>();
             size_t size = 0;
 
@@ -594,6 +627,7 @@ namespace das {
                 is_variable = true;
             if (sp.size() == 1 && sp[0] == 1)
                 is_array_column = false;
+	    
 
             for (typename buckets_type::iterator it = bks.begin(); it != bks.end(); ++it) {
 
@@ -606,7 +640,7 @@ namespace das {
                 else
                     size += it->second;
             }
-
+	    file_des.flush();
             size += c_->store_size();
             c_->store_size(size);
             c_->buffer().clear();
@@ -629,7 +663,7 @@ namespace das {
 
         template<typename T>
         void operator() (T &native_type) const {
-            typedef std::vector<ImageBufferEntry> buckets_type;
+            typedef std::deque<ImageBufferEntry> buckets_type;
             const buckets_type &bks = i_->buffer().buckets();
             size_t tiles = 0;
 
@@ -650,7 +684,7 @@ namespace das {
 
                 tiles += it->shape()[0];
             }
-
+	    file_des.flush();
             tiles += i_->store_tiles();
             i_->store_tiles(tiles);
             i_->buffer().clear();
@@ -663,7 +697,7 @@ namespace das {
 
     void
     RawStorageTransaction::save(const std::string &path) {
-        for (std::vector<DasObject*>::iterator obj_it = objs_.begin();
+        for (std::deque<DasObject*>::iterator obj_it = objs_.begin();
                 obj_it != objs_.end(); ++obj_it) {
             std::map<std::string, Column*> map;
             DasObject* obj = *obj_it;
@@ -769,7 +803,7 @@ namespace das {
 
     void
     RawStorageTransaction::save() {
-        for (std::vector<DasObject*>::iterator obj_it = objs_.begin();
+        for (std::deque<DasObject*>::iterator obj_it = objs_.begin();
                 obj_it != objs_.end(); ++obj_it) {
             std::map<std::string, Column*> map;
             DasObject* obj = *obj_it;
@@ -922,7 +956,7 @@ namespace das {
 
     void
     RawStorageTransaction::rollback() {
-        for (std::vector<DasObject*>::iterator obj_it = objs_.begin();
+        for (std::deque<DasObject*>::iterator obj_it = objs_.begin();
                 obj_it != objs_.end(); ++obj_it) {
             std::map<std::string, Column*> map;
             DasObject* obj = *obj_it;
@@ -1649,6 +1683,5 @@ namespace das {
 
         return s;
     }
-
 
 }

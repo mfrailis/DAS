@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE doc [
+<!ENTITY das_essential SYSTEM "../resources/das_essential.xml">
+]>
+<ddl xmlns="http://oats.inaf.it/das" xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://oats.inaf.it/das ../resources/ddl.xsd">
+
+  &das_essential;
+
+  <type name="s21"  description="ciws prototype data">
+    <associated name="pdms" type="pdm" multiplicity="many" relation="exclusive"/>
+    <metadata>
+      <keyword name="dtelescopeid" description="telescope identifier" type="int16" index="yes" />
+      <keyword name="dtype" description="packet type" type="int16"  index="yes" />
+      <keyword name="dsubtype" description="packet sub type" type="int16" index="yes" />
+      <keyword name="dssc" description="source sequence counter" type="int16"  index="yes" />
+      <keyword name="datetime" type="string"  description="UTC date time yy-mm-ddThh:hh:ss" index="yes"/>
+      <keyword name="nanoseconds" type="int32" unit="ns" description="nanoseconds fraction time" index="yes"/>
+      <keyword name="gpsStatus" type="boolean" description="gps status" index="yes"/>
+      <keyword name="eventnumber" type="int32" description="event number" index="yes" />
+      <keyword name="configuration" type="string"  description="number of event" index="yes" />
+      <keyword name="packetmode" type="int16" description="acquisition mode" index="yes" />
+      <keyword name="npdm" type="int16"  description="number of pdms" index="yes" />
+    </metadata>
+  </type>
+
+  <type name="pdm" description="pdm">
+    <metadata>
+      <keyword name="trpdm" type="boolean" description="triggered pdm id"  />
+      <keyword name="id" type="int16"  description="pdm id"/>   
+    </metadata>
+    <data  storeAs="file">
+      <binaryTable>
+	<column name="HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+      </binaryTable>
+    </data>
+  </type>
+</ddl>

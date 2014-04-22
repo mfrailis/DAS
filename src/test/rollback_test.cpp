@@ -70,7 +70,7 @@ void CHECK_NESTED_COLLECTIONS(
 }
 
 void
-save(shared_ptr<test_columns_blob>& ptr, shared_ptr<D::Database>& db) {
+save_blob(shared_ptr<test_columns_blob>& ptr, shared_ptr<D::Database>& db) {
     BOOST_REQUIRE_NO_THROW(
             D::Transaction t = db->begin();
             db->attach(ptr);
@@ -136,7 +136,7 @@ a.reference(ptr->get_column<T>(col_name));
 
 //    BOOST_CHECK_THROW(ptr->get_column<T>(col_name, 0, 10), das::io_exception);
 
-    save(ptr, db);
+    save_blob(ptr, db);
 
 //    BOOST_CHECK_THROW(ptr->get_column<T>(col_name, 0, 10), das::io_exception);
 
@@ -154,7 +154,7 @@ a.reference(ptr->get_column<T>(col_name));
 
  //   BOOST_CHECK_THROW(ptr->get_column<T>(col_name, 0, 10), das::io_exception);
 
-    save(ptr, db);
+    save_blob(ptr, db);
 
  //   BOOST_CHECK_THROW(ptr->get_column<T>(col_name, 0, 10), das::io_exception);
 

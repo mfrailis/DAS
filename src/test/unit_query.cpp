@@ -1,3 +1,5 @@
+#define BOOST_TEST_DYN_LINK
+#define BOOST_TEST_MODULE Unit Test Suite
 #include "unit_tpl_all.hpp"
 #include <vector>
 namespace T = das::tpl;
@@ -6,7 +8,7 @@ BOOST_AUTO_TEST_SUITE(query_unit_tests)
 
 BOOST_AUTO_TEST_CASE(query_exceptions_T) {
     shared_ptr<T::Database> db;
-    BOOST_REQUIRE_NO_THROW(db = T::Database::create("test_level2"));
+    BOOST_REQUIRE_NO_THROW(db = T::Database::create("unit_test"));
 
     T::Transaction t = db->begin();
 
@@ -77,7 +79,7 @@ BOOST_AUTO_TEST_CASE(query_exceptions_T) {
 
 BOOST_AUTO_TEST_CASE(query_T) {
     shared_ptr<T::Database> db;
-    BOOST_REQUIRE_NO_THROW(db = T::Database::create("test_level2"));
+    BOOST_REQUIRE_NO_THROW(db = T::Database::create("unit_test"));
 
     std::string name = "query_test";
 
@@ -111,11 +113,11 @@ BOOST_AUTO_TEST_CASE(query_T) {
     t.commit();
 
     MyVec vec;
-    vec.push_back(test_keywords::create(name+"0","test_level2"));
-    vec.push_back(test_keywords::create(name+"1","test_level2"));
-    vec.push_back(test_keywords::create(name+"2","test_level2"));
-    vec.push_back(test_keywords::create(name+"3","test_level2"));
-    vec.push_back(test_keywords::create(name+"4","test_level2"));
+    vec.push_back(test_keywords::create(name+"0","unit_test"));
+    vec.push_back(test_keywords::create(name+"1","unit_test"));
+    vec.push_back(test_keywords::create(name+"2","unit_test"));
+    vec.push_back(test_keywords::create(name+"3","unit_test"));
+    vec.push_back(test_keywords::create(name+"4","unit_test"));
     
     vec[0]->key_int32(10);    vec[0]->key_float32(5);       vec[0]->key_float64(5);
     vec[1]->key_int32(10);    vec[1]->key_float32(5);       vec[1]->key_float64(5);
@@ -148,7 +150,7 @@ BOOST_AUTO_TEST_CASE(query_T) {
 BOOST_AUTO_TEST_CASE(query_ord_T) {
     typedef std::vector<shared_ptr<test_keywords> > MyVec;
     shared_ptr<T::Database> db;
-    BOOST_REQUIRE_NO_THROW(db = T::Database::create("test_level2"));
+    BOOST_REQUIRE_NO_THROW(db = T::Database::create("unit_test"));
 
     std::string name = "query_testB";
 

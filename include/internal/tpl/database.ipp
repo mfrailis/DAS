@@ -12,7 +12,11 @@ namespace das {
                 DAS_LOG_DBG("DAS debug INFO: non mysql dbms aren't supported yet");
                 throw das::wrong_database();
             }
-            db.reset(new odb::mysql::database(info.user, info.password, info.db_name, info.host, info.port));
+            if(info.mysql_socket.empty())
+                db.reset(new odb::mysql::database(info.user, info.password, info.db_name, info.host, info.port));
+            else
+                db.reset(new odb::mysql::database(info.user, info.password, info.db_name, info.host, info.port, info.mysql_socket));
+                               
             shared_ptr<Database> das_db(new Database(alias, db));
             das_db->info_ = DdlInfo::get_instance(alias);
             return das_db;

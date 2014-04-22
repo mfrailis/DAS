@@ -379,15 +379,15 @@ add_custom_target(examples
     column_example
 )
 
-add_custom_target(tests
-  DEPENDS
-   # main_test
-    metadata_test
-    association_test
-    data_test
-    array_column_test
-    rollback_test
-)
+#add_custom_target(tests
+#  DEPENDS
+#   # main_test
+#    metadata_test
+#    association_test
+#    data_test
+#    array_column_test
+#    rollback_test
+#)
 '''
 )
         f.close()
@@ -565,6 +565,8 @@ namespace das{
       info.db_name = "''',str(db['db_name']),'''";
       info.db_type = "''',str(db['db_type']),'''";
 '''])
+        if(db.has_key('mysql_socket')):
+             f.writelines(['      info.mysql_socket = "'+str(db['mysql_socket'])+'";\n'])  
         f.writelines(l for l in  storage_engine_tree_visit(db['storage_engine'],''))
         f.writelines(['    }\n'])
     f.writelines(['''  }

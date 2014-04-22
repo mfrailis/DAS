@@ -42,7 +42,7 @@ namespace das {
         }
 
         template<int Rank>
-        ArrayStore(T* p, const TinyVector<int, Rank> s) :
+        ArrayStore(T* p, const TinyVector<int, Rank>& s) :
         ptr_(p),
         owner_(std::tr1::shared_ptr<T>(p,ArrayDeleter<T>())),
         shape_(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
@@ -111,7 +111,7 @@ namespace das {
     template<typename T>
     class ColumnArrayBuffer {
         typedef std::pair<size_t, T*> item;
-        typedef std::vector<item> buff_type;
+        typedef std::deque<item> buff_type;
 
     public:
 
@@ -153,13 +153,15 @@ namespace das {
 
             TinyVector<int, N_Rank> s(shape);
             Array<U, N_Rank> *b = new Array<U, N_Rank>[size()];
+            typename buff_type::iterator it = buff_.begin();
             for (size_t i = 0; i < count; ++i) {
-                s(0) = buff_[i].first / elems;
-                U* tmp = new U[buff_[i].first];
-                for (size_t j = 0; j < buff_[i].first; ++j)
-                    tmp[j] = buff_[i].second[j];
+                s(0) = it->first / elems;
+                U* tmp = new U[it->first];
+                for (size_t j = 0; j < it->first; ++j)
+                    tmp[j] = it->second[j];
                 buffer[i].reference(Array<U, N_Rank>(tmp, s, deleteDataWhenDone));
-                delete [] buff_[i].second;
+                delete [] it->second;
+                ++it;
             }
 
             buff_.clear();
@@ -180,9 +182,11 @@ namespace das {
                     throw das::bad_array_shape();
 
             TinyVector<int, N_Rank> s(shape);
+            typename buff_type::iterator it = buff_.begin();
             for (size_t i = 0; i < count; ++i) {
-                s(0) = buff_[i].first / elems;
-                buffer[i].reference(Array<T, N_Rank>(buff_[i].second, s, deleteDataWhenDone));
+                s(0) = it->first / elems;
+                buffer[i].reference(Array<T, N_Rank>(it->second, s, deleteDataWhenDone));
+                ++it;
             }
 
             buff_.clear();

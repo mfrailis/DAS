@@ -514,7 +514,8 @@ void
       self._protected_section.append("shared_ptr<ImageFile_"+self._class_name+"> image_;")
       self._data_types = _file_s.image_data_types(self._class_name,dim)
       self._src_body.extend(_file_s.image_body_src(self._class_name))
-    else:
+    else:  
+      self._src_header.append('#include "internal/storage_engine_blob.hpp"')
       self._protected_section.append("ImageBlob_"+self._class_name+" image_;")
       self._data_types = _blob_s.image_data_types(self._class_name,dim)
       self._src_body.extend(_blob_s.image_body_src(self._class_name))

@@ -1,4 +1,7 @@
+#define BOOST_TEST_DYN_LINK
+#define BOOST_TEST_MODULE Unit Test Suite
 #include "unit_tpl_all.hpp"
+
 using namespace std;
 namespace D = das::tpl;
 
@@ -203,13 +206,13 @@ BOOST_AUTO_TEST_CASE(one_shared) {
     shared_ptr<test_association_one_shared> ptr;
     shared_ptr<test_associated_one_shared> assoc, assoc2;
 
-    BOOST_REQUIRE_NO_THROW(db = D::Database::create("test_level2"));
+    BOOST_REQUIRE_NO_THROW(db = D::Database::create("unit_test"));
     BOOST_REQUIRE_NO_THROW(
-            ptr = test_association_one_shared::create("test_00", "test_level2"));
+            ptr = test_association_one_shared::create("test_00", "unit_test"));
     BOOST_REQUIRE_NO_THROW(
-            assoc = test_associated_one_shared::create("test_assoc_A", "test_level2"));
+            assoc = test_associated_one_shared::create("test_assoc_A", "unit_test"));
     BOOST_REQUIRE_NO_THROW(
-            assoc2 = test_associated_one_shared::create("test_assoc_B", "test_level2"));
+            assoc2 = test_associated_one_shared::create("test_assoc_B", "unit_test"));
 
     create_association(db, ptr, assoc);
     shared_ptr<test_association_one_shared> ptr1 =
@@ -229,13 +232,13 @@ BOOST_AUTO_TEST_CASE(one_exclusive) {
     shared_ptr<test_association_one_exclusive> ptr;
     shared_ptr<test_associated_one_exclusive> assoc, assoc2;
 
-    BOOST_REQUIRE_NO_THROW(db = D::Database::create("test_level2"));
+    BOOST_REQUIRE_NO_THROW(db = D::Database::create("unit_test"));
     BOOST_REQUIRE_NO_THROW(
-            ptr = test_association_one_exclusive::create("test_00", "test_level2"));
+            ptr = test_association_one_exclusive::create("test_00", "unit_test"));
     BOOST_REQUIRE_NO_THROW(
-            assoc = test_associated_one_exclusive::create("test_assoc_A", "test_level2"));
+            assoc = test_associated_one_exclusive::create("test_assoc_A", "unit_test"));
     BOOST_REQUIRE_NO_THROW(
-            assoc2 = test_associated_one_exclusive::create("test_assoc_B", "test_level2"));
+            assoc2 = test_associated_one_exclusive::create("test_assoc_B", "unit_test"));
     create_association(db, ptr, assoc);
     shared_ptr<test_association_one_exclusive> ptr1 =
             retrive<test_association_one_exclusive>(db, ptr->das_id());
@@ -256,19 +259,19 @@ BOOST_AUTO_TEST_CASE(many_shared) {
     vector< shared_ptr<test_associated_many_shared> > assoc;
     vector<shared_ptr<test_associated_many_shared> > assoc2;
 
-    BOOST_REQUIRE_NO_THROW(db = D::Database::create("test_level2"));
+    BOOST_REQUIRE_NO_THROW(db = D::Database::create("unit_test"));
     BOOST_REQUIRE_NO_THROW(
-            ptr = test_association_many_shared::create("test_00", "test_level2"));
+            ptr = test_association_many_shared::create("test_00", "unit_test"));
 
     for (int i = 0; i < 5; ++i)
         BOOST_REQUIRE_NO_THROW(
             assoc.push_back(
-            test_associated_many_shared::create("test_assoc_A", "test_level2")));
+            test_associated_many_shared::create("test_assoc_A", "unit_test")));
 
     for (int i = 0; i < 3; ++i)
         BOOST_REQUIRE_NO_THROW(
             assoc2.push_back(
-            test_associated_many_shared::create("test_assoc_B", "test_level2")));
+            test_associated_many_shared::create("test_assoc_B", "unit_test")));
 
     create_association(db, ptr, assoc);
 
@@ -291,18 +294,18 @@ BOOST_AUTO_TEST_CASE(many_exclusive) {
     vector< shared_ptr<test_associated_many_exclusive> > assoc;
     vector<shared_ptr<test_associated_many_exclusive> > assoc2;
   
-    BOOST_REQUIRE_NO_THROW(db = D::Database::create("test_level2"));
+    BOOST_REQUIRE_NO_THROW(db = D::Database::create("unit_test"));
     BOOST_REQUIRE_NO_THROW(
-            ptr = test_association_many_exclusive::create("test_00", "test_level2"));
+            ptr = test_association_many_exclusive::create("test_00", "unit_test"));
 
     for (int i = 0; i < 5; ++i)
         BOOST_REQUIRE_NO_THROW(
             assoc.push_back(
-            test_associated_many_exclusive::create("test_assoc_A", "test_level2")));
+            test_associated_many_exclusive::create("test_assoc_A", "unit_test")));
     for (int i = 0; i < 3; ++i)
         BOOST_REQUIRE_NO_THROW(
             assoc2.push_back(
-            test_associated_many_exclusive::create("test_assoc_B", "test_level2")));
+            test_associated_many_exclusive::create("test_assoc_B", "unit_test")));
 
     create_association(db, ptr, assoc);
 

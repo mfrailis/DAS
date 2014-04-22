@@ -1,7 +1,7 @@
 #ifndef IMAGE_BUFFER_HPP
 #define	IMAGE_BUFFER_HPP
 
-#include <vector>
+#include <deque>
 #include <exception>
 #include "array.hpp"
 #include <boost/variant.hpp>
@@ -76,18 +76,18 @@ public:
     : is_init_(false), iff_(iff), size0_(0){
     }
 
-    void init(const std::string &type);
+    void init(const std::string& type);
 
     bool is_init() const {
         return is_init_;
     }
-
+    
     bool empty();
 
     template<typename T, int N>
     void append(das::Array<T, N> &array);
 
-    const std::vector<ImageBufferEntry>&
+    const std::deque<ImageBufferEntry>&
     buckets() const {
         return buffer_;
     }
@@ -112,8 +112,9 @@ public:
             const das::TinyVector<int, 11> &stride);
 
 private:
+    ImageBuffer();
     image_type type_;
-    std::vector<ImageBufferEntry> buffer_;
+    std::deque<ImageBufferEntry> buffer_;
     bool is_init_;
     Image *iff_;
 

@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE doc [
+<!ENTITY das_essential SYSTEM "../resources/das_essential.xml">
+]>
+<ddl xmlns="http://oats.inaf.it/das" xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://oats.inaf.it/das ../resources/ddl.xsd">
+
+  &das_essential;
+
+  <type name="s21"  description="ciws prototype data">
+    <metadata>
+      <keyword name="dtelescopeid" description="telescope identifier" type="int16" index="yes" />
+      <keyword name="dtype" description="packet type" type="int16"  index="yes" />
+      <keyword name="dsubtype" description="packet sub type" type="int16" index="yes" />
+      <keyword name="dssc" description="source sequence counter" type="int16"  index="yes" />
+    </metadata>
+    <data  storeAs="file">
+      <binaryTable>
+	<column name="datetime" type="string"  description="UTC date time yy-mm-ddThh:hh:ss" />
+	<column name="nanoseconds" type="int32" unit="ns" description="nanoseconds fraction time" />
+	<column name="gpsStatus" type="boolean" description="gps status" />
+	<column name="eventnumber" type="int32" description="" arraysize="*" />
+	<column name="configuration" type="int32"  description="number of event" />
+	<column name="packetmode" type="int16" description="acquisition mode" />
+	<column name="npdm" type="int16"  description="number of pdms" arraysize="*" />
+	<column name="PDM1_trpdm" type="boolean" description="triggered pdm id" arraysize="1" />
+	<column name="PDM1_id" type="int16"  description="pdm id" arraysize="1" />
+	<column name="PDM1_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM1_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM2_trpdm" type="boolean"  description="triggered pdm" arraysize="1" />
+	<column name="PDM2_id" type="int16"  description="pdm id" arraysize="1" />
+	<column name="PDM2_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM2_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM3_trpdm" type="boolean" description="triggered pdm" arraysize="1" />
+	<column name="PDM3_id" type="int16"  description="pdm id" arraysize="1" />
+	<column name="PDM3_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM3_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM4_trpdm" type="boolean" description="triggered pdm" arraysize="1" />
+	<column name="PDM4_id" type="int16"  description="pdm id" arraysize="1" />
+	<column name="PDM4_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM4_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM5_trpdm" type="boolean" description="triggered pdm" arraysize="1" />
+	<column name="PDM5_id" type="int16"  description="" arraysize="1" />
+	<column name="PDM5_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM5_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM6_trpdm" type="boolean" description="triggered pdm" arraysize="1" />
+	<column name="PDM6_id" type="int16"  description="" arraysize="1" />
+	<column name="PDM6_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM6_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM7_trpdm" type="boolean" description="triggered pdm" arraysize="1" />
+	<column name="PDM7_id" type="int16"  description="" arraysize="1" />
+	<column name="PDM7_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM7_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM8_trpdm" type="boolean" description="triggered pdm" arraysize="1" />
+	<column name="PDM8_id" type="int16"  description="" arraysize="1" />
+	<column name="PDM8_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM8_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM9_trpdm" type="boolean" description="triggered pdm" arraysize="1" />	
+	<column name="PDM9_id" type="int16"  description="" arraysize="1" />
+	<column name="PDM9_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM9_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM10_trpdm" type="boolean" description="triggered pdm" arraysize="1" />
+	<column name="PDM10_id" type="int16"  description="" arraysize="1" />
+	<column name="PDM10_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM10_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM11_trpdm" type="boolean" description="triggered pdm" arraysize="1" />
+	<column name="PDM11_id" type="int16"  description="" arraysize="1" />
+	<column name="PDM11_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM11_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+	<column name="PDM12_trpdm" type="boolean" description="triggered pdm" arraysize="1" />
+	<column name="PDM12_id" type="int16"  description="" arraysize="1" />
+	<column name="PDM12_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM12_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM13_trpdm" type="boolean" description="triggered pdm" arraysize="1" />
+	<column name="PDM13_id" type="int16"  description="" arraysize="1" />
+	<column name="PDM13_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM13_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM14_trpdm" type="boolean" description="triggered pdm" arraysize="1" />
+	<column name="PDM14_id" type="int16"  description="" arraysize="1" />
+	<column name="PDM14_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM14_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM15_trpdm" type="boolean" description="triggered pdm" arraysize="1" />
+	<column name="PDM15_id" type="int16"  description="" arraysize="1" />
+	<column name="PDM15_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM15_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM16_trpdm" type="boolean" description="triggered pdm" arraysize="1" />
+	<column name="PDM16_id" type="int16"  description="" arraysize="1" />
+	<column name="PDM16_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM16_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM17_trpdm" type="boolean" description="triggered pdm" arraysize="1" />
+	<column name="PDM17_id" type="int16"  description="" arraysize="1" />
+	<column name="PDM17_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM17_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM18_trpdm" type="boolean" description="triggered pdm" arraysize="1" />
+	<column name="PDM18_id" type="int16"  description="" arraysize="1" />
+	<column name="PDM18_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM18_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM19_trpdm" type="boolean" description="triggered pdm" arraysize="1" />
+	<column name="PDM19_id" type="int16"  description="" arraysize="1" />
+	<column name="PDM19_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM19_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM20_trpdm" type="boolean" description="triggered pdm" arraysize="1" />
+	<column name="PDM20_id" type="int16"  description="" arraysize="1" />
+	<column name="PDM20_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM20_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM21_trpdm" type="boolean" description="triggered pdm" arraysize="1" />
+	<column name="PDM21_id" type="int16"  description="" arraysize="1" />
+	<column name="PDM21_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM21_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM22_trpdm" type="boolean" description="triggered pdm" arraysize="1" />
+	<column name="PDM22_id" type="int16"  description="" arraysize="1" />
+	<column name="PDM22_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM22_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM23_trpdm" type="boolean" description="triggered pdm" arraysize="1" />
+	<column name="PDM23_id" type="int16"  description="" arraysize="1" />
+	<column name="PDM23_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM23_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM24_trpdm" type="boolean" description="triggered pdm" arraysize="1" />
+	<column name="PDM24_id" type="int16"  description="" arraysize="1" />
+	<column name="PDM24_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM24_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM25_trpdm" type="boolean" description="triggered pdm" arraysize="1" />
+	<column name="PDM25_id" type="int16"  description="" arraysize="1" />
+	<column name="PDM25_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM25_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM26_trpdm" type="boolean" description="triggered pdm" arraysize="1" />
+	<column name="PDM26_id" type="int16"  description="" arraysize="1" />
+	<column name="PDM26_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM26_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM27_trpdm" type="boolean" description="triggered pdm" arraysize="1" />
+	<column name="PDM27_id" type="int16"  description="" arraysize="1" />
+	<column name="PDM27_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM27_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM28_trpdm" type="boolean" description="triggered pdm" arraysize="1" />
+	<column name="PDM28_id" type="int16"  description="" arraysize="1" />
+	<column name="PDM28_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM28_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM29_trpdm" type="boolean" description="triggered pdm" arraysize="1" />
+	<column name="PDM29_id" type="int16"  description="" arraysize="1" />
+	<column name="PDM29_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM29_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM30_trpdm" type="boolean" description="triggered pdm" arraysize="1" />
+	<column name="PDM30_id" type="int16"  description="" arraysize="1" />
+	<column name="PDM30_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM30_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM31_trpdm" type="boolean" description="triggered pdm" arraysize="1" />
+	<column name="PDM31_id" type="int16"  description="" arraysize="1" />
+	<column name="PDM31_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM31_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM32_trpdm" type="boolean" description="triggered pdm" arraysize="1" />
+	<column name="PDM32_id" type="int16"  description="" arraysize="1" />
+	<column name="PDM32_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM32_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM33_trpdm" type="boolean" description="triggered pdm" arraysize="1" />
+	<column name="PDM33_id" type="int16"  description="" arraysize="1" />
+	<column name="PDM33_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM33_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM34_trpdm" type="boolean" description="triggered pdm" arraysize="1" />
+	<column name="PDM34_id" type="int16"  description="" arraysize="1" />
+	<column name="PDM34_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM34_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM35_trpdm" type="boolean" description="triggered pdm" arraysize="1" />
+	<column name="PDM35_id" type="int16"  description="" arraysize="1" />
+	<column name="PDM35_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM35_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM36_trpdm" type="boolean" description="triggered pdm" arraysize="1" />
+	<column name="PDM36_id" type="int16"  description="" arraysize="1" />
+	<column name="PDM36_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM36_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />
+	<column name="PDM37_trpdm" type="boolean" description="triggered pdm" arraysize="1" />
+	<column name="PDM37_id" type="int16"  description="" arraysize="1" />
+	<column name="PDM37_HighGain" type="int16" unit="v" description="high gain values" arraysize="64" />
+	<column name="PDM37_LowGain" type="int16" unit="v" description="low gain values" arraysize="64" />	
+      </binaryTable>
+    </data>
+  </type>
+</ddl>

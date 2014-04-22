@@ -35,13 +35,13 @@ public:
     ColumnBuffer_add(das::Array<X> &elem) : elem_(elem) {
     }
 
-    void operator() (std::vector< das::ArrayStore<X> > &vec) const {
+    void operator() (std::deque< das::ArrayStore<X> > &vec) const {
         if (elem_.size() > 0)
             vec.push_back(das::ArrayStore<X>(elem_));
     }
 
     template<typename Y>
-    void operator() (std::vector< das::ArrayStore<Y> > &vec) const {
+    void operator() (std::deque< das::ArrayStore<Y> > &vec) const {
         size_t size = elem_.size();
 
         if (size == 0) return;
@@ -55,7 +55,7 @@ public:
         vec.push_back(das::ArrayStore<Y>(data, size));
     }
 
-    void operator() (std::vector< das::ArrayStore<std::string> > &vec) const {
+    void operator() (std::deque< das::ArrayStore<std::string> > &vec) const {
         throw das::bad_type();
     }
 
@@ -71,13 +71,13 @@ public:
     ColumnBuffer_add(das::Array<std::string> &elem) : elem_(elem) {
     }
 
-    void operator() (std::vector< das::ArrayStore<std::string> > &vec) const {
+    void operator() (std::deque< das::ArrayStore<std::string> > &vec) const {
         if (elem_.size() > 0)
             vec.push_back(das::ArrayStore<std::string>(elem_));
     }
 
     template<typename Y>
-    void operator() (std::vector< das::ArrayStore<Y> > &vec) const {
+    void operator() (std::deque< das::ArrayStore<Y> > &vec) const {
         throw das::bad_type();
     }
 private:
@@ -94,14 +94,14 @@ public:
     ColumnBuffer_array_add(das::ColumnArray<X, Rank> &elem) : elem_(elem) {
     }
 
-    void operator() (std::vector< das::ArrayStore<X> > &vec) const {
+    void operator() (std::deque< das::ArrayStore<X> > &vec) const {
         for (typename Elem_t::iterator it = elem_.begin(); it != elem_.end(); ++it)
             if (it->size() > 0)
                 vec.push_back(das::ArrayStore<X>(*it));
     }
 
     template<typename Y>
-    void operator() (std::vector< das::ArrayStore<Y> > &vec) const {
+    void operator() (std::deque< das::ArrayStore<Y> > &vec) const {
         size_t elements = elem_.size();
 
         if (elements == 0) return;
@@ -118,7 +118,7 @@ public:
         }
     }
 
-    void operator() (std::vector< das::ArrayStore<std::string> > &vec) const {
+    void operator() (std::deque< das::ArrayStore<std::string> > &vec) const {
         throw das::bad_type();
     }
 
@@ -135,14 +135,14 @@ public:
     ColumnBuffer_array_add(das::ColumnArray<std::string, Rank> &elem) : elem_(elem) {
     }
 
-    void operator() (std::vector< das::ArrayStore<std::string> > &vec) const {
+    void operator() (std::deque< das::ArrayStore<std::string> > &vec) const {
         for (typename Elem_t::iterator it = elem_.begin(); it != elem_.end(); ++it)
             if (it->size() > 0)
                 vec.push_back(das::ArrayStore<std::string>(*it));
     }
 
     template<typename Y>
-    void operator() (std::vector< das::ArrayStore<Y> > &vec) const {
+    void operator() (std::deque< das::ArrayStore<Y> > &vec) const {
         throw das::bad_type();
     }
 
@@ -192,8 +192,8 @@ public:
     }
 
     template<typename T>
-    U* operator() (std::vector< das::ArrayStore<T> > &vec) {
-        typename std::vector< das::ArrayStore<T> >::iterator v_it = vec.begin();
+    U* operator() (std::deque< das::ArrayStore<T> > &vec) {
+        typename std::deque< das::ArrayStore<T> >::iterator v_it = vec.begin();
         if (v_it == vec.end()) return b_;
         size_t first_offset = 0;
 
@@ -235,7 +235,7 @@ public:
         return b_;
     }
 
-    U* operator() (std::vector< das::ArrayStore<std::string> > &vec) {
+    U* operator() (std::deque< das::ArrayStore<std::string> > &vec) {
         return b_;
     }
 
@@ -253,8 +253,8 @@ public:
     b_(begin), e_(end), o_(offset) {
     }
 
-    std::string* operator() (std::vector< das::ArrayStore<std::string> > &vec) {
-        std::vector< das::ArrayStore<std::string> >::iterator v_it = vec.begin();
+    std::string* operator() (std::deque< das::ArrayStore<std::string> > &vec) {
+        std::deque< das::ArrayStore<std::string> >::iterator v_it = vec.begin();
         if (v_it == vec.end()) return b_;
         size_t first_offset = 0;
 
@@ -297,7 +297,7 @@ public:
     }
 
     template<typename T>
-    std::string* operator() (std::vector< das::ArrayStore<T> > &vec) {
+    std::string* operator() (std::deque< das::ArrayStore<T> > &vec) {
         return b_;
     }
 
@@ -322,8 +322,8 @@ public:
 
     template<typename U>
     OutputIterator
-    operator() (std::vector< das::ArrayStore<U> > &vec) {
-        typename std::vector< das::ArrayStore<U> >::iterator v_it = vec.begin();
+    operator() (std::deque< das::ArrayStore<U> > &vec) {
+        typename std::deque< das::ArrayStore<U> >::iterator v_it = vec.begin();
         if (v_it == vec.end()) return b_;
         size_t first_offset = 0;
 
@@ -346,7 +346,7 @@ public:
         return b_;
     }
 
-    OutputIterator operator() (std::vector< das::ArrayStore<std::string> > &vec) {
+    OutputIterator operator() (std::deque< das::ArrayStore<std::string> > &vec) {
         throw das::not_implemented();
     }
 
@@ -368,8 +368,8 @@ public:
     }
 
     OutputIterator 
-    operator() (std::vector< das::ArrayStore<std::string> > &vec) {
-        std::vector< das::ArrayStore<std::string> >::iterator v_it = vec.begin();
+    operator() (std::deque< das::ArrayStore<std::string> > &vec) {
+        std::deque< das::ArrayStore<std::string> >::iterator v_it = vec.begin();
         if (v_it == vec.end()) return b_;
         size_t first_offset = 0;
 
@@ -394,7 +394,7 @@ public:
 
     template<typename U>
     OutputIterator
-    operator() (std::vector< das::ArrayStore<U> > &vec) {
+    operator() (std::deque< das::ArrayStore<U> > &vec) {
         throw das::bad_type();
     }
 
@@ -417,19 +417,19 @@ ColumnBuffer::copy(T* begin, T* end, size_t offset) {
 }
 
 template<typename T>
-class ColumnBuffer_buckets : public boost::static_visitor<std::vector<std::pair<T*, size_t> > > {
+class ColumnBuffer_buckets : public boost::static_visitor<std::deque<std::pair<T*, size_t> > > {
 public:
 
     template<typename U>
-    std::vector<std::pair<T*, size_t> >
-    operator() (std::vector< das::ArrayStore<U> > &vec) const {
+    std::deque<std::pair<T*, size_t> >
+    operator() (std::deque< das::ArrayStore<U> > &vec) const {
         throw das::bad_type();
     }
 
-    std::vector<std::pair<T*, size_t> >
-    operator() (std::vector< das::ArrayStore<T> > &vec) const {
-        std::vector<std::pair<T*, size_t> > bks;
-        for (typename std::vector< das::ArrayStore<T> >::iterator it = vec.begin();
+    std::deque<std::pair<T*, size_t> >
+    operator() (std::deque< das::ArrayStore<T> > &vec) const {
+        std::deque<std::pair<T*, size_t> > bks;
+        for (typename std::deque< das::ArrayStore<T> >::iterator it = vec.begin();
                 it != vec.end(); ++it)
             bks.push_back(it->pair());
 
@@ -438,7 +438,7 @@ public:
 };
 
 template<typename T >
-std::vector<std::pair<T*, size_t> >
+std::deque<std::pair<T*, size_t> >
 ColumnBuffer::buckets() {
 
     return boost::apply_visitor(ColumnBuffer_buckets<T>(), buffer_);
@@ -449,7 +449,7 @@ public:
 
     template<typename T>
     void
-    operator() (std::vector< das::ArrayStore<T> > &vec) const {
+    operator() (std::deque< das::ArrayStore<T> > &vec) const {
 
         vec.clear();
     }

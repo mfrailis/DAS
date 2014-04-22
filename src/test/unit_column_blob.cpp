@@ -1,9 +1,11 @@
+#define BOOST_TEST_DYN_LINK
+#define BOOST_TEST_MODULE Unit Test Suite
 #include "unit_tpl_all.hpp"
 
 namespace D = das::tpl;
 
 void
-save(shared_ptr<test_columns_blob>& ptr, shared_ptr<D::Database>& db) {
+save_blob(shared_ptr<test_columns_blob>& ptr, shared_ptr<D::Database>& db) {
     BOOST_REQUIRE_NO_THROW(
             D::Transaction t = db->begin();
             db->attach(ptr);
@@ -14,8 +16,8 @@ save(shared_ptr<test_columns_blob>& ptr, shared_ptr<D::Database>& db) {
 struct ColumnFixtureBlob {
 
     ColumnFixtureBlob() : id(0) {
-        BOOST_REQUIRE_NO_THROW(db = D::Database::create("test_level2"));
-        BOOST_REQUIRE_NO_THROW(ptr = test_columns_blob::create("column_unit_test_0", "test_level2"));
+        BOOST_REQUIRE_NO_THROW(db = D::Database::create("unit_test"));
+        BOOST_REQUIRE_NO_THROW(ptr = test_columns_blob::create("column_unit_test_0", "unit_test"));
         BOOST_REQUIRE_NO_THROW(
                 D::Transaction t = db->begin();
                 db->persist(ptr);
@@ -26,7 +28,7 @@ struct ColumnFixtureBlob {
     }
 
     void change() {
-        BOOST_REQUIRE_NO_THROW(ptr = test_columns_blob::create("column_unit_test_1", "test_level2"));
+        BOOST_REQUIRE_NO_THROW(ptr = test_columns_blob::create("column_unit_test_1", "unit_test"));
         BOOST_REQUIRE_NO_THROW(
                 D::Transaction t = db->begin();
                 db->persist(ptr);
@@ -72,7 +74,7 @@ test_case_blob(
 
     BOOST_CHECK_THROW(ptr->get_column<T>(col_name,0,10),das::io_exception);
     
-    save(ptr, db);
+    save_blob(ptr, db);
 
     BOOST_CHECK_THROW(ptr->get_column<T>(col_name,0,10),das::io_exception);
     
@@ -90,7 +92,7 @@ test_case_blob(
 
     BOOST_CHECK_THROW(ptr->get_column<T>(col_name,0,10),das::io_exception);
     
-    save(ptr, db);
+    save_blob(ptr, db);
     
     BOOST_CHECK_THROW(ptr->get_column<T>(col_name,0,10),das::io_exception);
 
@@ -108,7 +110,7 @@ test_case_blob(
 
 BOOST_FIXTURE_TEST_SUITE(column_data_blob_unit_tests, ColumnFixtureBlob)
 
-BOOST_AUTO_TEST_CASE(conversion_exceptions) {
+BOOST_AUTO_TEST_CASE(conversion_exceptions_blob) {
     das::Array<int> base(das::shape(3));
     base(0) = -2220;
     base(1) = 1523;
@@ -132,7 +134,7 @@ BOOST_AUTO_TEST_CASE(conversion_exceptions) {
     BOOST_CHECK_THROW(ptr->get_column<std::string>("column_int32", 0, 3), das::bad_type);
 }
 
-BOOST_AUTO_TEST_CASE(column_char) {
+BOOST_AUTO_TEST_CASE(column_char_blob) {
     das::Array<char> base(das::shape(3));
     base(0) = -22;
     base(1) = 15;
@@ -144,15 +146,15 @@ BOOST_AUTO_TEST_CASE(column_char) {
     ext(2) = 18;
     ext(3) = -12;
 
-    das::DatabaseConfig::database("test_level2").buffered_data(true);
+    das::DatabaseConfig::database("unit_test").buffered_data(true);
     test_case_blob("column_char", ptr, db, base, ext);
 
     change();
-    das::DatabaseConfig::database("test_level2").buffered_data(false);
+    das::DatabaseConfig::database("unit_test").buffered_data(false);
     test_case_blob("column_char", ptr, db, base, ext);
 }
 
-BOOST_AUTO_TEST_CASE(column_short) {
+BOOST_AUTO_TEST_CASE(column_short_blob) {
     das::Array<short> base(das::shape(3));
     base(0) = -222;
     base(1) = 15;
@@ -164,15 +166,15 @@ BOOST_AUTO_TEST_CASE(column_short) {
     ext(2) = 18;
     ext(3) = -121;
 
-    das::DatabaseConfig::database("test_level2").buffered_data(true);
+    das::DatabaseConfig::database("unit_test").buffered_data(true);
     test_case_blob("column_int16", ptr, db, base, ext);
 
     change();
-    das::DatabaseConfig::database("test_level2").buffered_data(false);
+    das::DatabaseConfig::database("unit_test").buffered_data(false);
     test_case_blob("column_int16", ptr, db, base, ext);
 }
 
-BOOST_AUTO_TEST_CASE(column_int) {
+BOOST_AUTO_TEST_CASE(column_int_blob) {
     das::Array<int> base(das::shape(3));
     base(0) = -2220;
     base(1) = 1523;
@@ -184,15 +186,15 @@ BOOST_AUTO_TEST_CASE(column_int) {
     ext(2) = 18;
     ext(3) = -121;
 
-    das::DatabaseConfig::database("test_level2").buffered_data(true);
+    das::DatabaseConfig::database("unit_test").buffered_data(true);
     test_case_blob("column_int32", ptr, db, base, ext);
 
     change();
-    das::DatabaseConfig::database("test_level2").buffered_data(false);
+    das::DatabaseConfig::database("unit_test").buffered_data(false);
     test_case_blob("column_int32", ptr, db, base, ext);
 }
 
-BOOST_AUTO_TEST_CASE(column_long_long) {
+BOOST_AUTO_TEST_CASE(column_long_long_blob) {
     das::Array<long long> base(das::shape(3));
     base(0) = -22202;
     base(1) = 15213;
@@ -204,15 +206,15 @@ BOOST_AUTO_TEST_CASE(column_long_long) {
     ext(2) = 1866;
     ext(3) = -12111;
 
-    das::DatabaseConfig::database("test_level2").buffered_data(true);
+    das::DatabaseConfig::database("unit_test").buffered_data(true);
     test_case_blob("column_int64", ptr, db, base, ext);
 
     change();
-    das::DatabaseConfig::database("test_level2").buffered_data(false);
+    das::DatabaseConfig::database("unit_test").buffered_data(false);
     test_case_blob("column_int64", ptr, db, base, ext);
 }
 
-BOOST_AUTO_TEST_CASE(column_float) {
+BOOST_AUTO_TEST_CASE(column_float_blob) {
     das::Array<float> base(das::shape(3));
     base(0) = -22.202;
     base(1) = 152.13;
@@ -224,15 +226,15 @@ BOOST_AUTO_TEST_CASE(column_float) {
     ext(2) = 186.6;
     ext(3) = -121.11;
 
-    das::DatabaseConfig::database("test_level2").buffered_data(true);
+    das::DatabaseConfig::database("unit_test").buffered_data(true);
     test_case_blob("column_float32", ptr, db, base, ext);
 
     change();
-    das::DatabaseConfig::database("test_level2").buffered_data(false);
+    das::DatabaseConfig::database("unit_test").buffered_data(false);
     test_case_blob("column_float32", ptr, db, base, ext);
 }
 
-BOOST_AUTO_TEST_CASE(column_double) {
+BOOST_AUTO_TEST_CASE(column_double_blob) {
     das::Array<double> base(das::shape(3));
     base(0) = -22.202332;
     base(1) = 152.12243;
@@ -244,15 +246,15 @@ BOOST_AUTO_TEST_CASE(column_double) {
     ext(2) = 186.6232234;
     ext(3) = -121.1551;
 
-    das::DatabaseConfig::database("test_level2").buffered_data(true);
+    das::DatabaseConfig::database("unit_test").buffered_data(true);
     test_case_blob("column_float64", ptr, db, base, ext);
 
     change();
-    das::DatabaseConfig::database("test_level2").buffered_data(false);
+    das::DatabaseConfig::database("unit_test").buffered_data(false);
     test_case_blob("column_float64", ptr, db, base, ext);
 }
 
-BOOST_AUTO_TEST_CASE(column_boolean) {
+BOOST_AUTO_TEST_CASE(column_boolean_blob) {
     das::Array<bool> base(das::shape(3));
     base(0) = true;
     base(1) = false;
@@ -264,15 +266,15 @@ BOOST_AUTO_TEST_CASE(column_boolean) {
     ext(2) = false;
     ext(3) = false;
 
-    das::DatabaseConfig::database("test_level2").buffered_data(true);
+    das::DatabaseConfig::database("unit_test").buffered_data(true);
     test_case_blob("column_boolean", ptr, db, base, ext);
 
     change();
-    das::DatabaseConfig::database("test_level2").buffered_data(false);
+    das::DatabaseConfig::database("unit_test").buffered_data(false);
     test_case_blob("column_boolean", ptr, db, base, ext);
 }
 
-BOOST_AUTO_TEST_CASE(column_uchar) {
+BOOST_AUTO_TEST_CASE(column_uchar_blob) {
     das::Array<unsigned char> base(das::shape(3));
     base(0) = 22;
     base(1) = 15;
@@ -284,15 +286,15 @@ BOOST_AUTO_TEST_CASE(column_uchar) {
     ext(2) = 18;
     ext(3) = 12;
 
-    das::DatabaseConfig::database("test_level2").buffered_data(true);
+    das::DatabaseConfig::database("unit_test").buffered_data(true);
     test_case_blob("column_uint8", ptr, db, base, ext);
 
     change();
-    das::DatabaseConfig::database("test_level2").buffered_data(false);
+    das::DatabaseConfig::database("unit_test").buffered_data(false);
     test_case_blob("column_uint8", ptr, db, base, ext);
 }
 
-BOOST_AUTO_TEST_CASE(column_ushort) {
+BOOST_AUTO_TEST_CASE(column_ushort_blob) {
     das::Array<unsigned short> base(das::shape(3));
     base(0) = 222;
     base(1) = 15;
@@ -304,15 +306,15 @@ BOOST_AUTO_TEST_CASE(column_ushort) {
     ext(2) = 18;
     ext(3) = 121;
 
-    das::DatabaseConfig::database("test_level2").buffered_data(true);
+    das::DatabaseConfig::database("unit_test").buffered_data(true);
     test_case_blob("column_uin16", ptr, db, base, ext);
     
     change();
-    das::DatabaseConfig::database("test_level2").buffered_data(false);
+    das::DatabaseConfig::database("unit_test").buffered_data(false);
     test_case_blob("column_uin16", ptr, db, base, ext);
 }
 
-BOOST_AUTO_TEST_CASE(column_uint) {
+BOOST_AUTO_TEST_CASE(column_uint_blob) {
     das::Array<unsigned int> base(das::shape(3));
     base(0) = 2220;
     base(1) = 1523;
@@ -324,15 +326,15 @@ BOOST_AUTO_TEST_CASE(column_uint) {
     ext(2) = 18;
     ext(3) = 121;
     
-    das::DatabaseConfig::database("test_level2").buffered_data(true);
+    das::DatabaseConfig::database("unit_test").buffered_data(true);
     test_case_blob("column_uint32", ptr, db, base, ext);
     
     change();
-    das::DatabaseConfig::database("test_level2").buffered_data(false);
+    das::DatabaseConfig::database("unit_test").buffered_data(false);
     test_case_blob("column_uint32", ptr, db, base, ext);
 }
 
-BOOST_AUTO_TEST_CASE(column_string) {
+BOOST_AUTO_TEST_CASE(column_string_blob) {
     das::Array<std::string> base(das::shape(3));
     base(0) = "string01string01string01string01string01string01string01string01\
 string01string01string01string01string01string01string01string01string01string01\
@@ -360,15 +362,15 @@ string01string01string01string01string01string01string01string01string01string01
     ext(2) = "string chunk 2.1";
     ext(3) = "string chunk 2.1";
 
-    das::DatabaseConfig::database("test_level2").buffered_data(true);
+    das::DatabaseConfig::database("unit_test").buffered_data(true);
     test_case_blob("column_string", ptr, db, base, ext);
     
     change();
-    das::DatabaseConfig::database("test_level2").buffered_data(false);
+    das::DatabaseConfig::database("unit_test").buffered_data(false);
     test_case_blob("column_string", ptr, db, base, ext);
 }
 
-BOOST_AUTO_TEST_CASE(column_float_conversion) {
+BOOST_AUTO_TEST_CASE(column_float_conversion_blob) {
     das::Array<int> base(das::shape(3));
     base(0) = -2220;
     base(1) = 1523;
@@ -380,11 +382,11 @@ BOOST_AUTO_TEST_CASE(column_float_conversion) {
     ext(2) = 18;
     ext(3) = -121;
 
-    das::DatabaseConfig::database("test_level2").buffered_data(true);
+    das::DatabaseConfig::database("unit_test").buffered_data(true);
     test_case_blob("column_float32", ptr, db, base, ext);
      
     change();
-    das::DatabaseConfig::database("test_level2").buffered_data(false);   
+    das::DatabaseConfig::database("unit_test").buffered_data(false);   
     test_case_blob("column_float32", ptr, db, base, ext);  
 }
 
