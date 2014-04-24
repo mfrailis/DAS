@@ -19,8 +19,6 @@ using std::tr1::shared_ptr;
 
 namespace das {
 
-    // TODO: map also a string type, probably to NPY_STRING or NPY_OBJECT
-
     template<typename T>
     class numpy_type_map {
     public:
@@ -164,19 +162,7 @@ namespace das {
 
     template<int Rank>
     class Convert<std::string, Rank> {
-    public:
-/*
-        inline PyObject* to_numpy(das::Array<std::string>& array) const {
-            npy_intp size = {array.size()};
-            PyObject *py_array = PyArray_SimpleNew(1, &size, numpy_type_map<std::string>::typenum);
-            for (npy_intp i = 0; i < size; i++)
-                PyArray_SETITEM(py_array,
-                    PyArray_GETPTR1(py_array, i),
-                    SWIG_From_std_string(array(i)));
-
-            return py_array;
-        }
-*/        
+    public:        
         inline PyObject* to_numpy(das::Array<std::string, Rank>& array) const {
             size_t size = array.size();
             npy_intp dimensions[Rank];
@@ -603,7 +589,6 @@ namespace das {
         map_das_object_methods["uint8"] = das_object_func_ptr_T<unsigned char>();
         map_das_object_methods["uint16"] = das_object_func_ptr_T<unsigned short>();
         map_das_object_methods["uint32"] = das_object_func_ptr_T<unsigned int>();
-        //TODO
         map_das_object_methods["string"] = das_object_func_ptr_T<std::string>();
     }
 
