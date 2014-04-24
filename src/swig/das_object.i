@@ -75,7 +75,7 @@ protected:
 };
 
 %extend DasObject{
-    PyObject * get_column(const std::string &col_name, size_t start = 0, size_t length = -1) {
+    PyObject * get_column(const std::string &col_name, size_t start = 0, ssize_t length = -1) {
         std::string col_type = self->get_column_info(col_name).type;
         return das::map_das_object_methods.at(col_type).get_column(self, col_name,
         start, length);
@@ -93,12 +93,12 @@ protected:
         append_column_array(self, col_name, array);
     }
 
-    /*PyObject * get_column_array(const std::string &col_name, size_t start = 0, size_t length = -1) {
+    PyObject * get_column_array(const std::string &col_name, size_t start = 0, ssize_t length = -1) {
         const ColumnInfo& info = self->get_column_info(col_name);
         int extent = ColumnInfo::array_extent(info.array_size).size();
-        das::map_das_object_methods.at(info.type).extent_map.at(extent).
+        return das::map_das_object_methods.at(info.type).extent_map.at(extent).
         get_column_array(self, col_name, start, length);
-    }*/
+    }
 
     void append_tiles(PyObject * array) {
         std::string img_type = self->get_image_info().type;
