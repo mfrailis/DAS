@@ -25,9 +25,6 @@ set(COMMON_LIBRARIES
   ${ODB_BOOST_LIBRARIES}
 )
 
-set(CMAKE_BUILD_TYPE debug)
-set(CMAKE_CXX_FLAGS_DEBUG "-g")
-
 set(CPP_SOURCE_DIR ${CMAKE_SOURCE_DIR}/src/cpp)
 set(CPP_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
 set(CPP_INCLUDE_INTERNAL_DIR ${CPP_INCLUDE_DIR}/internal)
@@ -93,7 +90,6 @@ include_directories(${Boost_INCLUDE_DIR})
 include_directories(${ODB_INCLUDE_DIR})
 include_directories(${BLITZ_INCLUDE_DIR})
 include_directories(${MYSQL_INCLUDE_DIR})
-#include_directories(${ODB_SOURCE_DIR})
 
 set(ODB_COMMON_TYPES ${ODB_SOURCE_DIR}/ddl_types.hpp)
 
@@ -148,7 +144,7 @@ if(SWIG_FOUND AND PYTHONLIBS_FOUND)
   
   set_source_files_properties(${SWIG_SOURCE_DIR}/pydas.i PROPERTIES CPLUSPLUS ON)
   set_source_files_properties(${SWIG_SOURCE_DIR}/pydas.i PROPERTIES SWIG_FLAGS "-includeall")
-  swig_add_module(pydas python ${SWIG_SOURCE_DIR}/pydas.i)
+  swig_add_module(pydas python ${SWIG_SOURCE_DIR}/pydas.i ${SWIG_SOURCE_DIR}/data_array.cpp)
   swig_link_libraries(pydas ${PYTHON_LIBRARIES} DAS_SO)
 
 endif()
@@ -194,8 +190,6 @@ add_test(image_blob  unit_image_blob)
 add_test(query  unit_query)
 
 install(DIRECTORY include/ DESTINATION include/das)
-
-#add_library(das ${DAS_QL_SRC} ${DAS_SRC} ${TYPES_SRC} ${ODB_SRC})
 
 #get_cmake_property(_variableNames VARIABLES)
 #foreach (_variableName ${_variableNames})
