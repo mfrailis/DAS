@@ -10,7 +10,7 @@ instance under a schema, and will create a validator for you.
 Copyright (c) 2013 Julian Berman see LICENSE for details
 """
 
-from __future__ import division, unicode_literals
+
 
 import collections
 import contextlib
@@ -41,14 +41,15 @@ if PY3:
     from urllib import parse as urlparse
     from urllib.parse import unquote
     from urllib.request import urlopen
-    basestring = unicode = str
+    import urllib.parse
+    str = str = str
     long = int
     iteritems = operator.methodcaller("items")
 else:
-    from itertools import izip as zip
-    from urllib import unquote
-    from urllib2 import urlopen
-    import urlparse
+    
+    from urllib.parse import unquote
+    from urllib.request import urlopen
+    import urllib.parse
     iteritems = operator.methodcaller("iteritems")
 
 
@@ -103,7 +104,7 @@ class _URIDict(MutableMapping):
     """
 
     def normalize(self, uri):
-        return urlparse.urlsplit(uri).geturl()
+        return urllib.parse.urlsplit(uri).geturl()
 
     def __init__(self, *args, **kwargs):
         self.store = dict()
@@ -164,9 +165,9 @@ class ValidatorMixin(object):
     """
 
     DEFAULT_TYPES = {
-        "array" : list, "boolean" : bool, "integer" : (int, long),
+        "array" : list, "boolean" : bool, "integer" : (int, int),
         "null" : type(None), "number" : numbers.Number, "object" : dict,
-        "string" : basestring,
+        "string" : str,
     }
 
     def __init__(self, schema, types=(), resolver=None, format_checker=None):
@@ -367,7 +368,7 @@ class _Draft34CommonMixin(object):
             try:
                 self.format_checker.check(instance, format)
             except FormatError as e:
-                yield ValidationError(unicode(e), cause=e.cause)
+                yield ValidationError(str(e), cause=e.cause)
 
     def validate_minLength(self, mL, instance, schema):
         if self.is_type(instance, "string") and len(instance) < mL:
@@ -1000,7 +1001,7 @@ class RefResolver(object):
     @contextlib.contextmanager
     def in_scope(self, scope):
         old_scope = self.resolution_scope
-        self.resolution_scope = urlparse.urljoin(old_scope, scope)
+        self.resolution_scope = urllib.parse.urljoin(old_scope, scope)
         try:
             yield
         finally:
@@ -1016,8 +1017,8 @@ class RefResolver(object):
 
         """
 
-        full_uri = urlparse.urljoin(self.resolution_scope, ref)
-        uri, fragment = urlparse.urldefrag(full_uri)
+        full_uri = urllib.parse.urljoin(self.resolution_scope, ref)
+        uri, fragment = urllib.parse.urldefrag(full_uri)
 
         if uri in self.store:
             document = self.store[uri]
@@ -1080,7 +1081,7 @@ class RefResolver(object):
 
         """
 
-        scheme = urlparse.urlsplit(uri).scheme
+        scheme = urllib.parse.urlsplit(uri).scheme
 
         if scheme in self.handlers:
             result = self.handlers[scheme](uri)
@@ -1091,7 +1092,7 @@ class RefResolver(object):
         ):
             # Requests has support for detecting the correct encoding of
             # json over http
-            if callable(requests.Response.json):
+            if isinstance(requests.Response.json, collections.Callable):
                 result = requests.get(uri).json()
             else:
                 result = requests.get(uri).json
@@ -1160,8 +1161,8 @@ def _meta_schemas():
 
     """
 
-    meta_schemas = (v.META_SCHEMA for v in validators.values())
-    return dict((urlparse.urldefrag(m["id"])[0], m) for m in meta_schemas)
+    meta_schemas = (v.META_SCHEMA for v in list(validators.values()))
+    return dict((urllib.parse.urldefrag(m["id"])[0], m) for m in meta_schemas)
 
 
 def _find_additional_properties(instance, schema):
@@ -1248,7 +1249,7 @@ def _list(thing):
 
     """
 
-    if isinstance(thing, basestring):
+    if isinstance(thing, str):
         return [thing]
     return thing
 

@@ -537,7 +537,7 @@ void
     obj = self._instance.type_map[name]
     if obj.data is not None:
       if obj.data.isTable():
-        l1 = obj.data.data_obj.columns.keys()
+        l1 = list(obj.data.data_obj.columns.keys())
         l1.extend(l)
         if obj.ancestor != "essentialMetadata":
           return self._get_all_columns(obj.ancestor,l1)
@@ -553,8 +553,8 @@ void
 
   def _get_exclusive_associations(self,type_name):
     exc_assoc = []
-    for data_type in self._instance.type_map.values():
-      for assoc in data_type.associated.values():
+    for data_type in list(self._instance.type_map.values()):
+      for assoc in list(data_type.associated.values()):
         if assoc.atype == type_name:
           if assoc.relation == 'exclusive' or assoc.relation == 'extend':
             exc_assoc.append((assoc.name,data_type.name))
@@ -563,8 +563,8 @@ void
 
   def _get_all_associations(self,type_name):
     assoc_l = []
-    for data_type in self._instance.type_map.values():
-      for assoc in data_type.associated.values():
+    for data_type in list(self._instance.type_map.values()):
+      for assoc in list(data_type.associated.values()):
         if assoc.atype == type_name:
           assoc_l.append(data_type.name)
     return assoc_l
@@ -698,10 +698,10 @@ class DdlInheritanceValidator:
 
   def check_redefined_keywords(self):
     self._keyword_violation = False     
-    for (name,dtype) in self._instance.type_map.items():
+    for (name,dtype) in list(self._instance.type_map.items()):
       self._current_type = name
       if dtype.metadata is not None and dtype.ancestor != dtype.name:
-        for key_name in dtype.metadata.keywords.keys():
+        for key_name in list(dtype.metadata.keywords.keys()):
           self._check_keyword(key_name,dtype.ancestor)
     self._current_type = None
     return self._keyword_violation   
@@ -713,8 +713,8 @@ class DdlInheritanceValidator:
         return self._check_keyword(key_name,obj.ancestor)
     else:
       if obj.metadata.keywords.get(key_name,None) is not None:
-        print "Error: type " + self._current_type + " redefines keyword " + key_name
-        print "  previous declaration in ascendant type "+ type_name
+        print(("Error: type " + self._current_type + " redefines keyword " + key_name))
+        print(("  previous declaration in ascendant type "+ type_name))
         self._keyword_violation = True
       else:
         if obj.ancestor != obj.name:
@@ -722,10 +722,10 @@ class DdlInheritanceValidator:
 
   def check_redefined_columns(self):
     self._column_violation = False     
-    for (name,dtype) in self._instance.type_map.items():
+    for (name,dtype) in list(self._instance.type_map.items()):
       self._current_type = name
       if dtype.ancestor != dtype.name and dtype.data is not None and dtype.data.isTable():
-        for key_name in dtype.data.data_obj.columns.keys():
+        for key_name in list(dtype.data.data_obj.columns.keys()):
           self._check_column(key_name,dtype.ancestor)
     self._current_type = None
     return self._column_violation   
@@ -737,8 +737,8 @@ class DdlInheritanceValidator:
         return self._check_column(key_name,obj.ancestor)
     else:
       if obj.data.isTable() and obj.data.data_obj.columns.get(key_name,None) is not None:
-        print "Error: type " + self._current_type + " redefines column " + key_name
-        print "  previous declaration in ascendant type "+ type_name
+        print(("Error: type " + self._current_type + " redefines column " + key_name))
+        print(("  previous declaration in ascendant type "+ type_name))
         self._column_violation = True
       else:
         if obj.ancestor != obj.name:
@@ -746,7 +746,7 @@ class DdlInheritanceValidator:
 
   def check_ancestor_loop(self):
     errors = False
-    for type_ in self._instance.type_map.values():
+    for type_ in list(self._instance.type_map.values()):
       errors = errors or self._ancestor_loop(type_,[])
     return errors
   
@@ -754,16 +754,16 @@ class DdlInheritanceValidator:
     if type_.name == 'essentialMetadata':
       return False
     elif type_.name in type_set:
-      print "Error: self inheritance or inheritance loops are forbidden."
-      print "  type "+type_.name+" found in the inheritance chain started from type "+type_set[0]
+      print ("Error: self inheritance or inheritance loops are forbidden.")
+      print(("  type "+type_.name+" found in the inheritance chain started from type "+type_set[0]))
       return True
     else:
       type_set.append(type_.name)
       return self._ancestor_loop(self._instance.type_map[type_.ancestor],type_set)
 
   def check_association_loop(self):
-    for type_ in self._instance.type_map.values():
-      for assoc_ in type_.associated.values():
+    for type_ in list(self._instance.type_map.values()):
+      for assoc_ in list(type_.associated.values()):
         stack=[(type_.name,assoc_.name)]
         if self._association_loop(type_,assoc_,stack):
           return True
@@ -771,13 +771,13 @@ class DdlInheritanceValidator:
 
   def _association_loop(self,type_,assoc_,stack):
     if type_.name == assoc_.atype:
-      print "Error: found associations loop:"
+      print ("Error: found associations loop:")
       for i in stack:
-        print "  "+i[0]+"."+i[1]
+        print(("  "+i[0]+"."+i[1]))
       return True
     else:
       errors = False
-      for assoc_n_ in self._instance.type_map[assoc_.atype].associated.values():
+      for assoc_n_ in list(self._instance.type_map[assoc_.atype].associated.values()):
         stack.append((assoc_.atype,assoc_n_.name))
         errors = errors or self._association_loop(type_,assoc_n_,stack)
         if not errors:
@@ -786,7 +786,7 @@ class DdlInheritanceValidator:
 
   def check_image_table_mismatch(self):
     self._data_type_violation = False  
-    for (name,dtype) in self._instance.type_map.items():   
+    for (name,dtype) in list(self._instance.type_map.items()):   
       self._current_type = name
       if dtype.data is not None:
         if dtype.ancestor != dtype.name:
@@ -801,12 +801,12 @@ class DdlInheritanceValidator:
     dtype = self._instance.type_map[type_name]
     if dtype.data is not None:
       if dtype.data.isImage():
-        print "Error data: type "+ self._current_type +" defines table data"
-        print "  while ascendant type "+ type_name +" defines image data"
+        print(("Error data: type "+ self._current_type +" defines table data"))
+        print(("  while ascendant type "+ type_name +" defines image data"))
         self._data_type_violation = True
       elif dtype.data.store_as != store_type:
-        print "Error. mismatch value for attribute 'storeAs' in type "+self._current_type
-        print "  expected "+dtype.data.store_as+", found "+store_type
+        print(("Error. mismatch value for attribute 'storeAs' in type "+self._current_type))
+        print(("  expected "+dtype.data.store_as+", found "+store_type))
         self._data_type_violation = True
     if dtype.ancestor != dtype.name:
       self._check_table(dtype.ancestor,store_type)
@@ -816,12 +816,12 @@ class DdlInheritanceValidator:
     dtype = self._instance.type_map[type_name]
     if dtype.data is not None:
       if dtype.data.isTable():
-        print "Error data: type "+ self._current_type +" defines image data"
-        print "  while ascendant type "+ type_name +" defines table data" 
+        print(("Error data: type "+ self._current_type +" defines image data"))
+        print(("  while ascendant type "+ type_name +" defines table data"))
         self.data_type_violation = True
       else:
-        print "Error in type "+self._current_type+": multiple images are not allowed."
-        print "  previously image defined in ascendant type "+ type_name
+        print("Error in type "+self._current_type+": multiple images are not allowed.")
+        print("  previously image defined in ascendant type "+ type_name)
         self.data_type_violation = True
     else:
       if dtype.ancestor != dtype.name:

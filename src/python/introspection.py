@@ -91,7 +91,7 @@ class DdlInfoGenerator(_odb.DdlVisitor):
         f.writelines("  "+l + "\n" for l in self._init_keywords)
         f.writelines("  "+l + "\n" for l in self._init_associations)
         f.writelines(['\n'])
-        f.writelines('  ddl_map_["'+db+'"] = '+ddl+'::get_instance();\n' for (db,ddl) in self._db_map.items())
+        f.writelines('  ddl_map_["'+db+'"] = '+ddl+'::get_instance();\n' for (db,ddl) in list(self._db_map.items()))
         f.writelines(['}\n'])
         f.close()
         
@@ -112,7 +112,7 @@ namespace das{
     {
       if(!f_.empty()) return;
 '''])
-        for t in self._type_list.type_map.keys():
+        for t in list(self._type_list.type_map.keys()):
             if t != "essentialMetadata":
                 f.writelines(['      f_.insert(std::pair< std::string, shared_ptr<Functor> >("'+t+'",shared_ptr<Functor>(new FunctorImp<'+t+'>)));\n']) 
 
@@ -125,7 +125,7 @@ namespace das{
         
         _odb.comp_mv(db_plf_path,db_plf_path+'.tmp')
 
-        for ddl_name in self._DdlInfo_children.keys():
+        for ddl_name in list(self._DdlInfo_children.keys()):
             ddl_path = _os.path.join(self._src_dir, ddl_name+'.hpp')
             f = open(ddl_path+'.tmp', 'w')
             const = ['  '+ddl_name+'()\n','  {\n']
@@ -138,7 +138,7 @@ namespace das{
     def _get_keywords(self, type_name):
         ddl_type = self._type_list.type_map[type_name]
         if ddl_type.metadata is not None:
-            self._keywords.extend(ddl_type.metadata.keywords.values())
+            self._keywords.extend(list(ddl_type.metadata.keywords.values()))
         if ddl_type.ancestor != ddl_type.name:
             self._get_keywords(ddl_type.ancestor)
             
@@ -147,13 +147,13 @@ namespace das{
         if ddl_type.data is not None:
             if ddl_type.data.isImage():
                 return
-            self._columns.extend(ddl_type.data.data_obj.columns.values())
+            self._columns.extend(list(ddl_type.data.data_obj.columns.values()))
         if ddl_type.ancestor != ddl_type.name:
             self._get_columns(ddl_type.ancestor)
 
     def _get_associations(self, type_name):
         ddl_type = self._type_list.type_map[type_name]
-        for (ass_name,association) in ddl_type.associated.items():
+        for (ass_name,association) in list(ddl_type.associated.items()):
             self._associations.append((ass_name,association))
         if ddl_type.ancestor != ddl_type.name:
             self._get_associations(ddl_type.ancestor)
@@ -274,16 +274,16 @@ if __name__ == "__main__":
     db_map = { 'oracle1' : 'ddl_test1' , 'sqlite_cache' : 'ddl_test2', 'oracle2' : 'ddl_test1' }
 
 
-    print "ddl_map"
-    for (type_,list_) in ddl_map._map.items():
-        print type_
+    print("ddl_map")
+    for (type_,list_) in list(ddl_map._map.items()):
+        print(type_)
         for l in list_:
-            print "  ",l
+            print("  ",l)
             
-    print ""
-    print "db_map"
-    for (db,ddl) in db_map.items():
-        print db+"  "+ddl
+    print("")
+    print("db_map")
+    for (db,ddl) in list(db_map.items()):
+        print(db+"  "+ddl)
 
 
     ddl_generator = DdlInfoGenerator(instance,ddl_map,db_map,output_dir)

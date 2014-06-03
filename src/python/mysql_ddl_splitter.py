@@ -27,7 +27,8 @@ if __name__ == '__main__':
     for cs in constraints:
         cl = re.findall('ADD CONSTRAINT \`[a-zA-Z0-9\_]*\`',cs)
         for i in cl:
-            hc = 'ADD CONSTRAINT `fk_'+_hash.sha1(i).hexdigest()+'`'
+            enc = i.encode('utf-8')
+            hc = 'ADD CONSTRAINT `fk_'+_hash.sha1(enc).hexdigest()+'`'
             cs = cs.replace(i,hc)
 
         hash_constraints.append(cs)

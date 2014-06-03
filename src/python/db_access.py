@@ -46,7 +46,7 @@ class JsonAccessParser:
         aliases = []        
         for db in self._config:
             if db['alias'] in aliases:
-                print 'ERROR: found repeated  "'+db['alias']+'" alias in configuration file'
+                print('ERROR: found repeated  "'+db['alias']+'" alias in configuration file')
                 exit(1)
             aliases.append(db['alias'])
             if db['alias'] == alias:
@@ -56,7 +56,7 @@ class JsonAccessParser:
                 self._db_type = db['db_type']
 
         if alias not in aliases:
-            print 'ERROR: "'+alias+'" alias not found in configuration file'
+            print('ERROR: "'+alias+'" alias not found in configuration file')
             exit(1)           
 
         f = open(f_acc,'r')
@@ -67,7 +67,7 @@ class JsonAccessParser:
         u_aliases = []
         for db_a in self._access:
             if db_a['alias'] in u_aliases:
-                print 'ERROR: found repeated  "'+db_a['alias']+'" alias in access file'
+                print('ERROR: found repeated  "'+db_a['alias']+'" alias in access file')
                 exit(1)
             if db_a['alias'] == alias:
                 self._found = True
@@ -76,7 +76,7 @@ class JsonAccessParser:
             u_aliases.append(db_a['alias'])
         
         if not self._found:
-            print 'ERROR: no credentials for "'+alias+'" found'
+            print('ERROR: no credentials for "'+alias+'" found')
             exit(1)
 
     def execute(self, xsd_schema, xml_new):
@@ -160,30 +160,30 @@ class JsonAccessParser:
             lock.close()
 
         elif self._db_type == 'oracle':
-            print "ERROR: DBMS vendor not supported (yet)"
+            print("ERROR: DBMS vendor not supported (yet)")
             exit(1)
         elif self._db_type == 'pgsql':
-            print "ERROR: DBMS vendor not supported (yet)"
+            print("ERROR: DBMS vendor not supported (yet)")
             exit(1)
         elif self._db_type == 'sqlite':
-            print "ERROR: DBMS vendor not supported (yet)"
+            print("ERROR: DBMS vendor not supported (yet)")
             exit(1)
         elif self._db_type == 'mssql':
-            print "ERROR: DBMS vendor not supported (yet)"
+            print("ERROR: DBMS vendor not supported (yet)")
             exit(1)
 
     def _check_missing_types(self,cur,new):
-        for t in cur.type_map.values():
+        for t in list(cur.type_map.values()):
             ct = new.type_map.get(t.name,None)
             if ct is None:
-                print "ERROR: type "+t.name+" missing in the new ddl-document" 
+                print("ERROR: type "+t.name+" missing in the new ddl-document") 
                 return False
         return True
 #TODO modify this function in order to perform types upgrades
     def _generate_mysql(self,cur,new):
         code = []
 
-        for t in new.type_map.values():
+        for t in list(new.type_map.values()):
             ct = cur.type_map.get(t.name,None)
             if ct is None:
                 if t.name != "essentialMetadata":
@@ -201,7 +201,7 @@ class JsonAccessParser:
                     code.append((ddl,const))
             else:
                 # perform type upgrade operations
-                print "skipping "+t.name
+                print("skipping "+t.name)
                 pass
             
         return code

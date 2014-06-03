@@ -23,7 +23,7 @@ class DdlTypeList:
     self.type_map = MapOrd()
     
   def accept(self, visitor):
-    for node in self.type_map.values():
+    for node in list(self.type_map.values()):
       node.accept(visitor) 
     visitor.visit_type_list(self)
     
@@ -38,7 +38,7 @@ class DataType:
     
   def accept(self, visitor):
     visitor.name(self.name)
-    for node in self.associated.values():
+    for node in list(self.associated.values()):
       node.accept(visitor)
     if self.metadata is not None:
       self.metadata.accept(visitor)
@@ -49,26 +49,26 @@ class DataType:
   def upgrade(self,data_type):
     diff = TypeUpgrade(self.name)
     if self.name != data_type.name:
-      print "Error: different type names"
+      print("Error: different type names")
       diff.errors = True
       diff.is_copy = False
       return diff
 
     if self.ancestor != data_type.ancestor:
-      print "Error: type attribute in ancestor element mismatch"
+      print("Error: type attribute in ancestor element mismatch")
       diff.errors = True
           
-    for (name,assoc) in self.associated.items():
+    for (name,assoc) in list(self.associated.items()):
       assoc2 = data_type.associated.get(name,None)
       if assoc2 is None:
-        print "Error: expected associated element with name "+name
+        print("Error: expected associated element with name "+name)
         diff.errors = True
       else:
         if assoc.atype != assoc2.atype:
-          print "Error: type attribute mismatch in associated element "+name
+          print("Error: type attribute mismatch in associated element "+name)
           diff.errors = True
         if assoc.multiplicity != assoc2.multiplicity:
-          print "Error: multiplicity attribute mismatch in associated element "+name
+          print("Error: multiplicity attribute mismatch in associated element "+name)
           diff.errors = True
     set1 = set(self.associated.keys())
     set2 = set(data_type.associated.keys())
@@ -80,7 +80,7 @@ class DataType:
 
     if self.metadata is None:
       if data_type is not None:
-        print "Error: unexpected metadata element"
+        print("Error: unexpected metadata element")
         diff.errors = True
     else:
       md = self.metadata.upgrade(data_type.metadata)
@@ -92,7 +92,7 @@ class DataType:
       
     if self.data is None:
       if data_type.data is not None:
-        print "Error: unexpected data element"
+        print("Error: unexpected data element")
         diff.errors = True
     else:
       dt = self.data.upgrade(data_type.data)
@@ -124,7 +124,7 @@ class Metadata:
     self.keywords = MapOrd()
     
   def accept(self, visitor):
-    for node in self.keywords.values():
+    for node in list(self.keywords.values()):
       node.accept(visitor)
     visitor.visit_metadata(self)
     
@@ -132,30 +132,30 @@ class Metadata:
     diff = TypeUpgrade("")
 
     if metadata is None:
-      print "Error: expected metadata element"
+      print("Error: expected metadata element")
       diff.errors = True
       return diff
 
-    for (name,keyword) in self.keywords.items():
+    for (name,keyword) in list(self.keywords.items()):
       keyword2 = metadata.keywords.get(name,None)
       if keyword2 is None:
-        print "Error: expected keyword element with name "+name
+        print("Error: expected keyword element with name "+name)
         diff.errors = True
       else:
         if keyword.ktype != keyword2.ktype:
-          print "Error: type attribute mismatch in keyword "+name
+          print("Error: type attribute mismatch in keyword "+name)
           diff.errors = True
         if keyword.unit != keyword2.unit:
-          print "Error: unit attribute mismatch in keyword "+name
+          print("Error: unit attribute mismatch in keyword "+name)
           diff.errors = True
         if keyword.default != keyword2.default:
-          print "Error: default attribure mismatch in keyword "+name
+          print("Error: default attribure mismatch in keyword "+name)
           diff.errors = True
         if keyword.index != keyword2.index:
-          print "Error: index attribute mismatch in keyword "+name
+          print("Error: index attribute mismatch in keyword "+name)
           diff.errors = True
         if keyword.description != keyword2.description:
-          print "Error: description attribute mismatch in keyword "+name
+          print("Error: description attribute mismatch in keyword "+name)
           diff.errors = True
 
     set1 = set(self.keywords.keys())
@@ -205,18 +205,18 @@ class Data:
   def upgrade(self,data):
     diff = TypeUpgrade("")
     if data is None:
-      print "Error: expected data element"
+      print("Error: expected data element")
       diff.errors = True
       diff.is_copy = False
       return diff
     
     if self.store_as != data.store_as:
-      print "Error: storeAs attribute mismatch"
+      print("Error: storeAs attribute mismatch")
       diff.errors = True
 
     if self.isTable():
       if not data.isTable():
-        print "Error: data element mismatch"
+        print("Error: data element mismatch")
         diff.errors = True
       else:
         obj_diff = self.data_obj.upgrade(data.data_obj)
@@ -228,7 +228,7 @@ class Data:
 
     else:
       if not data.isImage():
-        print "Error: data element mismatch"
+        print("Error: data element mismatch")
         diff.errors = True
       else:
         obj_diff = self.data_obj.upgrade(data.data_obj)
@@ -244,31 +244,31 @@ class BinaryTable:
     self.columns = MapOrd()
     
   def accept(self, visitor):
-    for node in self.columns.values():
+    for node in list(self.columns.values()):
       node.accept(visitor)
     visitor.visit_binary_table(self)
     
   def upgrade(self,table):
     diff = TypeUpgrade("")
     if table is None:
-      print "Error: expected binaryTable element"
+      print("Error: expected binaryTable element")
       diff.errors = True
       return diff
 
-    for (name,column) in self.columns.items():
+    for (name,column) in list(self.columns.items()):
       column2 = table.columns.get(name,None)
       if column2 is None:
-        print "Error: expected column element with name "+name
+        print("Error: expected column element with name "+name)
         diff.errors = True
       else:
         if column.ctype != column2.ctype:
-          print "Error: type attribute mismatch in column "+name
+          print("Error: type attribute mismatch in column "+name)
           diff.errors = True
         if column.unit != column2.unit:
-          print "Error: unit attribute mismatch in column "+name
+          print("Error: unit attribute mismatch in column "+name)
           diff.errors = True
         if column.max_string_length != column2.max_string_length:
-          print "Error: maxStringLength attribute mismatch in column "+name
+          print("Error: maxStringLength attribute mismatch in column "+name)
           diff.errors = True
 
     set1 = set(self.columns.keys())
@@ -306,10 +306,10 @@ class Image:
   def upgrade(self, image):
     diff = TypeUpgrade("")
     if image is None:
-      print "Error: expected image element"
+      print("Error: expected image element")
       diff.errors = True
     if image.pix_type != image.pix_type:
-      print "Error: attribute pixType mismatch"
+      print("Error: attribute pixType mismatch")
       diff.errors = True
     if diff.errors:
       diff.is_copy = False

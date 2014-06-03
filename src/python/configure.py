@@ -28,7 +28,7 @@ class JsonConfigParser:
         aliases = []        
         for db in self._config:
             if db['alias'] in aliases:
-                print 'ERROR: found repeated  "'+db['alias']+'" alias in configuration file'
+                print(('ERROR: found repeated  "'+db['alias']+'" alias in configuration file'))
                 exit(1)
             aliases.append(db['alias'])
             self.db_map[_assemble_db(db)]=_assemble_ddl(db['ddl'])
@@ -36,7 +36,7 @@ class JsonConfigParser:
 
 
     def get_db_list(self):
-        return self.db_map.keys()
+        return list(self.db_map.keys())
 
     def generate_db_headers(self,output_dir):
         ddl_set = set(self.db_map.values())
@@ -104,7 +104,7 @@ foreach(type_name ${TYPE_NAMES_ALL})
 endforeach()
 ''')
 
-        for (db_type,db_dir_) in db_vendors.items():
+        for (db_type,db_dir_) in list(db_vendors.items()):
             db_dir = "${ODB_OUTPUT_DIR}/"+db_type
             f.write('''
 find_package(ODB_'''+db_type.upper()+''' REQUIRED)
@@ -393,7 +393,8 @@ add_custom_target(examples
         f.close()
         
 def _assemble_ddl(path):
-    return "ddl_"+_hash.sha1(path).hexdigest()
+    enc = path.encode('utf-8')
+    return "ddl_"+_hash.sha1(enc).hexdigest()
 
 def _assemble_db(db):
 #    uri=""+db['host']+str(db['port'])+db['db_name']
@@ -565,7 +566,7 @@ namespace das{
       info.db_name = "''',str(db['db_name']),'''";
       info.db_type = "''',str(db['db_type']),'''";
 '''])
-        if(db.has_key('mysql_socket')):
+        if('mysql_socket' in db):
              f.writelines(['      info.mysql_socket = "'+str(db['mysql_socket'])+'";\n'])  
         f.writelines(l for l in  storage_engine_tree_visit(db['storage_engine'],''))
         f.writelines(['    }\n'])
@@ -580,7 +581,7 @@ namespace das{
 def storage_engine_tree_visit(tree,path):
     src = []
     if type(tree) is dict:
-        for (name,subtree) in tree.items():
+        for (name,subtree) in list(tree.items()):
             if path == '':
                 pt = name
             else:
@@ -590,7 +591,7 @@ def storage_engine_tree_visit(tree,path):
         for item in tree:
             src.extend(storage_engine_list_visit(item,path))
     else:
-        if isinstance(tree, (int, long, float)):
+        if isinstance(tree, (int, float)):
            src.append('      info.storage_engine.put("'+path+'",'+str(tree)+');\n')
         else: 
             src.append('      info.storage_engine.put("'+path+'","'+str(tree)+'");\n')
@@ -600,7 +601,7 @@ def storage_engine_tree_visit(tree,path):
 def storage_engine_list_visit(tree,path):
     src = []
     if type(tree) is dict:
-        for (name,subtree) in tree.items():
+        for (name,subtree) in list(tree.items()):
             if path == '':
                 pt = name
             else:
@@ -610,7 +611,7 @@ def storage_engine_list_visit(tree,path):
         for item in tree:
             src.extend(storage_engine_list_visit(item,path))
     else:
-        if isinstance(tree, (int, long, float)):
+        if isinstance(tree, (int, float)):
            src.append('      info.storage_engine.add("'+path+'",'+str(tree)+');\n')
         else: 
             src.append('      info.storage_engine.add("'+path+'","'+str(tree)+'");\n')
@@ -651,7 +652,7 @@ if __name__ == '__main__':
         if validator.check_association_loop():
             exit(1)
         #check redefined types consistency
-        for (name,ddl_type) in temp_type_list.type_map.items():
+        for (name,ddl_type) in list(temp_type_list.type_map.items()):
             c.ddl_map.add_type(_assemble_ddl(ddl),ddl_type.name)
             type_set.add(ddl_type.name)
             if type_list.type_map.get(name,None) is None:
@@ -659,7 +660,7 @@ if __name__ == '__main__':
             else:
                 upg = type_list.type_map[name].upgrade(ddl_type)
                 if not upg.is_copy:
-                    print "Error: redefined type "+name+"  doesn't match the previously defined one"
+                    print(("Error: redefined type "+name+"  doesn't match the previously defined one"))
                     exit(1)
 
     #generate odb classes
