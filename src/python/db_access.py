@@ -1,7 +1,7 @@
 import json as _j
 import jsonschema as _js
 #import subprocess as _s
-import MySQLdb as _my
+import pyodbc as _my
 import ddl as _d
 import os as _os
 import re
@@ -83,19 +83,21 @@ class JsonAccessParser:
 
         is_new = True
         if  self._db_type == 'mysql':
-            filterwarnings('ignore', category = _my.Warning)
-            lock = _my.connect(host=self._host,
-                             port=self._port,
-                             user=self._user_name,
-                             passwd=self._password,
-                             db=self._db_name
-                             )
+###            filterwarnings('ignore', category = _my.Warning)
+            lock = _my.connect(driver='{MySQL}',
+                               host=self._host,
+                               port=self._port,
+                               uid=self._user_name,
+                               pwd=self._password,
+                               database=self._db_name
+                           )
 
-            db = _my.connect(host=self._host,
+            db = _my.connect(driver='{MySQL}',
+                             host=self._host,
                              port=self._port,
-                             user=self._user_name,
-                             passwd=self._password,
-                             db=self._db_name
+                             uid=self._user_name,
+                             pwd=self._password,
+                             database=self._db_name
                              )
             c = db.cursor()
             c.execute(MYSQL_DDL_SCHEMA)
@@ -135,6 +137,7 @@ class JsonAccessParser:
             code = self._generate_mysql(cur_types,new_types)
             for (ddl,cnst) in code:
                 cc = db.cursor()
+                print (ddl)
                 cc.execute(ddl)
                 cc.close()
 
@@ -209,11 +212,16 @@ class JsonAccessParser:
     def _split_ddl_mysql(self,text):
         ddl = text
         constraints = re.findall('ALTER TABLE[a-zA-Z0-9\ \`\,_\(\)\n]*;',text)
+        indexes = re.findall('CREATE INDEX `[a-zA-Z0-9\ \`\,_\(\)\n]*;',text)
         
         const_str = ''
         for cs in constraints:
             ddl = ddl.replace(cs,'')
             const_str = const_str + cs + '\n'
+
+        for idx in indexes:
+            print ("INDICE="+idx)
+            ddl = ddl.replace(idx,'')
 
         return (ddl,const_str)
     
